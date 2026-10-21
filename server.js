@@ -956,10 +956,10 @@ app.get(
   "/api/admin/orders",
   requireAdmin,
   requirePermission("orders.view"),
-  async (_req, res, next) => {
+  async (req, res, next) => {
     try {
       const orders = await getOrders();
-      const visibleOrders = req.adminSession.role === "owner"
+      const visibleOrders = req.adminSession?.role === "owner"
         ? orders
         : orders.map(order => ({
             ...order,

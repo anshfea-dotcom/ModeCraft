@@ -302,6 +302,22 @@ async function initDatabase() {
     CREATE INDEX IF NOT EXISTS product_reviews_product_idx
       ON product_reviews (product_id, created_at DESC);
 
+    CREATE TABLE IF NOT EXISTS customer_wishlist (
+      customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (customer_id, product_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      token_hash TEXT PRIMARY KEY,
+      customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS password_reset_customer_idx
+      ON password_reset_tokens (customer_id, expires_at DESC);
+
     CREATE TABLE IF NOT EXISTS audit_logs (
       id BIGSERIAL PRIMARY KEY,
       actor TEXT NOT NULL,
@@ -627,17 +643,63 @@ app.post("/api/auth/logout", (req, res, next) => {
   req.session.save(error => error ? next(error) : res.json({ ok: true }));
 });
 
-app.post("/api/auth/forgot-password", async (req, res) => {
-  const email = cleanText(req.body?.email, 180).toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({ error: "Enter a valid email address." });
-  }
-  // Deliberately do not pretend an email was sent. A mail provider and reset-token flow must be configured first.
-  if (!process.env.PASSWORD_RESET_BASE_URL || !process.env.RESEND_API_KEY) {
-    return res.status(503).json({ error: "Password reset email is not configured yet. Add PASSWORD_RESET_BASE_URL and RESEND_API_KEY to Render after setting up the email sender." });
-  }
-  // Fail closed until a provider-specific sender is implemented rather than exposing reset tokens.
-  return res.status(503).json({ error: "Password reset email delivery is not enabled on this server yet." });
+app.post("/api/auth/forgot-password", async (req, res, next) => {
+  try {
+    const email = cleanText(req.body?.email, 180).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Enter a valid email address." });
+    }
+    // Always use a generic response so account existence is not disclosed.
+    const found = await pool.query("SELECT id FROM customers WHERE email = $1", [email]);
+    if (found.rowCount && process.env.RESEND_API_KEY && process.env.PASSWORD_RESET_BASE_URL && process.env.PASSWORD_RESET_FROM) {
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+      await pool.query("DELETE FROM password_reset_tokens WHERE customer_id = $1", [found.rows[0].id]);
+      await pool.query(
+        "INSERT INTO password_reset_tokens (token_hash, customer_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL '30 minutes')",
+        [tokenHash, found.rows[0].id]
+      );
+      const resetUrl = new URL(process.env.PASSWORD_RESET_BASE_URL);
+      resetUrl.searchParams.set("token", rawToken);
+      const mail = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: process.env.PASSWORD_RESET_FROM,
+          to: [email],
+          subject: "Reset your ModeCraft password",
+          html: `<p>We received a request to reset your ModeCraft password.</p><p><a href="${resetUrl.toString()}">Reset password</a></p><p>This link expires in 30 minutes. If you did not request this, ignore this email.</p>`
+        })
+      });
+      if (!mail.ok) console.error("Password reset email provider returned status", mail.status);
+    }
+    res.json({ ok: true, message: "If an account exists for that email and email delivery is configured, a password reset link will be sent." });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/auth/reset-password", async (req, res, next) => {
+  try {
+    const token = cleanText(req.body?.token, 200);
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    if (!token || password.length < 8 || password.length > 200) {
+      return res.status(400).json({ error: "Provide a valid reset token and a password of at least 8 characters." });
+    }
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const found = await pool.query(
+      "SELECT customer_id FROM password_reset_tokens WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()",
+      [tokenHash]
+    );
+    if (!found.rowCount) return res.status(400).json({ error: "This reset link is invalid or has expired." });
+    const { salt, hash } = hashPassword(password);
+    await pool.query("BEGIN");
+    try {
+      await pool.query("UPDATE customers SET password_salt = $1, password_hash = $2, updated_at = NOW() WHERE id = $3", [salt, hash, found.rows[0].customer_id]);
+      await pool.query("UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = $1", [tokenHash]);
+      await pool.query("DELETE FROM password_reset_tokens WHERE customer_id = $1 AND token_hash <> $2", [found.rows[0].customer_id, tokenHash]);
+      await pool.query("COMMIT");
+    } catch (error) { await pool.query("ROLLBACK"); throw error; }
+    res.json({ ok: true, message: "Password updated. You can now sign in." });
+  } catch (error) { next(error); }
 });
 
 app.get("/api/orders/my", requireCustomer, async (req, res, next) => {
@@ -697,6 +759,37 @@ app.post("/api/products/:id/reviews", requireCustomer, async (req, res, next) =>
       [id, product.id, customer.id, customer.name, rating, title, comment]
     );
     res.status(201).json({ ok: true, review: result.rows[0] });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/wishlist", requireCustomer, async (req, res, next) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.data, w.created_at AS "addedAt"
+       FROM customer_wishlist w JOIN products p ON p.id = w.product_id
+       WHERE w.customer_id = $1 ORDER BY w.created_at DESC`,
+      [req.session.customer.id]
+    );
+    res.json({ wishlist: result.rows.map(row => ({ ...row.data, addedAt: row.addedAt })) });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/wishlist/:productId", requireCustomer, async (req, res, next) => {
+  try {
+    const product = await getProduct(cleanText(req.params.productId, 150));
+    if (!product || product.active === false) return res.status(404).json({ error: "Product not found." });
+    await pool.query(
+      "INSERT INTO customer_wishlist (customer_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+      [req.session.customer.id, product.id]
+    );
+    res.status(201).json({ ok: true, productId: product.id });
+  } catch (error) { next(error); }
+});
+
+app.delete("/api/wishlist/:productId", requireCustomer, async (req, res, next) => {
+  try {
+    await pool.query("DELETE FROM customer_wishlist WHERE customer_id = $1 AND product_id = $2", [req.session.customer.id, cleanText(req.params.productId, 150)]);
+    res.json({ ok: true });
   } catch (error) { next(error); }
 });
 
@@ -1013,7 +1106,11 @@ app.post(
     try {
       const name = cleanText(req.body?.name, 120);
       const category = cleanText(req.body?.category, 80);
-      const image = cleanText(req.body?.image, 1000);
+      const suppliedImages = Array.isArray(req.body?.images)
+        ? req.body.images.map(value => cleanText(value, 1000)).filter(Boolean).slice(0, 12)
+        : [];
+      const image = cleanText(req.body?.image, 1000) || suppliedImages[0] || "";
+      const images = [...new Set([image, ...suppliedImages].filter(Boolean))].slice(0, 12);
       const description = cleanText(req.body?.description, 500);
       const price = Number(req.body?.price);
       const stock = Number(req.body?.stock ?? 0);
@@ -1037,6 +1134,7 @@ app.post(
         category,
         price,
         image,
+        images,
         description,
         stock,
         active: req.body?.active !== false,
@@ -1077,6 +1175,17 @@ app.patch(
 
       if (req.body?.image !== undefined) {
         product.image = cleanText(req.body.image, 1000);
+      }
+
+      if (req.body?.images !== undefined) {
+        if (!Array.isArray(req.body.images)) {
+          return res.status(400).json({ error: "Images must be an array of image URLs." });
+        }
+        product.images = [...new Set(req.body.images.map(value => cleanText(value, 1000)).filter(Boolean))].slice(0, 12);
+        if (!product.image && product.images.length) product.image = product.images[0];
+      }
+      if (req.body?.image !== undefined && !product.images?.length && product.image) {
+        product.images = [product.image];
       }
 
       if (req.body?.description !== undefined) {

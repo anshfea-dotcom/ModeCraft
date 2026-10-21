@@ -141,8 +141,9 @@ const ROLE_PERMISSIONS = {
     "orders.cancel",
     "products.view",
     "products.manage",
-    "customers.view",
     "staff.manage",
+    "customers.view",
+    "orders.payment.receive",
     "analytics.view",
     "audit.view"
   ],
@@ -151,6 +152,7 @@ const ROLE_PERMISSIONS = {
     "orders.view",
     "orders.update",
     "orders.cancel",
+    "orders.payment.receive",
     "products.view",
     "products.manage",
     "analytics.view",
@@ -160,6 +162,7 @@ const ROLE_PERMISSIONS = {
     "dashboard.view",
     "orders.view",
     "orders.update",
+    "orders.payment.receive",
     "products.view"
   ]
 };
@@ -953,18 +956,66 @@ app.get(
   "/api/admin/orders",
   requireAdmin,
   requirePermission("orders.view"),
-  async (req, res, next) => {
+  async (_req, res, next) => {
     try {
       const orders = await getOrders();
-      // Customer identity and delivery details are owner-only. Enforce this in the API,
-      // not only in the dashboard UI, so staff cannot inspect the raw response.
-      const visibleOrders = req.adminSession?.role === "owner"
+      const visibleOrders = req.adminSession.role === "owner"
         ? orders
         : orders.map(order => ({
             ...order,
-            customer: { name: "Private customer", email: "", phone: "", address: "", city: "", postalCode: "" }
+            customer: order.customer ? {
+              name: order.customer.name || "Customer",
+              email: "",
+              phone: "",
+              address: "",
+              city: "",
+              postalCode: ""
+            } : order.customer
           }));
       res.json({ orders: visibleOrders });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+app.get(
+  "/api/admin/customers",
+  requireAdmin,
+  requirePermission("customers.view"),
+  async (_req, res, next) => {
+    try {
+      const result = await pool.query(
+        "SELECT id, name, email, phone, created_at FROM customers ORDER BY created_at DESC LIMIT 1000"
+      );
+      const orders = await getOrders();
+      const customers = result.rows.map(row => {
+        const history = orders.filter(order =>
+          String(order.customer?.email || "").toLowerCase() === String(row.email || "").toLowerCase() ||
+          String(order.customer?.phone || "") === String(row.phone || "")
+        ).map(order => ({
+          id: order.id,
+          createdAt: order.createdAt,
+          total: Number(order.total || 0),
+          paymentMethod: order.paymentMethod || "—",
+          paymentStatus: order.paymentStatus || "pending",
+          orderStatus: order.orderStatus || "received",
+          address: order.customer?.address || "",
+          city: order.customer?.city || "",
+          postalCode: order.customer?.postalCode || "",
+          items: Array.isArray(order.items) ? order.items : []
+        }));
+        return {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          phone: row.phone,
+          createdAt: row.created_at,
+          orderCount: history.length,
+          orders: history
+        };
+      });
+      res.json({ customers });
     } catch (error) {
       next(error);
     }
@@ -1036,9 +1087,10 @@ app.patch(
         status
       });
 
-      const responseOrder = req.adminSession?.role === "owner"
-        ? order
-        : { ...order, customer: { name: "Private customer", email: "", phone: "", address: "", city: "", postalCode: "" } };
+      const responseOrder = req.adminSession.role === "owner" ? order : {
+        ...order,
+        customer: order.customer ? { name: order.customer.name || "Customer", email: "", phone: "", address: "", city: "", postalCode: "" } : order.customer
+      };
       res.json({ ok: true, order: responseOrder });
     } catch (error) {
       next(error);
@@ -1046,44 +1098,39 @@ app.patch(
   }
 );
 
-// Owner-only customer directory. Never return password salts, hashes, reset tokens,
-// or any other authentication secrets. Address/history are derived from saved orders.
-app.get(
-  "/api/admin/customers",
+app.patch(
+  "/api/admin/orders/:id/payment",
   requireAdmin,
-  requirePermission("customers.view"),
-  async (_req, res, next) => {
+  requirePermission("orders.payment.receive"),
+  async (req, res, next) => {
     try {
-      const [customerResult, orders] = await Promise.all([
-        pool.query("SELECT id, name, email, phone, created_at, updated_at FROM customers ORDER BY created_at DESC"),
-        getOrders()
-      ]);
-      const customers = customerResult.rows.map(row => {
-        const matchingOrders = orders
-          .filter(order => String(order.customer?.email || "").toLowerCase() === String(row.email).toLowerCase())
-          .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-        const latest = matchingOrders[0];
-        return {
-          id: row.id,
-          name: row.name,
-          email: row.email,
-          phone: row.phone,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-          address: latest?.customer?.address || "",
-          city: latest?.customer?.city || "",
-          postalCode: latest?.customer?.postalCode || "",
-          orderCount: matchingOrders.length,
-          orders: matchingOrders.slice(0, 50).map(order => ({
-            id: order.id,
-            createdAt: order.createdAt,
-            total: order.total,
-            paymentStatus: order.paymentStatus,
-            orderStatus: order.orderStatus
-          }))
-        };
+      const order = await getOrder(req.params.id);
+      if (!order) return res.status(404).json({ error: "Order not found." });
+      if (String(order.paymentMethod || "").toUpperCase() !== "COD") {
+        return res.status(409).json({ error: "Only COD payments can be manually marked as received. Online payments must be verified by Razorpay." });
+      }
+      if (order.paymentStatus === "paid") {
+        return res.status(409).json({ error: "This order is already marked as paid." });
+      }
+      const note = cleanText(req.body?.note, 250);
+      order.paymentStatus = "paid";
+      order.paymentReceivedAt = new Date().toISOString();
+      order.paymentReceivedBy = req.adminSession.username;
+      order.paymentReceivedRole = req.adminSession.role;
+      order.paymentReceivedNote = note;
+      order.updatedAt = new Date().toISOString();
+      if (!Array.isArray(order.paymentHistory)) order.paymentHistory = [];
+      order.paymentHistory.push({
+        status: "paid",
+        method: "COD",
+        by: req.adminSession.username,
+        role: req.adminSession.role,
+        note,
+        at: order.paymentReceivedAt
       });
-      res.json({ customers });
+      await putOrder(order);
+      await audit(req.adminSession, "order.payment.received", { orderId: order.id, method: "COD" });
+      res.json({ ok: true, orderId: order.id, paymentStatus: order.paymentStatus, paymentReceivedAt: order.paymentReceivedAt, paymentReceivedBy: order.paymentReceivedBy });
     } catch (error) {
       next(error);
     }

@@ -276,6 +276,32 @@ async function initDatabase() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS customers (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      phone TEXT NOT NULL UNIQUE,
+      password_salt TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS product_reviews (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+      customer_name TEXT NOT NULL,
+      rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      title TEXT NOT NULL DEFAULT '',
+      comment TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(product_id, customer_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS product_reviews_product_idx
+      ON product_reviews (product_id, created_at DESC);
+
     CREATE TABLE IF NOT EXISTS audit_logs (
       id BIGSERIAL PRIMARY KEY,
       actor TEXT NOT NULL,
@@ -505,6 +531,173 @@ app.get("/health", async (_req, res) => {
       database: "unavailable"
     });
   }
+});
+
+// Customer authentication and reviews. Customer sessions are kept separate from admin sessions.
+function publicCustomer(row) {
+  return { id: row.id, name: row.name, email: row.email, phone: row.phone, createdAt: row.created_at };
+}
+
+function requireCustomer(req, res, next) {
+  if (!req.session?.customer?.id) {
+    return res.status(401).json({ error: "Please sign in to continue." });
+  }
+  next();
+}
+
+const customerLoginAttempts = new Map();
+
+app.post("/api/auth/signup", async (req, res, next) => {
+  try {
+    const name = cleanText(req.body?.name, 100);
+    const email = cleanText(req.body?.email, 180).toLowerCase();
+    const phone = cleanText(req.body?.phone, 10);
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{10}$/.test(phone) || password.length < 8 || password.length > 200) {
+      return res.status(400).json({ error: "Enter your name, valid email, 10-digit phone number and a password of at least 8 characters." });
+    }
+    const existing = await pool.query("SELECT id FROM customers WHERE email = $1 OR phone = $2 LIMIT 1", [email, phone]);
+    if (existing.rowCount) return res.status(409).json({ error: "An account already exists with this email or phone number." });
+    const { salt, hash } = hashPassword(password);
+    const id = "cus_" + crypto.randomBytes(12).toString("hex");
+    const result = await pool.query(
+      `INSERT INTO customers (id, name, email, phone, password_salt, password_hash)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, email, phone, created_at`,
+      [id, name, email, phone, salt, hash]
+    );
+    req.session.regenerate(error => {
+      if (error) return next(error);
+      req.session.customer = { id: result.rows[0].id };
+      req.session.save(saveError => {
+        if (saveError) return next(saveError);
+        res.status(201).json({ ok: true, user: publicCustomer(result.rows[0]) });
+      });
+    });
+  } catch (error) {
+    if (error.code === "23505") return res.status(409).json({ error: "An account already exists with this email or phone number." });
+    next(error);
+  }
+});
+
+app.post("/api/auth/login", async (req, res, next) => {
+  try {
+    const email = cleanText(req.body?.email, 180).toLowerCase();
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    const ip = req.socket?.remoteAddress || "unknown";
+    const now = Date.now();
+    let attempt = customerLoginAttempts.get(ip);
+    if (attempt && now - attempt.startedAt < 15 * 60 * 1000 && attempt.count >= 10) {
+      return res.status(429).json({ error: "Too many login attempts. Please wait 15 minutes." });
+    }
+    if (!attempt || now - attempt.startedAt >= 15 * 60 * 1000) {
+      attempt = { startedAt: now, count: 0 };
+      customerLoginAttempts.set(ip, attempt);
+    }
+    const result = await pool.query("SELECT id, name, email, phone, password_salt, password_hash, created_at FROM customers WHERE email = $1", [email]);
+    const user = result.rows[0];
+    if (!user || !verifyPassword(password, user.password_salt, user.password_hash)) {
+      attempt.count += 1;
+      return res.status(401).json({ error: "Incorrect email or password." });
+    }
+    customerLoginAttempts.delete(ip);
+    req.session.regenerate(error => {
+      if (error) return next(error);
+      req.session.customer = { id: user.id };
+      req.session.save(saveError => {
+        if (saveError) return next(saveError);
+        res.json({ ok: true, user: publicCustomer(user) });
+      });
+    });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/auth/me", async (req, res, next) => {
+  try {
+    if (!req.session?.customer?.id) return res.json({ authenticated: false, user: null });
+    const result = await pool.query("SELECT id, name, email, phone, created_at FROM customers WHERE id = $1", [req.session.customer.id]);
+    if (!result.rowCount) return res.json({ authenticated: false, user: null });
+    res.json({ authenticated: true, user: publicCustomer(result.rows[0]) });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/auth/logout", (req, res, next) => {
+  // Only clear the customer identity; preserve an admin identity if the same browser has one.
+  if (req.session) delete req.session.customer;
+  if (!req.session) return res.json({ ok: true });
+  req.session.save(error => error ? next(error) : res.json({ ok: true }));
+});
+
+app.post("/api/auth/forgot-password", async (req, res) => {
+  const email = cleanText(req.body?.email, 180).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: "Enter a valid email address." });
+  }
+  // Deliberately do not pretend an email was sent. A mail provider and reset-token flow must be configured first.
+  if (!process.env.PASSWORD_RESET_BASE_URL || !process.env.RESEND_API_KEY) {
+    return res.status(503).json({ error: "Password reset email is not configured yet. Add PASSWORD_RESET_BASE_URL and RESEND_API_KEY to Render after setting up the email sender." });
+  }
+  // Fail closed until a provider-specific sender is implemented rather than exposing reset tokens.
+  return res.status(503).json({ error: "Password reset email delivery is not enabled on this server yet." });
+});
+
+app.get("/api/orders/my", requireCustomer, async (req, res, next) => {
+  try {
+    const result = await pool.query(
+      `SELECT data FROM orders
+       WHERE lower(data->'customer'->>'email') = (SELECT lower(email) FROM customers WHERE id = $1)
+       ORDER BY created_at DESC LIMIT 100`, [req.session.customer.id]
+    );
+    res.json({ orders: result.rows.map(row => row.data) });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/orders/track", async (req, res, next) => {
+  try {
+    const orderId = cleanText(req.query?.orderId, 100);
+    const phone = cleanText(req.query?.phone, 10);
+    if (!orderId || !/^\d{10}$/.test(phone)) return res.status(400).json({ error: "Enter the order ID and the 10-digit phone number used at checkout." });
+    const order = await getOrder(orderId);
+    if (!order || order.customer?.phone !== phone) return res.status(404).json({ error: "No order found for those details." });
+    res.json({ order: { id: order.id, orderStatus: order.orderStatus, paymentStatus: order.paymentStatus, paymentMethod: order.paymentMethod, createdAt: order.createdAt, statusHistory: order.statusHistory || [], items: order.items } });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/products/:id/reviews", async (req, res, next) => {
+  try {
+    const product = await getProduct(cleanText(req.params.id, 150));
+    if (!product) return res.status(404).json({ error: "Product not found." });
+    const result = await pool.query(
+      `SELECT id, customer_name AS "customerName", rating, title, comment, created_at AS "createdAt"
+       FROM product_reviews WHERE product_id = $1 ORDER BY created_at DESC LIMIT 200`, [product.id]
+    );
+    res.json({ reviews: result.rows });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/products/:id/reviews", requireCustomer, async (req, res, next) => {
+  try {
+    const product = await getProduct(cleanText(req.params.id, 150));
+    if (!product) return res.status(404).json({ error: "Product not found." });
+    const rating = Number(req.body?.rating);
+    const title = cleanText(req.body?.title, 120);
+    const comment = cleanText(req.body?.comment, 1500);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 3) {
+      return res.status(400).json({ error: "Choose a rating from 1 to 5 and write a review of at least 3 characters." });
+    }
+    const customerResult = await pool.query("SELECT id, name FROM customers WHERE id = $1", [req.session.customer.id]);
+    if (!customerResult.rowCount) return res.status(401).json({ error: "Please sign in again." });
+    const customer = customerResult.rows[0];
+    const id = "rev_" + crypto.randomBytes(10).toString("hex");
+    const result = await pool.query(
+      `INSERT INTO product_reviews (id, product_id, customer_id, customer_name, rating, title, comment)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (product_id, customer_id) DO UPDATE SET
+         rating = EXCLUDED.rating, title = EXCLUDED.title, comment = EXCLUDED.comment, created_at = NOW()
+       RETURNING id, customer_name AS "customerName", rating, title, comment, created_at AS "createdAt"`,
+      [id, product.id, customer.id, customer.name, rating, title, comment]
+    );
+    res.status(201).json({ ok: true, review: result.rows[0] });
+  } catch (error) { next(error); }
 });
 
 app.get("/api/products", async (_req, res, next) => {

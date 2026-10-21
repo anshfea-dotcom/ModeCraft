@@ -141,6 +141,7 @@ const ROLE_PERMISSIONS = {
     "orders.cancel",
     "products.view",
     "products.manage",
+    "customers.view",
     "staff.manage",
     "analytics.view",
     "audit.view"
@@ -952,9 +953,18 @@ app.get(
   "/api/admin/orders",
   requireAdmin,
   requirePermission("orders.view"),
-  async (_req, res, next) => {
+  async (req, res, next) => {
     try {
-      res.json({ orders: await getOrders() });
+      const orders = await getOrders();
+      // Customer identity and delivery details are owner-only. Enforce this in the API,
+      // not only in the dashboard UI, so staff cannot inspect the raw response.
+      const visibleOrders = req.adminSession?.role === "owner"
+        ? orders
+        : orders.map(order => ({
+            ...order,
+            customer: { name: "Private customer", email: "", phone: "", address: "", city: "", postalCode: "" }
+          }));
+      res.json({ orders: visibleOrders });
     } catch (error) {
       next(error);
     }
@@ -1026,7 +1036,54 @@ app.patch(
         status
       });
 
-      res.json({ ok: true, order });
+      const responseOrder = req.adminSession?.role === "owner"
+        ? order
+        : { ...order, customer: { name: "Private customer", email: "", phone: "", address: "", city: "", postalCode: "" } };
+      res.json({ ok: true, order: responseOrder });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Owner-only customer directory. Never return password salts, hashes, reset tokens,
+// or any other authentication secrets. Address/history are derived from saved orders.
+app.get(
+  "/api/admin/customers",
+  requireAdmin,
+  requirePermission("customers.view"),
+  async (_req, res, next) => {
+    try {
+      const [customerResult, orders] = await Promise.all([
+        pool.query("SELECT id, name, email, phone, created_at, updated_at FROM customers ORDER BY created_at DESC"),
+        getOrders()
+      ]);
+      const customers = customerResult.rows.map(row => {
+        const matchingOrders = orders
+          .filter(order => String(order.customer?.email || "").toLowerCase() === String(row.email).toLowerCase())
+          .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        const latest = matchingOrders[0];
+        return {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          phone: row.phone,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          address: latest?.customer?.address || "",
+          city: latest?.customer?.city || "",
+          postalCode: latest?.customer?.postalCode || "",
+          orderCount: matchingOrders.length,
+          orders: matchingOrders.slice(0, 50).map(order => ({
+            id: order.id,
+            createdAt: order.createdAt,
+            total: order.total,
+            paymentStatus: order.paymentStatus,
+            orderStatus: order.orderStatus
+          }))
+        };
+      });
+      res.json({ customers });
     } catch (error) {
       next(error);
     }

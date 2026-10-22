@@ -662,9 +662,27 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
       const gmailAppPassword = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASSWORD || process.env.EMAIL_PASS;
       const baseUrl = process.env.PASSWORD_RESET_BASE_URL;
 
-      if (!gmailUser || !gmailAppPassword || !baseUrl) {
-        console.error("Password reset email not configured: set GMAIL_USER, GMAIL_APP_PASSWORD and PASSWORD_RESET_BASE_URL in Render.");
+      if (!gmailUser || !gmailAppPassword) {
+        console.error("Password reset email not configured: set GMAIL_USER and GMAIL_APP_PASSWORD (or supported aliases) in Render.");
+        return res.status(503).json({ error: "Password reset email is not configured. Check the Gmail environment variables in Render." });
       } else {
+        // Normalize and validate the reset URL before creating a token in the database.
+        // Render sometimes receives values with accidental whitespace or wrapping quotes.
+        const cleanBaseUrl = typeof baseUrl === "string"
+          ? baseUrl.trim().replace(/^([\"'])(.*)\1$/, "$2").trim()
+          : "";
+        let resetUrl;
+        try {
+          const candidate = cleanBaseUrl || process.env.RENDER_EXTERNAL_URL || "https://modecraft-india.onrender.com";
+          resetUrl = new URL(candidate);
+          if (resetUrl.protocol !== "https:" && resetUrl.protocol !== "http:") {
+            throw new TypeError("Password reset URL must use http:// or https://");
+          }
+        } catch (urlError) {
+          console.error("Invalid PASSWORD_RESET_BASE_URL; using the ModeCraft Render URL. Check the Render environment variable.");
+          resetUrl = new URL(process.env.RENDER_EXTERNAL_URL || "https://modecraft-india.onrender.com");
+        }
+
         const rawToken = crypto.randomBytes(32).toString("hex");
         const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
         await pool.query("DELETE FROM password_reset_tokens WHERE customer_id = $1", [found.rows[0].id]);
@@ -673,7 +691,6 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
           [tokenHash, found.rows[0].id]
         );
 
-        const resetUrl = new URL(baseUrl);
         resetUrl.searchParams.set("token", rawToken);
         const transporter = nodemailer.createTransport({
           service: "gmail",

@@ -133,39 +133,36 @@ const DEFAULT_PRODUCTS = [
   }
 ];
 
+const PERMISSION_CATALOG = [
+  { id: "dashboard.view", label: "View dashboard" },
+  { id: "orders.view", label: "View orders" },
+  { id: "orders.update", label: "Update order status" },
+  { id: "orders.cancel", label: "Cancel orders" },
+  { id: "orders.payment.receive", label: "Record COD payment received" },
+  { id: "products.view", label: "View products" },
+  { id: "products.manage", label: "Create, edit, disable and delete products" },
+  { id: "customers.view", label: "View customer profiles and order history" },
+  { id: "analytics.view", label: "View analytics" },
+  { id: "audit.view", label: "View activity log" }
+];
+const GRANTABLE_PERMISSIONS = new Set(PERMISSION_CATALOG.map(item => item.id));
 const ROLE_PERMISSIONS = {
-  owner: [
-    "dashboard.view",
-    "orders.view",
-    "orders.update",
-    "orders.cancel",
-    "products.view",
-    "products.manage",
-    "staff.manage",
-    "customers.view",
-    "orders.payment.receive",
-    "analytics.view",
-    "audit.view"
-  ],
-  manager: [
-    "dashboard.view",
-    "orders.view",
-    "orders.update",
-    "orders.cancel",
-    "orders.payment.receive",
-    "products.view",
-    "products.manage",
-    "analytics.view",
-    "audit.view"
-  ],
-  staff: [
-    "dashboard.view",
-    "orders.view",
-    "orders.update",
-    "orders.payment.receive",
-    "products.view"
-  ]
+  owner: [...PERMISSION_CATALOG.map(item => item.id), "staff.manage"],
+  manager: ["dashboard.view", "orders.view", "orders.update", "orders.cancel", "orders.payment.receive", "products.view", "products.manage", "analytics.view", "audit.view"],
+  staff: ["dashboard.view", "orders.view", "orders.update", "orders.payment.receive", "products.view"]
 };
+const OWNER_ONLY_ROUTES = new Set(["offers.manage", "coupons.manage", "staff.manage"]);
+function effectivePermissions(user) {
+  if (!user) return [];
+  if (user.role === "owner") return ROLE_PERMISSIONS.owner;
+  const saved = Array.isArray(user.permissions) ? user.permissions : ROLE_PERMISSIONS[user.role] || [];
+  return [...new Set(saved.filter(permission => GRANTABLE_PERMISSIONS.has(permission)))];
+}
+function validatePermissions(value) {
+  if (!Array.isArray(value)) return null;
+  if (value.some(permission => typeof permission !== "string" || !GRANTABLE_PERMISSIONS.has(permission))) return null;
+  return [...new Set(value)];
+}
 
 function cleanText(value, max = 300) {
   return typeof value === "string"
@@ -206,28 +203,48 @@ function publicStaff(user) {
     displayName: user.displayName,
     role: user.role,
     active: user.active,
+    permissions: effectivePermissions(user),
     createdAt: user.createdAt
   };
 }
-
 function can(user, permission) {
-  return Boolean(
-    user &&
-    ROLE_PERMISSIONS[user.role]?.includes(permission)
-  );
+  if (!user) return false;
+  if (user.role === "owner") return true;
+  if (OWNER_ONLY_ROUTES.has(permission)) return false;
+  return effectivePermissions(user).includes(permission);
 }
-
-function requireAdmin(req, res, next) {
-  if (!req.session || !req.session.admin) {
-    return res.status(401).json({
-      error: "Please sign in again."
-    });
+function requireOwner(req, res, next) {
+  if (!req.adminSession || req.adminSession.role !== "owner") {
+    return res.status(403).json({ error: "Only the store owner can perform this action." });
   }
-
-  req.adminSession = req.session.admin;
   next();
 }
-
+function requireAdmin(req, res, next) {
+  if (!req.session || !req.session.admin) {
+    return res.status(401).json({ error: "Please sign in again." });
+  }
+  const sessionUser = req.session.admin;
+  if (sessionUser.role === "owner" && safeEqual(sessionUser.username, process.env.ADMIN_USERNAME)) {
+    req.adminSession = sessionUser;
+    return next();
+  }
+  if (!sessionUser.staffId) {
+    req.session.destroy(() => {});
+    return res.status(401).json({ error: "Please sign in again." });
+  }
+  getStaff().then(users => {
+    const user = users.find(item => item.id === sessionUser.staffId);
+    if (!user || !user.active) {
+      return req.session.destroy(() => res.status(401).json({ error: "This staff account is disabled. Please sign in again." }));
+    }
+    sessionUser.username = user.username;
+    sessionUser.displayName = user.displayName;
+    sessionUser.role = user.role;
+    sessionUser.permissions = effectivePermissions(user);
+    req.adminSession = sessionUser;
+    next();
+  }).catch(next);
+}
 function requirePermission(permission) {
   return (req, res, next) => {
     if (!can(req.adminSession, permission)) {
@@ -277,6 +294,13 @@ async function initDatabase() {
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
       data JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS offers (
+      id TEXT PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE,
+      data JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
@@ -924,6 +948,7 @@ app.post("/api/admin/login", async (req, res, next) => {
           displayName: user.displayName,
           role: user.role,
           staffId: user.id,
+          permissions: effectivePermissions(user),
           active: true
         };
       }
@@ -964,15 +989,15 @@ app.post("/api/admin/login", async (req, res, next) => {
   }
 });
 
-app.get("/api/admin/me", (req, res) => {
-  const user = req.session?.admin || null;
-
+app.get("/api/admin/me", requireAdmin, (req, res) => {
+  const user = req.adminSession;
   res.json({
-    authenticated: Boolean(user),
-    role: user?.role || null,
-    username: user?.username || null,
-    displayName: user?.displayName || null,
-    permissions: user ? ROLE_PERMISSIONS[user.role] || [] : []
+    authenticated: true,
+    role: user.role,
+    username: user.username,
+    displayName: user.displayName,
+    isOwner: user.role === "owner",
+    permissions: effectivePermissions(user)
   });
 });
 
@@ -1411,7 +1436,7 @@ app.delete(
 app.get(
   "/api/admin/staff",
   requireAdmin,
-  requirePermission("staff.manage"),
+  requireOwner,
   async (_req, res, next) => {
     try {
       res.json({ staff: (await getStaff()).map(publicStaff) });
@@ -1424,7 +1449,7 @@ app.get(
 app.post(
   "/api/admin/staff",
   requireAdmin,
-  requirePermission("staff.manage"),
+  requireOwner,
   async (req, res, next) => {
     try {
       const username = cleanText(req.body?.username, 60);
@@ -1433,7 +1458,13 @@ app.post(
         ? req.body.password
         : "";
       const role = req.body?.role;
+      const permissions = req.body?.permissions === undefined
+        ? [...(ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.staff)]
+        : validatePermissions(req.body.permissions);
 
+      if (req.body?.permissions !== undefined && permissions === null) {
+        return res.status(400).json({ error: "One or more permissions are invalid." });
+      }
       if (!/^[a-zA-Z0-9._-]{3,60}$/.test(username)) {
         return res.status(400).json({
           error: "Username must be 3–60 characters using letters, numbers, dots, underscores or hyphens."
@@ -1467,6 +1498,7 @@ app.post(
         username,
         displayName,
         role,
+        permissions,
         active: true,
         salt: hashed.salt,
         passwordHash: hashed.hash,
@@ -1492,7 +1524,7 @@ app.post(
 app.patch(
   "/api/admin/staff/:id",
   requireAdmin,
-  requirePermission("staff.manage"),
+  requireOwner,
   async (req, res, next) => {
     try {
       const users = await getStaff();
@@ -1512,6 +1544,13 @@ app.patch(
         }
 
         user.role = req.body.role;
+        if (!Array.isArray(user.permissions)) user.permissions = [...(ROLE_PERMISSIONS[user.role] || ROLE_PERMISSIONS.staff)];
+      }
+
+      if (req.body?.permissions !== undefined) {
+        const permissions = validatePermissions(req.body.permissions);
+        if (permissions === null) return res.status(400).json({ error: "One or more permissions are invalid." });
+        user.permissions = permissions;
       }
 
       if (req.body?.active !== undefined) {
@@ -1561,7 +1600,7 @@ app.patch(
 app.delete(
   "/api/admin/staff/:id",
   requireAdmin,
-  requirePermission("staff.manage"),
+  requireOwner,
   async (req, res, next) => {
     try {
       const users = await getStaff();
@@ -1611,6 +1650,94 @@ app.get(
     }
   }
 );
+
+async function getOffers() {
+  const result = await pool.query("SELECT data FROM offers ORDER BY created_at DESC");
+  return result.rows.map(row => row.data);
+}
+async function getOfferByCode(code) {
+  const result = await pool.query("SELECT data FROM offers WHERE code = $1", [String(code || "").trim().toUpperCase()]);
+  return result.rows[0]?.data || null;
+}
+function validateOffer(offer, subtotal) {
+  if (!offer || offer.active === false) throw Object.assign(new Error("This coupon code is invalid or inactive."), { status: 400 });
+  const now = Date.now();
+  if (offer.startsAt && now < new Date(offer.startsAt).getTime()) throw Object.assign(new Error("This offer is not active yet."), { status: 400 });
+  if (offer.expiresAt && now > new Date(offer.expiresAt).getTime()) throw Object.assign(new Error("This coupon has expired."), { status: 400 });
+  if (subtotal < Number(offer.minimumSubtotal || 0)) throw Object.assign(new Error(`Minimum order subtotal for this code is ₹${Number(offer.minimumSubtotal || 0)}.`), { status: 400 });
+  const discount = offer.discountType === "percent"
+    ? Math.min(subtotal, Math.floor(subtotal * Number(offer.discountValue) / 100))
+    : Math.min(subtotal, Math.floor(Number(offer.discountValue)));
+  if (!Number.isFinite(discount) || discount <= 0) throw Object.assign(new Error("This coupon does not provide a valid discount."), { status: 400 });
+  return { couponCode: offer.code, discount, subtotal, total: Math.max(0, subtotal - discount) };
+}
+app.get("/api/coupons/validate", async (req, res, next) => {
+  try {
+    const code = cleanText(req.query?.code, 50).toUpperCase();
+    const subtotal = Number(req.query?.subtotal);
+    if (!code || !Number.isFinite(subtotal) || subtotal <= 0) return res.status(400).json({ error: "Enter a coupon code and valid subtotal." });
+    const offer = await getOfferByCode(code);
+    const result = validateOffer(offer, subtotal);
+    res.json({ ok: true, code: result.couponCode, discount: result.discount, subtotal: result.subtotal, total: result.total, message: "Coupon applied." });
+  } catch (error) { res.status(error.status || 500).json({ error: error.message || "Could not validate coupon." }); }
+});
+app.get("/api/admin/offers", requireAdmin, requireOwner, async (_req, res, next) => {
+  try { res.json({ offers: await getOffers() }); } catch (error) { next(error); }
+});
+app.post("/api/admin/offers", requireAdmin, requireOwner, async (req, res, next) => {
+  try {
+    const code = cleanText(req.body?.code, 32).toUpperCase().replace(/\s+/g, "");
+    const title = cleanText(req.body?.title, 100);
+    const discountType = req.body?.discountType;
+    const discountValue = Number(req.body?.discountValue);
+    const minimumSubtotal = Number(req.body?.minimumSubtotal || 0);
+    const startsDate = req.body?.startsAt ? new Date(req.body.startsAt) : null;
+    const expiresDate = req.body?.expiresAt ? new Date(req.body.expiresAt) : null;
+    if ((startsDate && Number.isNaN(startsDate.getTime())) || (expiresDate && Number.isNaN(expiresDate.getTime()))) return res.status(400).json({ error: "Offer dates are invalid." });
+    const startsAt = startsDate ? startsDate.toISOString() : null;
+    const expiresAt = expiresDate ? expiresDate.toISOString() : null;
+    if (!/^[A-Z0-9_-]{3,32}$/.test(code) || title.length < 2 || !["percent", "fixed"].includes(discountType) || !Number.isFinite(discountValue) || discountValue <= 0 || (discountType === "percent" && discountValue > 100) || !Number.isFinite(minimumSubtotal) || minimumSubtotal < 0) return res.status(400).json({ error: "Enter a valid code, title, discount and minimum subtotal." });
+    if (startsAt && Number.isNaN(Date.parse(startsAt)) || expiresAt && Number.isNaN(Date.parse(expiresAt))) return res.status(400).json({ error: "Offer dates are invalid." });
+    if (startsAt && expiresAt && new Date(expiresAt) <= new Date(startsAt)) return res.status(400).json({ error: "Expiry must be later than the start date." });
+    const offer = { id: crypto.randomUUID(), code, title, discountType, discountValue, minimumSubtotal, startsAt, expiresAt, active: req.body?.active !== false, usageCount: 0, createdAt: new Date().toISOString() };
+    await pool.query("INSERT INTO offers (id, code, data) VALUES ($1, $2, $3::jsonb)", [offer.id, offer.code, JSON.stringify(offer)]);
+    await audit(req.adminSession, "offer.created", { code, discountType, discountValue });
+    res.status(201).json({ ok: true, offer });
+  } catch (error) {
+    if (error.code === "23505") return res.status(409).json({ error: "That coupon code already exists." });
+    next(error);
+  }
+});
+app.patch("/api/admin/offers/:id", requireAdmin, requireOwner, async (req, res, next) => {
+  try {
+    const found = await pool.query("SELECT data FROM offers WHERE id = $1", [req.params.id]);
+    if (!found.rowCount) return res.status(404).json({ error: "Offer not found." });
+    const offer = found.rows[0].data;
+    if (req.body?.active !== undefined) offer.active = Boolean(req.body.active);
+    if (req.body?.title !== undefined) { const title = cleanText(req.body.title, 100); if (title.length < 2) return res.status(400).json({ error: "Offer title is too short." }); offer.title = title; }
+    if (req.body?.discountType !== undefined) { if (!["percent", "fixed"].includes(req.body.discountType)) return res.status(400).json({ error: "Invalid discount type." }); offer.discountType = req.body.discountType; }
+    if (req.body?.discountValue !== undefined) { const value = Number(req.body.discountValue); if (!Number.isFinite(value) || value <= 0 || (offer.discountType === "percent" && value > 100)) return res.status(400).json({ error: "Invalid discount value." }); offer.discountValue = value; }
+    if (req.body?.minimumSubtotal !== undefined) { const minimum = Number(req.body.minimumSubtotal); if (!Number.isFinite(minimum) || minimum < 0) return res.status(400).json({ error: "Invalid minimum subtotal." }); offer.minimumSubtotal = minimum; }
+    for (const key of ["startsAt", "expiresAt"]) {
+      if (req.body?.[key] !== undefined) {
+        if (req.body[key] === null || req.body[key] === "") offer[key] = null;
+        else { const date = new Date(req.body[key]); if (Number.isNaN(date.getTime())) return res.status(400).json({ error: "Offer dates are invalid." }); offer[key] = date.toISOString(); }
+      }
+    }
+    if (offer.startsAt && offer.expiresAt && new Date(offer.expiresAt) <= new Date(offer.startsAt)) return res.status(400).json({ error: "Expiry must be later than the start date." });
+    await pool.query("UPDATE offers SET data = $2::jsonb, updated_at = NOW() WHERE id = $1", [offer.id, JSON.stringify(offer)]);
+    await audit(req.adminSession, "offer.updated", { code: offer.code, active: offer.active });
+    res.json({ ok: true, offer });
+  } catch (error) { next(error); }
+});
+app.delete("/api/admin/offers/:id", requireAdmin, requireOwner, async (req, res, next) => {
+  try {
+    const result = await pool.query("DELETE FROM offers WHERE id = $1 RETURNING code", [req.params.id]);
+    if (!result.rowCount) return res.status(404).json({ error: "Offer not found." });
+    await audit(req.adminSession, "offer.deleted", { code: result.rows[0].code });
+    res.json({ ok: true });
+  } catch (error) { next(error); }
+});
 
 async function buildOrder(body = {}) {
   const customer = body.customer || {};
@@ -1681,9 +1808,23 @@ async function buildOrder(body = {}) {
     total += Number(product.price) * quantity;
   }
 
+  const subtotal = total;
+  const couponCode = cleanText(body.couponCode, 50).toUpperCase();
+  let discount = 0;
+  let appliedCode = null;
+  if (couponCode) {
+    const offer = await getOfferByCode(couponCode);
+    const applied = validateOffer(offer, subtotal);
+    discount = applied.discount;
+    total = applied.total;
+    appliedCode = applied.couponCode;
+  }
   return {
     customer: { name, email, phone, address, city, postalCode },
     items,
+    subtotal,
+    discount,
+    couponCode: appliedCode,
     total,
     currency: "INR"
   };
@@ -1708,6 +1849,7 @@ app.post("/api/orders/cod", async (req, res) => {
     };
 
     await putOrder(order);
+    if (order.couponCode) await pool.query("UPDATE offers SET data = jsonb_set(data, '{usageCount}', to_jsonb(COALESCE((data->>'usageCount')::int, 0) + 1), true), updated_at = NOW() WHERE code = $1", [order.couponCode]);
 
     res.status(201).json({
       ok: true,
@@ -1761,6 +1903,7 @@ app.post("/api/payments/razorpay/order", async (req, res) => {
       createdAt: new Date().toISOString(),
       statusHistory: []
     });
+    if (orderData.couponCode) await pool.query("UPDATE offers SET data = jsonb_set(data, '{usageCount}', to_jsonb(COALESCE((data->>'usageCount')::int, 0) + 1), true), updated_at = NOW() WHERE code = $1", [orderData.couponCode]);
 
     res.status(201).json({
       keyId: process.env.RAZORPAY_KEY_ID,

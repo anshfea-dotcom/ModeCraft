@@ -8,6 +8,7 @@ const { Pool } = require("pg");
 const session = require("express-session");
 const PgSession = require("connect-pg-simple")(session);
 const Razorpay = require("razorpay");
+const nodemailer = require("nodemailer");
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -653,30 +654,50 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ error: "Enter a valid email address." });
     }
-    // Always use a generic response so account existence is not disclosed.
+
+    // Keep the response generic so account existence is not disclosed.
     const found = await pool.query("SELECT id FROM customers WHERE email = $1", [email]);
-    if (found.rowCount && process.env.RESEND_API_KEY && process.env.PASSWORD_RESET_BASE_URL && process.env.PASSWORD_RESET_FROM) {
-      const rawToken = crypto.randomBytes(32).toString("hex");
-      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-      await pool.query("DELETE FROM password_reset_tokens WHERE customer_id = $1", [found.rows[0].id]);
-      await pool.query(
-        "INSERT INTO password_reset_tokens (token_hash, customer_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL '30 minutes')",
-        [tokenHash, found.rows[0].id]
-      );
-      const resetUrl = new URL(process.env.PASSWORD_RESET_BASE_URL);
-      resetUrl.searchParams.set("token", rawToken);
-      const mail = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: process.env.PASSWORD_RESET_FROM,
-          to: [email],
-          subject: "Reset your ModeCraft password",
-          html: `<p>We received a request to reset your ModeCraft password.</p><p><a href="${resetUrl.toString()}">Reset password</a></p><p>This link expires in 30 minutes. If you did not request this, ignore this email.</p>`
-        })
-      });
-      if (!mail.ok) console.error("Password reset email provider returned status", mail.status);
+    if (found.rowCount) {
+      const gmailUser = process.env.GMAIL_USER || process.env.GMAIL_EMAIL || process.env.EMAIL_USER;
+      const gmailAppPassword = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASSWORD || process.env.EMAIL_PASS;
+      const baseUrl = process.env.PASSWORD_RESET_BASE_URL;
+
+      if (!gmailUser || !gmailAppPassword || !baseUrl) {
+        console.error("Password reset email not configured: set GMAIL_USER, GMAIL_APP_PASSWORD and PASSWORD_RESET_BASE_URL in Render.");
+      } else {
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+        await pool.query("DELETE FROM password_reset_tokens WHERE customer_id = $1", [found.rows[0].id]);
+        await pool.query(
+          "INSERT INTO password_reset_tokens (token_hash, customer_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL '30 minutes')",
+          [tokenHash, found.rows[0].id]
+        );
+
+        const resetUrl = new URL(baseUrl);
+        resetUrl.searchParams.set("token", rawToken);
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: gmailUser, pass: gmailAppPassword }
+        });
+
+        try {
+          await transporter.sendMail({
+            from: `ModeCraft <${gmailUser}>`,
+            to: email,
+            subject: "Reset your ModeCraft password",
+            text: `We received a request to reset your ModeCraft password. Open this link within 30 minutes: ${resetUrl.toString()}\n\nIf you did not request this, ignore this email.`,
+            html: `<p>We received a request to reset your ModeCraft password.</p><p><a href="${resetUrl.toString()}">Reset password</a></p><p>This link expires in 30 minutes. If you did not request this, ignore this email.</p>`
+          });
+          console.log("Password reset email sent successfully.");
+        } catch (mailError) {
+          // Invalidate the token if delivery failed; never leave a non-delivered active token.
+          await pool.query("DELETE FROM password_reset_tokens WHERE token_hash = $1", [tokenHash]);
+          console.error("Gmail password reset delivery failed:", mailError.message);
+          return res.status(502).json({ error: "Password reset email could not be sent. Check Gmail app-password configuration in Render." });
+        }
+      }
     }
+
     res.json({ ok: true, message: "If an account exists for that email and email delivery is configured, a password reset link will be sent." });
   } catch (error) { next(error); }
 });

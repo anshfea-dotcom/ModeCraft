@@ -296,6 +296,21 @@ async function initDatabase() {
       data JSONB NOT NULL,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS inventory_variants (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      color TEXT NOT NULL,
+      size TEXT NOT NULL,
+      sku TEXT NOT NULL DEFAULT '',
+      quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (product_id, color, size)
+    );
+
+    CREATE INDEX IF NOT EXISTS inventory_variants_product_idx
+      ON inventory_variants (product_id, color, size);
+
     CREATE TABLE IF NOT EXISTS offers (
       id TEXT PRIMARY KEY,
       code TEXT NOT NULL UNIQUE,
@@ -1681,6 +1696,91 @@ app.get("/api/coupons/validate", async (req, res, next) => {
     res.json({ ok: true, code: result.couponCode, discount: result.discount, subtotal: result.subtotal, total: result.total, message: "Coupon applied." });
   } catch (error) { res.status(error.status || 500).json({ error: error.message || "Could not validate coupon." }); }
 });
+
+// Inventory variants: persisted independently in PostgreSQL; protected by existing product permissions.
+app.get("/api/admin/inventory", requireAdmin, requirePermission("products.view"), async (_req, res, next) => {
+  try {
+    const result = await pool.query(`
+      SELECT v.id, v.product_id, v.color, v.size, v.sku, v.quantity,
+             v.created_at, v.updated_at, p.data->>'name' AS product_name
+      FROM inventory_variants v
+      JOIN products p ON p.id = v.product_id
+      ORDER BY p.data->>'name', v.color, v.size
+    `);
+    res.json({ inventory: result.rows.map(row => ({
+      id: row.id, productId: row.product_id, productName: row.product_name || "Unknown product",
+      color: row.color, size: row.size, sku: row.sku, quantity: row.quantity,
+      createdAt: row.created_at, updatedAt: row.updated_at
+    })) });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/admin/inventory", requireAdmin, requirePermission("products.manage"), async (req, res, next) => {
+  try {
+    const productId = cleanText(req.body?.productId, 120);
+    const color = cleanText(req.body?.color, 50);
+    const size = cleanText(req.body?.size, 30);
+    const sku = cleanText(req.body?.sku, 80);
+    const quantity = Number(req.body?.quantity);
+    if (!productId || !color || !size || !Number.isInteger(quantity) || quantity < 0 || quantity > 1000000) {
+      return res.status(400).json({ error: "Choose a product, enter colour and size, and provide a whole-number quantity from 0 to 1,000,000." });
+    }
+    const product = await getProduct(productId);
+    if (!product) return res.status(404).json({ error: "Product not found." });
+    const id = "inv_" + crypto.randomBytes(10).toString("hex");
+    const result = await pool.query(
+      `INSERT INTO inventory_variants (id, product_id, color, size, sku, quantity)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       RETURNING id, product_id, color, size, sku, quantity, created_at, updated_at`,
+      [id, productId, color, size, sku, quantity]
+    );
+    await audit(req.adminSession, "inventory.variant.saved", { productId, color, size, quantity });
+    const row = result.rows[0];
+    res.status(201).json({ ok: true, variant: { id: row.id, productId: row.product_id, productName: product.name, color: row.color, size: row.size, sku: row.sku, quantity: row.quantity, createdAt: row.created_at, updatedAt: row.updated_at } });
+  } catch (error) {
+    if (error.code === "23503") return res.status(404).json({ error: "Product not found." });
+    if (error.code === "23505") return res.status(409).json({ error: "This product already has that colour and size combination. Edit the existing variant instead." });
+    next(error);
+  }
+});
+
+app.patch("/api/admin/inventory/:id", requireAdmin, requirePermission("products.manage"), async (req, res, next) => {
+  try {
+    const existing = await pool.query("SELECT id FROM inventory_variants WHERE id = $1", [req.params.id]);
+    if (!existing.rowCount) return res.status(404).json({ error: "Stock variant not found." });
+    const productId = cleanText(req.body?.productId, 120);
+    const color = cleanText(req.body?.color, 50);
+    const size = cleanText(req.body?.size, 30);
+    const sku = cleanText(req.body?.sku, 80);
+    const quantity = Number(req.body?.quantity);
+    if (!productId || !color || !size || !Number.isInteger(quantity) || quantity < 0 || quantity > 1000000) {
+      return res.status(400).json({ error: "Choose a product, enter colour and size, and provide a valid non-negative whole-number quantity." });
+    }
+    const product = await getProduct(productId);
+    if (!product) return res.status(404).json({ error: "Product not found." });
+    const result = await pool.query(
+      `UPDATE inventory_variants SET product_id=$1, color=$2, size=$3, sku=$4, quantity=$5, updated_at=NOW()
+       WHERE id=$6 RETURNING id, product_id, color, size, sku, quantity, created_at, updated_at`,
+      [productId, color, size, sku, quantity, req.params.id]
+    );
+    const row = result.rows[0];
+    await audit(req.adminSession, "inventory.variant.updated", { variantId: row.id, productId, color, size, quantity });
+    res.json({ ok: true, variant: { id: row.id, productId: row.product_id, productName: product.name, color: row.color, size: row.size, sku: row.sku, quantity: row.quantity, createdAt: row.created_at, updatedAt: row.updated_at } });
+  } catch (error) {
+    if (error.code === "23505") return res.status(409).json({ error: "This product already has that colour and size combination." });
+    next(error);
+  }
+});
+
+app.delete("/api/admin/inventory/:id", requireAdmin, requirePermission("products.manage"), async (req, res, next) => {
+  try {
+    const result = await pool.query("DELETE FROM inventory_variants WHERE id=$1 RETURNING id, product_id, color, size", [req.params.id]);
+    if (!result.rowCount) return res.status(404).json({ error: "Stock variant not found." });
+    await audit(req.adminSession, "inventory.variant.deleted", result.rows[0]);
+    res.json({ ok: true });
+  } catch (error) { next(error); }
+});
+
 app.get("/api/admin/offers", requireAdmin, requireOwner, async (_req, res, next) => {
   try { res.json({ offers: await getOffers() }); } catch (error) { next(error); }
 });

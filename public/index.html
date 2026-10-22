@@ -35,6 +35,11 @@ body:not(.dark) .remove{color:#625b53;background:transparent}
 body.dark .modalbox h2,body.dark .modalbox h3,body.dark .modalbox label,body.dark .pinfo h3,body.dark .heading h2,body.dark .drawerhead h2{color:#f4f0e9}
 body.dark .modalbox p,body.dark .modalbox .notice,body.dark .reviewitem,body.dark #accountState,body.dark #trackResult{color:#c8c0b6}
 
+
+/* Premium but restrained motion and mobile navigation */
+@media(prefers-reduced-motion:no-preference){.card,.heroimg,.btn,.iconbtn,.add,.modalbox,.drawer{animation:mc-rise .32s ease both}.card:nth-child(2n){animation-delay:.035s}.card:nth-child(3n){animation-delay:.07s}.modal.show .modalbox{animation:mc-pop .22s ease both}.card:hover{transform:translateY(-3px);transition:transform .22s ease}.pic img{will-change:transform}}
+@keyframes mc-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes mc-pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:560px){#menuBtn{font-size:15px;padding:9px 10px}}
 </style>
 </head>
 <body>
@@ -42,7 +47,7 @@ body.dark .modalbox p,body.dark .modalbox .notice,body.dark .reviewitem,body.dar
 <header class="nav"><div class="navin">
 <a class="brand" href="#">MODE<span>CRAFT.</span></a>
 <nav class="links"><a href="#home">Home</a><a href="#shop">Shop</a><a href="#about">Our promise</a></nav>
-<div class="navactions"><button class="iconbtn" id="accountBtn" title="Account">Account</button><button class="iconbtn" id="wishlistBtn" title="Wishlist">♡ <span id="wishCount">0</span></button><button class="iconbtn" id="trackBtn" title="Track order">Track</button><button class="bag" id="bagBtn">Bag (<span id="count">0</span>)</button></div>
+<div class="navactions"><button class="iconbtn" id="accountBtn" title="Profile">♙ Profile</button><button class="iconbtn" id="menuBtn" title="Menu and settings" aria-label="Open menu and settings">☰</button><button class="iconbtn" id="wishlistBtn" title="Wishlist">♡ <span id="wishCount">0</span></button><button class="iconbtn" id="trackBtn" title="Track order">Track</button><button class="bag" id="bagBtn">Bag (<span id="count">0</span>)</button></div>
 </div></header>
 <main>
 <section class="hero" id="home">
@@ -85,7 +90,7 @@ const $=s=>document.querySelector(s);
 let products=[],cart=[],config={razorpayEnabled:false,keyId:""};
 const money=n=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(n);
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),4000)}
-async function api(url,body){const r=await fetch(url,{method:body?"POST":"GET",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined});const data=await r.json().catch(()=>({error:"Unexpected server response"}));if(!r.ok)throw new Error(data.error||"Request failed");return data}
+async function api(url,body){const r=await fetch(url,{method:body?"POST":"GET",credentials:"same-origin",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined});const data=await r.json().catch(()=>({error:"Unexpected server response"}));if(!r.ok)throw new Error(data.error||"Request failed");return data}
 async function init(){
   const root=$("#products");
   root.innerHTML='<p class="muted">Loading collection…</p>';
@@ -161,13 +166,15 @@ function openProduct(id){const p=products.find(x=>String(x.id)===String(id));if(
 byId('detailAdd').onclick=()=>{if(!selectedProduct)return;add(selectedProduct.id);closeModal('productModal');showBag(true)};
 byId('detailWish').onclick=()=>{if(selectedProduct){toggleWish(selectedProduct.id);byId('detailWish').textContent=isWished(selectedProduct.id)?'♥ SAVED TO WISHLIST':'♡ SAVE TO WISHLIST'}};
 byId('wishlistBtn').onclick=()=>{byId('wishlistSection').hidden=false;renderWish();byId('wishlistSection').scrollIntoView({behavior:'smooth'})};
-byId('accountBtn').onclick=()=>{openModal('accountModal');updateAuthUI()};
+byId('accountBtn').onclick=()=>{openModal('accountModal');updateAuthUI()};byId('menuBtn').onclick=()=>openModal('settingsModal');
 byId('trackBtn').onclick=()=>openModal('trackModal');
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
 document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{authMode=b.dataset.auth;document.querySelectorAll('[data-auth]').forEach(x=>x.classList.toggle('active',x===b));const signup=authMode==='signup',forgot=authMode==='forgot';byId('accountTitle').textContent=forgot?'Reset your password':signup?'Create your account':'Welcome back';byId('authName').hidden=!signup;byId('authNameLabel').hidden=!signup;byId('authName').required=signup;byId('authPhone').hidden=!signup;byId('authPhoneLabel').hidden=!signup;byId('authPhone').required=signup;byId('authPassword').hidden=forgot;byId('authPasswordLabel').hidden=forgot;byId('authPassword').required=!forgot;byId('authPassword').autocomplete=signup?'new-password':'current-password';byId('authSubmit').textContent=forgot?'SEND RESET LINK':signup?'CREATE ACCOUNT':'LOGIN';byId('authNote').textContent='This form needs matching server-side authentication routes; no password is stored in this browser.'});
-function updateAuthUI(){const session=safeRead('modecraft_session_v1',null);byId('accountState').textContent=session?'Signed in as '+(session.email||session.phone||session.name||'customer')+'.':'Login or create an account to access your profile and order history.';byId('logoutBtn').hidden=!session;byId('authForm').hidden=!!session}
-byId('authForm').addEventListener('submit',async e=>{e.preventDefault();const btn=byId('authSubmit');btn.disabled=true;try{const payload={name:byId('authName').value.trim(),email:byId('authEmail').value.trim(),phone:byId('authPhone').value.trim(),password:byId('authPassword').value,mode:authMode};const endpoint=authMode==='signup'?'/api/auth/signup':authMode==='forgot'?'/api/auth/forgot-password':'/api/auth/login';const result=await api(endpoint,payload);if(authMode==='forgot'){toast(result.message||'If the account exists, reset instructions will be sent.');return}if(result.token||result.user){safeWrite('modecraft_session_v1',{token:result.token||null,email:payload.email,phone:payload.phone,name:payload.name,user:result.user||null});toast(result.message||'Account request completed');updateAuthUI()}else{toast(result.message||'Server response received. Check backend authentication setup.')}}catch(err){byId('authNote').textContent='Could not complete this request: '+err.message+'. The server must implement '+(authMode==='signup'?'/api/auth/signup':authMode==='forgot'?'/api/auth/forgot-password':'/api/auth/login')+'.'}finally{btn.disabled=false}});
-byId('logoutBtn').onclick=()=>{localStorage.removeItem('modecraft_session_v1');updateAuthUI();toast('Logged out on this device')};
+let currentCustomer=null;
+function updateAuthUI(){const session=currentCustomer||safeRead('modecraft_session_v1',null);byId('accountState').textContent=session?'Signed in as '+(session.email||session.phone||session.name||'customer')+'.':'Login or create an account to access your profile and order history.';byId('logoutBtn').hidden=!currentCustomer;byId('authForm').hidden=!!currentCustomer}
+async function refreshCustomerSession(){try{const r=await api('/api/auth/me');currentCustomer=r.authenticated?r.user:null;if(currentCustomer)safeWrite('modecraft_session_v1',currentCustomer);else localStorage.removeItem('modecraft_session_v1')}catch(e){currentCustomer=null}updateAuthUI()}
+byId('authForm').addEventListener('submit',async e=>{e.preventDefault();const btn=byId('authSubmit');btn.disabled=true;try{const payload={name:byId('authName').value.trim(),email:byId('authEmail').value.trim(),phone:byId('authPhone').value.trim(),password:byId('authPassword').value};const endpoint=authMode==='signup'?'/api/auth/signup':authMode==='forgot'?'/api/auth/forgot-password':'/api/auth/login';const result=await api(endpoint,payload);if(authMode==='forgot'){toast(result.message||'If the account exists, reset instructions will be sent.');return}if(result.user){currentCustomer=result.user;safeWrite('modecraft_session_v1',result.user);byId('authPassword').value='';toast(authMode==='signup'?'Account created successfully.':'Welcome back!');updateAuthUI()}else{throw new Error('Unexpected authentication response.')}}catch(err){byId('authNote').textContent='Could not complete this request: '+err.message;}finally{btn.disabled=false}});
+byId('logoutBtn').onclick=async()=>{try{await api('/api/auth/logout',{});}catch(e){toast('Could not contact server; please try again.');return}currentCustomer=null;localStorage.removeItem('modecraft_session_v1');updateAuthUI();toast('You have been logged out.')};
 byId('trackForm').addEventListener('submit',async e=>{e.preventDefault();byId('trackResult').textContent='Looking up order…';try{const id=encodeURIComponent(byId('trackOrderId').value.trim()),phone=encodeURIComponent(byId('trackPhone').value.trim());const result=await api('/api/orders/track?orderId='+id+'&phone='+phone);byId('trackResult').textContent='Status: '+(result.status||result.order?.status||'Order found')+(result.message?' — '+result.message:'');}catch(err){byId('trackResult').textContent='Tracking is not available yet: '+err.message+'. The backend needs a secure order-tracking endpoint.'}});
 byId('reviewForm').addEventListener('submit',async e=>{
   e.preventDefault();if(!selectedProduct)return;
@@ -186,8 +193,8 @@ byId('reviewForm').addEventListener('submit',async e=>{
     toast('Review not saved: '+err.message+(err.message.includes('sign in')?' Please log in to your account.':''));
   }finally{if(submit){submit.disabled=false;submit.textContent='SUBMIT REVIEW'}}
 });
-byId('themeSelect').value=localStorage.getItem(STORE.theme)||'light';function applyTheme(v){document.body.classList.toggle('dark',v==='dark');localStorage.setItem(STORE.theme,v)}applyTheme(byId('themeSelect').value);byId('themeSelect').onchange=e=>applyTheme(e.target.value);
-byId('recentOrdersBtn').onclick=async()=>{closeModal('settingsModal');openModal('recentOrdersModal');const root=byId('recentOrdersList');root.textContent='Loading recent orders…';try{const session=safeRead('modecraft_session_v1',null);const result=await api('/api/orders/my');const orders=result.orders||[];root.replaceChildren();if(!orders.length){root.textContent='No recent orders found.';return}orders.slice(0,10).forEach(o=>{const d=document.createElement('p');d.className='reviewitem';d.textContent=(o.orderId||o.id||'Order')+' · '+(o.status||'Status unavailable')+' · '+money(Number(o.total||o.amount)||0);root.append(d)})}catch(err){root.textContent='Order history needs a secure backend endpoint (/api/orders/my) and authenticated customer session. '+err.message}};
+byId('themeSelect').value=localStorage.getItem(STORE.theme)||'light';function applyTheme(v){document.body.classList.toggle('dark',v==='dark');localStorage.setItem(STORE.theme,v);document.querySelector('meta[name=theme-color]')?.setAttribute('content',v==='dark'?'#151515':'#ffffff')}applyTheme(byId('themeSelect').value);byId('themeSelect').onchange=e=>applyTheme(e.target.value);
+byId('recentOrdersBtn').onclick=async()=>{closeModal('settingsModal');openModal('recentOrdersModal');const root=byId('recentOrdersList');root.textContent='Loading your orders…';try{const me=await api('/api/auth/me');if(!me.authenticated){root.textContent='Please sign in to view orders placed using your customer account.';openModal('accountModal');updateAuthUI();return}currentCustomer=me.user;safeWrite('modecraft_session_v1',me.user);updateAuthUI();const result=await api('/api/orders/my');const orders=Array.isArray(result.orders)?result.orders:[];root.replaceChildren();if(!orders.length){root.textContent='No recent orders found for this account yet.';return}orders.slice(0,10).forEach(o=>{const d=document.createElement('div');d.className='reviewitem';const id=document.createElement('strong');id.textContent=(o.id||o.orderId||'Order');const meta=document.createElement('p');meta.textContent=(o.orderStatus||o.status||'received').replaceAll('_',' ')+' · '+(o.paymentStatus||'pending')+' · '+money(Number(o.total||o.amount)||0);const date=document.createElement('p');date.className='muted';date.textContent=o.createdAt?'Placed '+new Date(o.createdAt).toLocaleDateString('en-IN'):'';d.append(id,meta,date);root.append(d)})}catch(err){root.textContent='Could not load orders: '+err.message+'. Please sign in again if your session has expired.'}}
 // Expose settings from the account area with a small inline link.
 const settingsLink=document.createElement('button');settingsLink.className='add';settingsLink.textContent='SETTINGS / APPEARANCE';settingsLink.style.marginTop='12px';settingsLink.onclick=()=>{closeModal('accountModal');openModal('settingsModal')};byId('accountState').after(settingsLink);
 // Product cards now open detail pages; wishlist shortcut appears on each card.
@@ -196,7 +203,7 @@ const originalRenderProducts=renderProducts;renderProducts=function(){originalRe
 const originalAdd=add;add=function(id){originalAdd(id);safeWrite('modecraft_cart_v1',cart)};
 const oldChange=change;change=function(id,d){oldChange(id,d);safeWrite('modecraft_cart_v1',cart)};
 const oldRenderCart=renderCart;renderCart=function(){oldRenderCart();safeWrite('modecraft_cart_v1',cart)};
-cart=safeRead('modecraft_cart_v1',[]);renderCart();
+cart=safeRead('modecraft_cart_v1',[]);renderCart();refreshCustomerSession();
 
 init();
 </script>

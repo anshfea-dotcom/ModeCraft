@@ -151,10 +151,27 @@ async function init(){
   } catch (e) {
     console.error("ModeCraft products API/render error:", e);
     const message = String(e?.message || "Unknown error");
-    root.innerHTML = '<div class="empty"><strong>We couldn’t load the collection.</strong><p id="productsErrorDetail"></p><button class="add" id="retryProducts">TRY AGAIN</button></div>';
-    const detail = $("#productsErrorDetail");
-    if (detail) detail.textContent = message;
-    $("#retryProducts")?.addEventListener("click", init);
+
+    // Build the error state from DOM nodes instead of querying an element
+    // immediately after replacing innerHTML. This avoids a null textContent
+    // error if the markup changes or a browser extension modifies the page.
+    if (root) {
+      const state = document.createElement("div");
+      state.className = "empty";
+      const title = document.createElement("strong");
+      title.textContent = "We couldn’t load the collection.";
+      const detail = document.createElement("p");
+      detail.id = "productsErrorDetail";
+      detail.textContent = message;
+      const retry = document.createElement("button");
+      retry.className = "add";
+      retry.id = "retryProducts";
+      retry.type = "button";
+      retry.textContent = "TRY AGAIN";
+      retry.addEventListener("click", init);
+      state.append(title, detail, retry);
+      root.replaceChildren(state);
+    }
     return;
   }
   // Payment config is optional for displaying products; COD can still be used if enabled server-side.

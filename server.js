@@ -8,7 +8,6 @@ const { Pool } = require("pg");
 const session = require("express-session");
 const PgSession = require("connect-pg-simple")(session);
 const Razorpay = require("razorpay");
-const nodemailer = require("nodemailer");
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -658,13 +657,13 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
     // Keep the response generic so account existence is not disclosed.
     const found = await pool.query("SELECT id FROM customers WHERE email = $1", [email]);
     if (found.rowCount) {
-      const gmailUser = process.env.GMAIL_USER || process.env.GMAIL_EMAIL || process.env.EMAIL_USER;
-      const gmailAppPassword = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASSWORD || process.env.EMAIL_PASS;
+      const resendApiKey = process.env.RESEND_API_KEY;
+      const fromEmail = (process.env.PASSWORD_RESET_FROM || "ModeCraft <onboarding@resend.dev>").trim();
       const baseUrl = process.env.PASSWORD_RESET_BASE_URL;
 
-      if (!gmailUser || !gmailAppPassword) {
-        console.error("Password reset email not configured: set GMAIL_USER and GMAIL_APP_PASSWORD (or supported aliases) in Render.");
-        return res.status(503).json({ error: "Password reset email is not configured. Check the Gmail environment variables in Render." });
+      if (!resendApiKey) {
+        console.error("Password reset email not configured: set RESEND_API_KEY in Render.");
+        return res.status(503).json({ error: "Password reset email is not configured. Check Resend settings in Render." });
       } else {
         // Normalize and validate the reset URL before creating a token in the database.
         // Render sometimes receives values with accidental whitespace or wrapping quotes.
@@ -692,25 +691,31 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
         );
 
         resetUrl.searchParams.set("token", rawToken);
-        const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: { user: gmailUser, pass: gmailAppPassword }
-        });
-
         try {
-          await transporter.sendMail({
-            from: `ModeCraft <${gmailUser}>`,
-            to: email,
-            subject: "Reset your ModeCraft password",
-            text: `We received a request to reset your ModeCraft password. Open this link within 30 minutes: ${resetUrl.toString()}\n\nIf you did not request this, ignore this email.`,
-            html: `<p>We received a request to reset your ModeCraft password.</p><p><a href="${resetUrl.toString()}">Reset password</a></p><p>This link expires in 30 minutes. If you did not request this, ignore this email.</p>`
+          const emailResponse = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${resendApiKey}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              from: fromEmail,
+              to: [email],
+              subject: "Reset your ModeCraft password",
+              text: `We received a request to reset your ModeCraft password. Open this link within 30 minutes: ${resetUrl.toString()}\n\nIf you did not request this, ignore this email.`,
+              html: `<p>We received a request to reset your ModeCraft password.</p><p><a href="${resetUrl.toString()}">Reset password</a></p><p>This link expires in 30 minutes. If you did not request this, ignore this email.</p>`
+            })
           });
-          console.log("Password reset email sent successfully.");
+          const emailResult = await emailResponse.json().catch(() => ({}));
+          if (!emailResponse.ok) {
+            throw new Error(`Resend API returned ${emailResponse.status}: ${emailResult.message || emailResult.name || "email delivery request failed"}`);
+          }
+          console.log("Password reset email accepted by Resend.");
         } catch (mailError) {
-          // Invalidate the token if delivery failed; never leave a non-delivered active token.
+          // Invalidate the token if the email provider rejects the request.
           await pool.query("DELETE FROM password_reset_tokens WHERE token_hash = $1", [tokenHash]);
-          console.error("Gmail password reset delivery failed:", mailError.message);
-          return res.status(502).json({ error: "Password reset email could not be sent. Check Gmail app-password configuration in Render." });
+          console.error("Resend password reset delivery failed:", mailError.message);
+          return res.status(502).json({ error: "Password reset email could not be sent. Check Resend API key, sender and account restrictions." });
         }
       }
     }

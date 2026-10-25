@@ -883,8 +883,14 @@ app.get("/api/products", async (_req, res, next) => {
   try {
     const products = await getProducts();
 
+    const variants = await pool.query("SELECT product_id, color, size, quantity FROM inventory_variants WHERE quantity > 0 ORDER BY color, size");
+    const inventoryByProduct = new Map();
+    for (const row of variants.rows) {
+      if (!inventoryByProduct.has(row.product_id)) inventoryByProduct.set(row.product_id, []);
+      inventoryByProduct.get(row.product_id).push({ color: row.color, size: row.size, quantity: row.quantity });
+    }
     res.json({
-      products: products.filter(product => product.active !== false)
+      products: products.filter(product => product.active !== false).map(product => ({ ...product, inventoryVariants: inventoryByProduct.get(product.id) || [] }))
     });
   } catch (error) {
     next(error);
@@ -1325,6 +1331,8 @@ app.post(
         description,
         stock,
         active: req.body?.active !== false,
+        colors: Array.isArray(req.body?.colors) ? req.body.colors.map(value => cleanText(value, 40)).filter(Boolean).slice(0, 30) : [],
+        sizesByColor: req.body?.sizesByColor && typeof req.body.sizesByColor === "object" && !Array.isArray(req.body.sizesByColor) ? req.body.sizesByColor : {},
         createdAt: new Date().toISOString()
       };
 
@@ -1405,6 +1413,15 @@ app.patch(
 
       if (req.body?.active !== undefined) {
         product.active = Boolean(req.body.active);
+      }
+      if (req.body?.colors !== undefined) {
+        if (!Array.isArray(req.body.colors)) return res.status(400).json({ error: "Colours must be a list of selected colour names." });
+        product.colors = [...new Set(req.body.colors.map(value => cleanText(value, 40)).filter(Boolean))].slice(0, 30);
+      }
+      if (req.body?.sizesByColor !== undefined) {
+        if (!req.body.sizesByColor || typeof req.body.sizesByColor !== "object" || Array.isArray(req.body.sizesByColor)) return res.status(400).json({ error: "Choose sizes for each selected colour." });
+        const selectedColors = new Set(product.colors || []);
+        product.sizesByColor = Object.fromEntries(Object.entries(req.body.sizesByColor).filter(([color, sizes]) => selectedColors.has(color) && Array.isArray(sizes)).map(([color, sizes]) => [color, [...new Set(sizes.map(value => cleanText(value, 30)).filter(Boolean))].slice(0, 20)]));
       }
 
       await putProduct(product);
@@ -1898,9 +1915,22 @@ async function buildOrder(body = {}) {
       throw error;
     }
 
+    const color = cleanText(item.color, 40);
+    const size = cleanText(item.size, 30);
+    if (Array.isArray(product.colors) && product.colors.length) {
+      if (!color || !product.colors.includes(color)) {
+        const error = new Error(`Choose an available colour for ${product.name}.`); error.status = 400; throw error;
+      }
+      const allowedSizes = Array.isArray(product.sizesByColor?.[color]) ? product.sizesByColor[color] : [];
+      if (!size || !allowedSizes.includes(size)) {
+        const error = new Error(`Choose an available size for ${product.name} in ${color}.`); error.status = 400; throw error;
+      }
+    }
     items.push({
       id: product.id,
       name: product.name,
+      color: color || undefined,
+      size: size || undefined,
       unitPrice: Number(product.price),
       quantity
     });

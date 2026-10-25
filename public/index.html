@@ -336,9 +336,68 @@ body.dark .track-error{background:#321f1b;border-color:#684038;color:#f0b8aa}
 @media(prefers-reduced-motion:reduce){.success-mark{animation:none}}
 /* ================= END ORDER / AUTH UI EXPERIENCE ================= */
 
+
+/* ===== ModeCraft premium entrance, cart actions and payment cards ===== */
+.mc-intro{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#10100f;color:#f8f4ed;isolation:isolate;transition:opacity .75s cubic-bezier(.2,.7,.2,1),visibility .75s}
+.mc-intro.is-leaving{opacity:0;visibility:hidden;pointer-events:none}
+.intro-grain{position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 50% 45%,rgba(183,138,86,.17),transparent 38%),linear-gradient(125deg,#10100f 0%,#171512 52%,#0d0d0c 100%)}
+.intro-grain:before,.intro-grain:after{content:"";position:absolute;width:min(72vw,760px);aspect-ratio:1;border:1px solid rgba(200,164,120,.13);border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);animation:introOrbit 12s linear infinite}
+.intro-grain:after{width:min(55vw,580px);border-color:rgba(200,164,120,.1);animation-direction:reverse;animation-duration:17s}
+.intro-content{width:min(90vw,560px);text-align:center;animation:introReveal 1.1s cubic-bezier(.2,.7,.2,1) both}
+.intro-mark{display:flex;justify-content:center;align-items:baseline;gap:8px;font-size:clamp(38px,8vw,68px);font-weight:900;letter-spacing:-.075em;line-height:1}
+.intro-mark span{animation:introWord .8s .1s both}.intro-mark i{font-style:normal;font-weight:300;color:#c8a478;animation:introWord .8s .25s both}
+.intro-rule{height:1px;width:min(70%,320px);margin:27px auto 20px;background:rgba(255,255,255,.12);overflow:hidden}
+.intro-rule span{display:block;height:100%;width:100%;background:linear-gradient(90deg,transparent,#c8a478,transparent);transform:translateX(-100%);animation:introLine 1.35s .35s ease-out forwards}
+.intro-tagline{margin:0;color:#d2c2ae;font-size:10px;letter-spacing:clamp(3px,1vw,6px);font-weight:600;animation:introFade .8s .45s both}
+.intro-enter{margin-top:42px;display:inline-flex;align-items:center;justify-content:center;gap:24px;min-height:46px;padding:0 18px;border:1px solid rgba(200,164,120,.5);background:transparent;color:#f8f4ed;font-size:9px;font-weight:700;letter-spacing:1.7px;opacity:0;animation:introFade .65s 1s forwards;transition:background .2s,border-color .2s,color .2s}
+.intro-enter:hover{background:#c8a478;border-color:#c8a478;color:#111}
+.intro-bottom{position:absolute;bottom:26px;left:28px;right:28px;display:flex;justify-content:space-between;gap:15px;color:#8e867b;font-size:8px;letter-spacing:1.8px;animation:introFade .8s .5s both}
+@keyframes introReveal{from{opacity:0;transform:translateY(18px);filter:blur(7px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+@keyframes introWord{from{opacity:0;transform:translateY(14px);letter-spacing:-.12em}to{opacity:1;transform:translateY(0);letter-spacing:inherit}}
+@keyframes introLine{to{transform:translateX(0)}}
+@keyframes introFade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes introOrbit{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.cart-footer-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin-top:14px}
+.cart-footer-actions .cart-continue-btn,.cart-footer-actions .cart-checkout-btn{width:100%;min-width:0;min-height:48px;margin:0;padding:12px 10px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:9px;font-weight:750;letter-spacing:.75px;line-height:1.3;text-align:center}
+.cart-footer-actions .cart-continue-btn{border:1px solid #d9cec0;background:#fff;color:#29231d}
+.cart-footer-actions .cart-continue-btn:hover{border-color:#9b784c;background:#f7f2eb;transform:translateY(-1px)}
+.cart-footer-actions .cart-checkout-btn{background:#171717;color:#fff;border:1px solid #171717;box-shadow:0 5px 14px rgba(23,23,23,.12)}
+.cart-footer-actions .cart-checkout-btn:hover{background:#9b784c;border-color:#9b784c;transform:translateY(-1px)}
+body.dark .cart-footer-actions .cart-continue-btn{background:#202020;color:#f4f0e9;border-color:#51483d}
+body.dark .cart-footer-actions .cart-continue-btn:hover{background:#302a24;border-color:#c8a478}
+body.dark .cart-footer-actions .cart-checkout-btn{background:#c8a478;color:#171717;border-color:#c8a478}
+.payment-label{display:block;margin-top:19px!important;font-size:10px!important;font-weight:800!important;letter-spacing:1.3px;color:var(--muted)}
+.payment-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:9px}
+.payment-method{position:relative;display:flex;align-items:center;gap:10px;min-width:0;min-height:82px;padding:13px 11px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;transition:border-color .2s,background .2s,transform .2s,box-shadow .2s}
+.payment-method:hover{border-color:#b78a56;transform:translateY(-1px)}
+.payment-method.active{border-color:#9b784c;background:linear-gradient(135deg,#fbf8f3,#f4ede3);box-shadow:inset 0 0 0 1px rgba(155,120,76,.12)}
+.payment-icon{width:34px;height:34px;display:grid;place-items:center;flex:0 0 34px;border:1px solid #ded1bf;background:#fff;color:#8d6538}
+.payment-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.payment-copy{display:grid;gap:5px;min-width:0;flex:1}
+.payment-copy strong{font-size:11px;line-height:1.35;font-weight:750}
+.payment-copy small{font-size:9px;line-height:1.45;color:var(--muted)}
+.payment-check{display:none;align-items:center;justify-content:center;align-self:flex-start;width:17px;height:17px;flex:0 0 17px;border-radius:50%;background:#171717;color:#fff;font-size:10px}
+.payment-method.active .payment-check{display:flex}
+.payment-method:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+body.dark .payment-method.active{background:linear-gradient(135deg,#302a24,#211e1a);border-color:#c8a478}
+body.dark .payment-icon{background:#28231e;border-color:#51483d;color:#d9b78f}
+body.dark .payment-check{background:#c8a478;color:#171717}
+@media(max-width:420px){.cart-footer-actions{gap:7px}.cart-footer-actions .cart-continue-btn,.cart-footer-actions .cart-checkout-btn{font-size:8px;letter-spacing:.35px;padding:11px 6px}.payment-methods{grid-template-columns:1fr}.payment-method{min-height:70px}.intro-bottom{left:16px;right:16px;bottom:18px;font-size:7px;letter-spacing:1px}}
+@media(prefers-reduced-motion:reduce){.intro-grain:before,.intro-grain:after,.intro-content,.intro-mark span,.intro-mark i,.intro-rule span,.intro-tagline,.intro-enter,.intro-bottom{animation:none!important}.intro-enter{opacity:1}.mc-intro{transition:none}}
+
 </style>
 </head>
 <body>
+<div class="mc-intro" id="mcIntro" role="dialog" aria-modal="true" aria-label="Welcome to ModeCraft">
+  <div class="intro-grain" aria-hidden="true"></div>
+  <div class="intro-content">
+    <div class="intro-mark"><span>MODE</span><i>CRAFT.</i></div>
+    <div class="intro-rule"><span></span></div>
+    <p class="intro-tagline">WEAR YOUR IDENTITY</p>
+    <button type="button" class="intro-enter" id="introEnter">ENTER THE WORLD <span aria-hidden="true">↗</span></button>
+  </div>
+  <div class="intro-bottom"><span>MODERN ESSENTIALS</span><span>EST. MODECRAFT</span></div>
+</div>
 <div class="announce">THE NEW COLLECTION · EVERYDAY STYLE, ELEVATED</div>
 <header class="nav"><div class="navin">
 <a class="brand" href="#">MODE<span>CRAFT.</span></a>
@@ -366,7 +425,10 @@ body.dark .track-error{background:#321f1b;border-color:#684038;color:#f0b8aa}
 </main>
 <footer><div class="brand">MODECRAFT.</div><p>Wear Your Identity.</p><p>© <span id="year"></span> ModeCraft. All rights reserved.</p></footer>
 <div class="shade" id="shade"></div>
-<aside class="drawer" id="drawer" aria-label="Shopping bag"><div class="drawerhead"><h2>Your bag</h2><button type="button" class="drawer-close" id="closeBag" aria-label="Close bag">×</button></div><button type="button" class="drawer-back" id="continueShopping" aria-label="Close bag and continue shopping"><span aria-hidden="true">←</span> Continue shopping</button><div class="items" id="cartItems"></div><div class="total"><div class="totalrow"><b>Subtotal</b><b id="subtotal">₹0</b></div><p class="notice">Supplier availability and delivery fees must be confirmed before dispatch.</p><button class="btn" id="checkoutBtn">CONTINUE TO CHECKOUT</button></div></aside>
+<aside class="drawer" id="drawer" aria-label="Shopping bag"><div class="drawerhead"><h2>Your bag</h2><button type="button" class="drawer-close" id="closeBag" aria-label="Close bag">×</button></div><div class="items" id="cartItems"></div><div class="total"><div class="totalrow"><b>Subtotal</b><b id="subtotal">₹0</b></div><p class="notice">Supplier availability and delivery fees must be confirmed before dispatch.</p><div class="cart-footer-actions">
+<button type="button" class="cart-continue-btn" id="continueShoppingFooter"><span aria-hidden="true">←</span> CONTINUE SHOPPING</button>
+<button class="btn cart-checkout-btn" id="checkoutBtn">CHECKOUT <span aria-hidden="true">↗</span></button>
+</div></div></aside>
 <div class="modal" id="checkout"><div class="modalbox"><div class="modalhead"><h2>Delivery & payment</h2><button id="closeCheckout" aria-label="Close checkout">×</button></div><p class="notice" id="checkoutSummary"></p>
 <section id="couponPanel" class="coupon-panel" aria-labelledby="couponHeading">
 <div class="coupon-topline"><span class="coupon-ticket" aria-hidden="true">%</span><div class="coupon-intro"><h3 id="couponHeading">Have a promo code?</h3><p>Make your order a little more rewarding.</p></div><span class="coupon-tag">EXCLUSIVE SAVINGS</span></div>
@@ -389,7 +451,18 @@ body.dark .track-error{background:#321f1b;border-color:#684038;color:#f0b8aa}
 <label for="address">Street address</label><input id="address" required maxlength="300" autocomplete="street-address">
 <label for="city">City</label><input id="city" required maxlength="100" autocomplete="address-level2">
 <label for="pin">PIN code</label><input id="pin" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="postal-code">
-<label for="payment">Payment method</label><select id="payment"><option value="COD">Cash on Delivery</option><option value="ONLINE">UPI / Online payment (Razorpay)</option></select>
+<label class="payment-label">CHOOSE PAYMENT METHOD</label>
+<div class="payment-methods" role="group" aria-label="Choose payment method">
+<button type="button" class="payment-method active" data-payment="COD" aria-pressed="true">
+<span class="payment-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5h18v11H3z"/><path d="M3 10h18M7 15h4"/></svg></span>
+<span class="payment-copy"><strong>Cash on Delivery</strong><small>Pay when your order arrives</small></span><span class="payment-check" aria-hidden="true">✓</span>
+</button>
+<button type="button" class="payment-method" data-payment="ONLINE" aria-pressed="false">
+<span class="payment-icon upi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 3-5 9 5 9M16 3l5 9-5 9M9 12h6"/></svg></span>
+<span class="payment-copy"><strong>UPI / Online</strong><small>Secure payment via Razorpay</small></span><span class="payment-check" aria-hidden="true">✓</span>
+</button>
+</div>
+<select id="payment" aria-label="Selected payment method" hidden><option value="COD">Cash on Delivery</option><option value="ONLINE">UPI / Online payment (Razorpay)</option></select>
 <button class="btn" type="submit" id="placeOrder">PLACE ORDER</button>
 <p class="notice">Your order is accepted only after the server responds. For supplier-fulfilled products, confirm stock and delivery timing before dispatch.</p>
 </form></div></div>
@@ -571,9 +644,9 @@ function total(){return cart.reduce((s,i)=>s+(products.find(p=>p.id===i.id)?.pri
 function showBag(show){$("#drawer").classList.toggle("show",show);$("#shade").classList.toggle("show",show)}
 function showCheckout(show){$("#checkout").classList.toggle("show",show)}
 function payload(){return{customer:{name:$("#name").value.trim(),email:$("#email").value.trim(),phone:$("#phone").value.trim(),address:$("#address").value.trim(),city:$("#city").value.trim(),postalCode:$("#pin").value.trim()},items:cart.map(i=>({id:i.id,quantity:i.quantity,color:i.color||'',size:i.size||''})),couponCode:appliedCoupon?.code||""}}
-$("#bagBtn").onclick=()=>showBag(true);$("#closeBag").onclick=()=>showBag(false);$("#continueShopping").addEventListener("click",()=>{showBag(false);const target=document.querySelector("#products")||document.querySelector("#home")||document.querySelector("main")||document.body;requestAnimationFrame(()=>target.scrollIntoView({behavior:"smooth",block:"start"}));});$("#shade").onclick=()=>showBag(false);$("#checkoutBtn").onclick=()=>{if(!cart.length)return toast("Your bag is empty");updateCheckoutSummary();showBag(false);showCheckout(true)};$("#closeCheckout").onclick=()=>showCheckout(false);
+$("#bagBtn").onclick=()=>showBag(true);$("#closeBag").onclick=()=>showBag(false);$("#shade").onclick=()=>showBag(false);$("#checkoutBtn").onclick=()=>{if(!cart.length)return toast("Your bag is empty");updateCheckoutSummary();showBag(false);showCheckout(true)};$("#closeCheckout").onclick=()=>showCheckout(false);
 $("#search").oninput=renderProducts;$("#category").onchange=renderProducts;$("#sort").onchange=renderProducts;$("#year").textContent=new Date().getFullYear();
-$("#orderForm").addEventListener("submit",async e=>{e.preventDefault();if(!cart.length)return toast("Your bag is empty");const btn=$("#placeOrder");btn.disabled=true;btn.textContent="PLEASE WAIT…";try{const body=payload();if($("#payment").value==="COD"){const result=await api("/api/orders/cod",body);showCheckout(false);cart=[];appliedCoupon=null;$("#couponInput").value="";$("#couponMessage").textContent="Have a coupon? Apply it before placing your order.";$("#couponTotals").style.display="none";renderCart();e.target.reset();showOrderSuccess(result.orderId,result.message,$("#payment").value);return}if(!config.razorpayEnabled)throw new Error("Online payment is not configured. Add Razorpay keys to .env, restart the server, and refresh.");if(!window.Razorpay)throw new Error("Razorpay Checkout could not load. Check your connection.");const order=await api("/api/payments/razorpay/order",body);const options={key:order.keyId,amount:order.amount,currency:order.currency,name:"ModeCraft",description:"Fashion order",order_id:order.razorpayOrderId,prefill:order.customer,theme:{color:"#111111"},handler:async response=>{try{const verified=await api("/api/payments/razorpay/verify",response);showCheckout(false);cart=[];appliedCoupon=null;$("#couponInput").value="";$("#couponMessage").textContent="Have a coupon? Apply it before placing your order.";$("#couponTotals").style.display="none";renderCart();e.target.reset();showOrderSuccess(verified.orderId,verified.message,"ONLINE")}catch(err){alert("Payment was submitted but could not be verified by the store. Contact support and do not pay again immediately. Reference: "+order.razorpayOrderId)}}};const checkout=new Razorpay(options);checkout.on("payment.failed",r=>toast(r.error?.description||"Payment failed. Please try again."));checkout.open()}catch(err){toast(err.message)}finally{btn.disabled=false;btn.textContent="PLACE ORDER"}});
+$("#orderForm").addEventListener("submit",async e=>{e.preventDefault();if(!cart.length)return toast("Your bag is empty");const btn=$("#placeOrder");btn.disabled=true;btn.textContent="PLEASE WAIT…";try{const body=payload();if($("#payment").value==="COD"){const result=await api("/api/orders/cod",body);showCheckout(false);cart=[];appliedCoupon=null;$("#couponInput").value="";$("#couponMessage").textContent="Have a coupon? Apply it before placing your order.";$("#couponTotals").style.display="none";renderCart();e.target.reset();syncPaymentButtons();showOrderSuccess(result.orderId,result.message,$("#payment").value);return}if(!config.razorpayEnabled)throw new Error("Online payment is not configured. Add Razorpay keys to .env, restart the server, and refresh.");if(!window.Razorpay)throw new Error("Razorpay Checkout could not load. Check your connection.");const order=await api("/api/payments/razorpay/order",body);const options={key:order.keyId,amount:order.amount,currency:order.currency,name:"ModeCraft",description:"Fashion order",order_id:order.razorpayOrderId,prefill:order.customer,theme:{color:"#111111"},handler:async response=>{try{const verified=await api("/api/payments/razorpay/verify",response);showCheckout(false);cart=[];appliedCoupon=null;$("#couponInput").value="";$("#couponMessage").textContent="Have a coupon? Apply it before placing your order.";$("#couponTotals").style.display="none";renderCart();e.target.reset();syncPaymentButtons();showOrderSuccess(verified.orderId,verified.message,"ONLINE")}catch(err){alert("Payment was submitted but could not be verified by the store. Contact support and do not pay again immediately. Reference: "+order.razorpayOrderId)}}};const checkout=new Razorpay(options);checkout.on("payment.failed",r=>toast(r.error?.description||"Payment failed. Please try again."));checkout.open()}catch(err){toast(err.message)}finally{btn.disabled=false;btn.textContent="PLACE ORDER"}});
 
 // Extra storefront features: wishlist/recently viewed/theme are stored on this device.
 const STORE={wish:'modecraft_wishlist_v1',recent:'modecraft_recent_v1',theme:'modecraft_theme_v1',orders:'modecraft_recent_orders_v1'};
@@ -696,6 +769,23 @@ cart=safeRead('modecraft_cart_v1',[]);renderCart();refreshCustomerSession();
 byId('successContinueBtn').addEventListener('click',()=>closeModal('orderSuccessModal'));
 byId('successTrackBtn').addEventListener('click',()=>{const id=byId('successOrderId').textContent;closeModal('orderSuccessModal');byId('trackOrderId').value=id==='Reference unavailable'?'':id;byId('trackResult').replaceChildren();openModal('trackModal');});
 byId('loginSuccessContinue').addEventListener('click',()=>closeModal('loginSuccessModal'));
+
+// Premium intro: enter button and timed fallback both dismiss the intro safely.
+const intro=byId('mcIntro');
+let introDismissed=false;
+function dismissIntro(){if(introDismissed||!intro)return;introDismissed=true;intro.classList.add('is-leaving');document.body.style.overflow='';setTimeout(()=>intro.remove(),850)}
+byId('introEnter').addEventListener('click',dismissIntro);
+document.body.style.overflow='hidden';
+const introTimer=setTimeout(dismissIntro,2600);
+byId('introEnter').addEventListener('click',()=>clearTimeout(introTimer));
+
+// Keep the existing payment value used by the checkout/API logic, while presenting premium selection cards.
+function syncPaymentButtons(){document.querySelectorAll('[data-payment]').forEach(button=>{const active=button.dataset.payment===byId('payment').value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active))})}
+document.querySelectorAll('[data-payment]').forEach(button=>button.addEventListener('click',()=>{byId('payment').value=button.dataset.payment;syncPaymentButtons();}));
+syncPaymentButtons();
+
+// Continue shopping now sits beside checkout in the cart footer.
+byId('continueShoppingFooter').addEventListener('click',()=>{showBag(false);const target=document.querySelector('#products')||document.querySelector('#home')||document.querySelector('main')||document.body;requestAnimationFrame(()=>target.scrollIntoView({behavior:'smooth',block:'start'}));});
 setCollectionFromHash();
 init();
 </script>

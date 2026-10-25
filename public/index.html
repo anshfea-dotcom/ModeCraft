@@ -337,26 +337,20 @@ body.dark .track-error{background:#321f1b;border-color:#684038;color:#f0b8aa}
 /* ================= END ORDER / AUTH UI EXPERIENCE ================= */
 
 
-/* ===== ModeCraft premium entrance, cart actions and payment cards ===== */
-.mc-intro{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#10100f;color:#f8f4ed;isolation:isolate;transition:opacity .75s cubic-bezier(.2,.7,.2,1),visibility .75s}
+/* ===== ModeCraft minimal premium intro, cart actions and payment cards ===== */
+.mc-intro{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;background:#10100f;color:#f4f0e9;transition:opacity .65s ease,visibility .65s ease}
 .mc-intro.is-leaving{opacity:0;visibility:hidden;pointer-events:none}
-.intro-grain{position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 50% 45%,rgba(183,138,86,.17),transparent 38%),linear-gradient(125deg,#10100f 0%,#171512 52%,#0d0d0c 100%)}
-.intro-grain:before,.intro-grain:after{content:"";position:absolute;width:min(72vw,760px);aspect-ratio:1;border:1px solid rgba(200,164,120,.13);border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);animation:introOrbit 12s linear infinite}
-.intro-grain:after{width:min(55vw,580px);border-color:rgba(200,164,120,.1);animation-direction:reverse;animation-duration:17s}
-.intro-content{width:min(90vw,560px);text-align:center;animation:introReveal 1.1s cubic-bezier(.2,.7,.2,1) both}
-.intro-mark{display:flex;justify-content:center;align-items:baseline;gap:8px;font-size:clamp(38px,8vw,68px);font-weight:900;letter-spacing:-.075em;line-height:1}
-.intro-mark span{animation:introWord .8s .1s both}.intro-mark i{font-style:normal;font-weight:300;color:#c8a478;animation:introWord .8s .25s both}
-.intro-rule{height:1px;width:min(70%,320px);margin:27px auto 20px;background:rgba(255,255,255,.12);overflow:hidden}
-.intro-rule span{display:block;height:100%;width:100%;background:linear-gradient(90deg,transparent,#c8a478,transparent);transform:translateX(-100%);animation:introLine 1.35s .35s ease-out forwards}
-.intro-tagline{margin:0;color:#d2c2ae;font-size:10px;letter-spacing:clamp(3px,1vw,6px);font-weight:600;animation:introFade .8s .45s both}
-.intro-enter{margin-top:42px;display:inline-flex;align-items:center;justify-content:center;gap:24px;min-height:46px;padding:0 18px;border:1px solid rgba(200,164,120,.5);background:transparent;color:#f8f4ed;font-size:9px;font-weight:700;letter-spacing:1.7px;opacity:0;animation:introFade .65s 1s forwards;transition:background .2s,border-color .2s,color .2s}
-.intro-enter:hover{background:#c8a478;border-color:#c8a478;color:#111}
-.intro-bottom{position:absolute;bottom:26px;left:28px;right:28px;display:flex;justify-content:space-between;gap:15px;color:#8e867b;font-size:8px;letter-spacing:1.8px;animation:introFade .8s .5s both}
-@keyframes introReveal{from{opacity:0;transform:translateY(18px);filter:blur(7px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
-@keyframes introWord{from{opacity:0;transform:translateY(14px);letter-spacing:-.12em}to{opacity:1;transform:translateY(0);letter-spacing:inherit}}
-@keyframes introLine{to{transform:translateX(0)}}
-@keyframes introFade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
-@keyframes introOrbit{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.intro-grain{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 48%,rgba(184,145,91,.09),transparent 42%),#10100f}
+.intro-grain:after{content:"";position:absolute;inset:0;opacity:.08;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.3'/%3E%3C/svg%3E")}
+.intro-center{position:relative;z-index:1;width:min(280px,72vw);display:flex;flex-direction:column;align-items:center;animation:introAppear .8s cubic-bezier(.2,.7,.2,1) both}
+.intro-logo{display:inline-flex;align-items:baseline;white-space:nowrap;color:#f4f0e9!important;font-size:clamp(29px,5vw,43px)!important;font-weight:900!important;letter-spacing:-1.8px!important;line-height:1!important;text-decoration:none!important}
+.intro-logo span{font-weight:400!important;color:#c8a478!important}
+.intro-loader{width:100%;margin-top:34px}
+.intro-loader-track{width:100%;height:2px;background:rgba(255,255,255,.13);overflow:hidden}
+.intro-loader-fill{height:100%;width:0;background:#c8a478;animation:introProgress 3s cubic-bezier(.4,0,.2,1) forwards;transform-origin:left}
+@keyframes introAppear{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes introProgress{from{width:0}to{width:100%}}
+
 .cart-footer-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin-top:14px}
 .cart-footer-actions .cart-continue-btn,.cart-footer-actions .cart-checkout-btn{width:100%;min-width:0;min-height:48px;margin:0;padding:12px 10px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:9px;font-weight:750;letter-spacing:.75px;line-height:1.3;text-align:center}
 .cart-footer-actions .cart-continue-btn{border:1px solid #d9cec0;background:#fff;color:#29231d}
@@ -382,23 +376,21 @@ body.dark .cart-footer-actions .cart-checkout-btn{background:#c8a478;color:#1717
 body.dark .payment-method.active{background:linear-gradient(135deg,#302a24,#211e1a);border-color:#c8a478}
 body.dark .payment-icon{background:#28231e;border-color:#51483d;color:#d9b78f}
 body.dark .payment-check{background:#c8a478;color:#171717}
-@media(max-width:420px){.cart-footer-actions{gap:7px}.cart-footer-actions .cart-continue-btn,.cart-footer-actions .cart-checkout-btn{font-size:8px;letter-spacing:.35px;padding:11px 6px}.payment-methods{grid-template-columns:1fr}.payment-method{min-height:70px}.intro-bottom{left:16px;right:16px;bottom:18px;font-size:7px;letter-spacing:1px}}
-@media(prefers-reduced-motion:reduce){.intro-grain:before,.intro-grain:after,.intro-content,.intro-mark span,.intro-mark i,.intro-rule span,.intro-tagline,.intro-enter,.intro-bottom{animation:none!important}.intro-enter{opacity:1}.mc-intro{transition:none}}
+@media(max-width:420px){.cart-footer-actions{gap:7px}.cart-footer-actions .cart-continue-btn,.cart-footer-actions .cart-checkout-btn{font-size:8px;letter-spacing:.35px;padding:11px 6px}.payment-methods{grid-template-columns:1fr}.payment-method{min-height:70px}}
+@media(prefers-reduced-motion:reduce){.intro-center{animation:none}.intro-loader-fill{animation-duration:1ms}.mc-intro{transition:none}}
 
 </style>
 </head>
 <body>
-<div class="mc-intro" id="mcIntro" role="dialog" aria-modal="true" aria-label="Welcome to ModeCraft">
+<div class="mc-intro" id="mcIntro" role="status" aria-label="Loading ModeCraft">
   <div class="intro-grain" aria-hidden="true"></div>
-  <div class="intro-content">
-    <div class="intro-mark"><span>MODE</span><i>CRAFT.</i></div>
-    <div class="intro-rule"><span></span></div>
-    <p class="intro-tagline">WEAR YOUR IDENTITY</p>
-    <button type="button" class="intro-enter" id="introEnter">ENTER THE WORLD <span aria-hidden="true">↗</span></button>
+  <div class="intro-center">
+    <a class="brand intro-logo" href="#" aria-label="ModeCraft">MODE<span>CRAFT.</span></a>
+    <div class="intro-loader" aria-label="Loading">
+      <div class="intro-loader-track"><div class="intro-loader-fill"></div></div>
+    </div>
   </div>
-  <div class="intro-bottom"><span>MODERN ESSENTIALS</span><span>EST. MODECRAFT</span></div>
-</div>
-<div class="announce">THE NEW COLLECTION · EVERYDAY STYLE, ELEVATED</div>
+</div><div class="announce">THE NEW COLLECTION · EVERYDAY STYLE, ELEVATED</div>
 <header class="nav"><div class="navin">
 <a class="brand" href="#">MODE<span>CRAFT.</span></a>
 <div class="navactions"><button class="iconbtn menu-trigger" id="menuBtn" title="Open menu" aria-label="Open menu" aria-expanded="false"><span class="hamburger-lines" aria-hidden="true"><i></i><i></i><i></i></span><span class="menu-trigger-label">MENU</span></button><button class="bag-icon-button" id="bagBtn" type="button" aria-label="Open shopping bag, 0 items" title="Shopping bag"><svg class="bag-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 8.5h13l1 12h-15l1-12Z"/><path d="M9 9V6.5a3 3 0 0 1 6 0V9"/></svg><span class="bag-count" id="count">0</span></button></div>
@@ -770,14 +762,12 @@ byId('successContinueBtn').addEventListener('click',()=>closeModal('orderSuccess
 byId('successTrackBtn').addEventListener('click',()=>{const id=byId('successOrderId').textContent;closeModal('orderSuccessModal');byId('trackOrderId').value=id==='Reference unavailable'?'':id;byId('trackResult').replaceChildren();openModal('trackModal');});
 byId('loginSuccessContinue').addEventListener('click',()=>closeModal('loginSuccessModal'));
 
-// Premium intro: enter button and timed fallback both dismiss the intro safely.
+// Minimal premium logo intro with a three-second loading timer.
 const intro=byId('mcIntro');
 let introDismissed=false;
-function dismissIntro(){if(introDismissed||!intro)return;introDismissed=true;intro.classList.add('is-leaving');document.body.style.overflow='';setTimeout(()=>intro.remove(),850)}
-byId('introEnter').addEventListener('click',dismissIntro);
+function dismissIntro(){if(introDismissed||!intro)return;introDismissed=true;intro.classList.add('is-leaving');document.body.style.overflow='';setTimeout(()=>intro.remove(),650)}
 document.body.style.overflow='hidden';
-const introTimer=setTimeout(dismissIntro,2600);
-byId('introEnter').addEventListener('click',()=>clearTimeout(introTimer));
+const introTimer=setTimeout(dismissIntro,3000);
 
 // Keep the existing payment value used by the checkout/API logic, while presenting premium selection cards.
 function syncPaymentButtons(){document.querySelectorAll('[data-payment]').forEach(button=>{const active=button.dataset.payment===byId('payment').value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active))})}

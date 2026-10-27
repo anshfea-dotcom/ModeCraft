@@ -440,6 +440,30 @@ body.dark .productbox .detail-wishlist-btn{color:var(--ink);border-color:var(--l
 body.dark .productbox .detail-wishlist-btn:hover{background:#302a24;border-color:#c8a478;color:#f4f0e9}
 
 
+
+/* Product popup begins directly below the sticky header; the header stays visible. */
+#productModal.product-modal-below-header{top:var(--product-modal-top,76px);bottom:0;left:0;right:0;z-index:25;align-items:flex-start;justify-content:center;overflow-y:auto;padding:12px;background:rgba(0,0,0,.62)}
+#productModal.product-modal-below-header .productbox{max-height:calc(100dvh - var(--product-modal-top,76px) - 24px);margin:0 auto;border:1px solid rgba(183,138,86,.35);border-radius:4px;box-shadow:0 22px 70px rgba(0,0,0,.24)}
+.productbox .detail-primary-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;width:100%;align-items:stretch}
+.productbox .detail-primary-actions #detailWish,.productbox .detail-primary-actions #detailAdd{width:100%;height:50px;min-height:50px;max-height:50px;margin:0;padding:0 8px;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(9px,1vw,11px);line-height:1;letter-spacing:.45px;border-radius:2px}
+.productbox .detail-primary-actions #detailAdd{background:#171717;color:#fff;border:1px solid #171717;box-shadow:0 5px 14px rgba(23,23,23,.12)}
+.productbox .detail-primary-actions #detailAdd:hover{background:#9b784c;border-color:#9b784c;color:#fff}
+.productbox .detail-purchase-actions{display:grid;grid-template-columns:1fr;gap:9px;margin-top:20px}
+.productbox .detail-purchase-actions .detail-buy-btn{width:100%;height:50px;min-height:50px;margin:0}
+@media(max-width:700px){#productModal.product-modal-below-header{padding:8px;--product-modal-mobile-gap:16px}#productModal.product-modal-below-header .productbox{width:100%;max-width:100%;max-height:calc(100dvh - var(--product-modal-top,110px) - 16px);padding:15px}#productModal.product-modal-below-header .detailgrid{grid-template-columns:1fr;gap:15px}#productModal.product-modal-below-header .detailhero{aspect-ratio:4/3;max-height:220px}#productModal.product-modal-below-header .modalhead{position:sticky;top:-15px;z-index:4;background:var(--paper);padding:6px 0 10px;margin-bottom:10px}#productModal.product-modal-below-header .productbox hr{margin:18px 0}}
+@media(max-width:420px){.productbox .detail-primary-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}.productbox .detail-primary-actions #detailWish,.productbox .detail-primary-actions #detailAdd{height:48px;min-height:48px;max-height:48px;padding:0 4px;font-size:9px;letter-spacing:.15px}.productbox .detail-purchase-actions .detail-buy-btn{height:49px;min-height:49px}}
+
+/* Premium rounded corners for the product details page and its controls. */
+#productModal.product-modal-below-header .productbox{border-radius:22px;overflow:hidden}
+#productModal.product-modal-below-header .detailhero{border-radius:16px;overflow:hidden}
+#productModal.product-modal-below-header .detailhero img{border-radius:16px}
+#productModal.product-modal-below-header .thumbs button{border-radius:10px;overflow:hidden}
+#productModal.product-modal-below-header .detail-primary-actions #detailWish,
+#productModal.product-modal-below-header .detail-primary-actions #detailAdd,
+#productModal.product-modal-below-header .detail-purchase-actions .detail-buy-btn{border-radius:10px}
+#productModal.product-modal-below-header .size-option{border-radius:9px}
+#productModal.product-modal-below-header .colour-swatch{border-radius:50%}
+@media(max-width:700px){#productModal.product-modal-below-header .productbox{border-radius:19px}#productModal.product-modal-below-header .detailhero,#productModal.product-modal-below-header .detailhero img{border-radius:14px}}
 </style>
 </head>
 <body>
@@ -754,8 +778,8 @@ let selectedProduct=null,authMode='login';
 const safeRead=(key,fallback=[])=>{try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback}};
 const safeWrite=(key,value)=>localStorage.setItem(key,JSON.stringify(value));
 function byId(id){return document.getElementById(id)}
-function openModal(id){byId(id).classList.add('show')}
-function closeModal(id){byId(id).classList.remove('show')}
+function openModal(id){const modal=byId(id);if(id==='productModal'){const nav=document.querySelector('.nav');const navBottom=nav?Math.max(0,Math.ceil(nav.getBoundingClientRect().bottom)):0;modal.style.setProperty('--product-modal-top',navBottom+'px');modal.classList.add('product-modal-below-header')}modal.classList.add('show')}
+function closeModal(id){byId(id).classList.remove('show');if(id==='productModal')byId(id).classList.remove('product-modal-below-header')}
 function showOrderSuccess(orderId,message,paymentLabel){
   byId('successOrderId').textContent=orderId||'Reference unavailable';
   byId('orderSuccessMessage').textContent=message||'Your order has been accepted by the store.';

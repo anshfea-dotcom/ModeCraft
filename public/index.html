@@ -454,7 +454,7 @@ body.dark .productbox .detail-wishlist-btn:hover{background:#302a24;border-color
 @media(max-width:420px){.productbox .detail-primary-actions{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}.productbox .detail-primary-actions #detailWish,.productbox .detail-primary-actions #detailAdd{height:48px;min-height:48px;max-height:48px;padding:0 4px;font-size:9px;letter-spacing:.15px}.productbox .detail-purchase-actions .detail-buy-btn{height:49px;min-height:49px}}
 
 /* Premium rounded corners for the product details page and its controls. */
-#productModal.product-modal-below-header .productbox{border-radius:22px;overflow:hidden}
+#productModal.product-modal-below-header .productbox{border-radius:22px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 #productModal.product-modal-below-header .detailhero{border-radius:16px;overflow:hidden}
 #productModal.product-modal-below-header .detailhero img{border-radius:16px}
 #productModal.product-modal-below-header .thumbs button{border-radius:10px;overflow:hidden}

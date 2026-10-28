@@ -1,4 +1,3 @@
-
 {
   "name": "modecraft-store",
   "version": "1.0.0",
@@ -9,9 +8,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
-  "engines": {
-    "node": ">=20"
-  },
+  "engines": { "node": ">=20" },
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "connect-pg-simple": "^10.0.0",

@@ -949,7 +949,7 @@ app.post("/api/admin/login", async (req, res, next) => {
     ) {
       account = {
         username: process.env.ADMIN_USERNAME,
-        displayName: "Store Owner",
+        displayName: "Founder & CEO",
         role: "owner",
         active: true
       };
@@ -1306,6 +1306,8 @@ app.post(
       const images = [...new Set([image, ...suppliedImages].filter(Boolean))].slice(0, 12);
       const description = cleanText(req.body?.description, 500);
       const price = Number(req.body?.price);
+      const salePriceInput = req.body?.salePrice;
+      const salePrice = salePriceInput === undefined || salePriceInput === null || salePriceInput === "" ? null : Number(salePriceInput);
       const stock = Number(req.body?.stock ?? 0);
 
       if (
@@ -1313,11 +1315,12 @@ app.post(
         !category ||
         !Number.isFinite(price) ||
         price <= 0 ||
+        (salePrice !== null && (!Number.isFinite(salePrice) || salePrice <= 0 || salePrice >= price)) ||
         !Number.isInteger(stock) ||
         stock < 0
       ) {
         return res.status(400).json({
-          error: "Enter a product name, category, valid price and non-negative stock."
+          error: "Enter a product name, category, valid original price, an optional sale price lower than the original price, and non-negative stock."
         });
       }
 
@@ -1326,6 +1329,7 @@ app.post(
         name,
         category,
         price,
+        salePrice,
         image,
         images,
         description,
@@ -1389,14 +1393,23 @@ app.patch(
 
       if (req.body?.price !== undefined) {
         const price = Number(req.body.price);
-
         if (!Number.isFinite(price) || price <= 0) {
-          return res.status(400).json({
-            error: "Price must be greater than zero."
-          });
+          return res.status(400).json({ error: "Original price must be greater than zero." });
         }
-
         product.price = price;
+      }
+      if (req.body?.salePrice !== undefined) {
+        if (req.body.salePrice === null || req.body.salePrice === "") {
+          product.salePrice = null;
+        } else {
+          const salePrice = Number(req.body.salePrice);
+          if (!Number.isFinite(salePrice) || salePrice <= 0 || salePrice >= Number(product.price)) {
+            return res.status(400).json({ error: "Sale price must be greater than zero and lower than the original price." });
+          }
+          product.salePrice = salePrice;
+        }
+      } else if (product.salePrice != null && Number(product.salePrice) >= Number(product.price)) {
+        return res.status(400).json({ error: "Original price must be higher than the saved sale price. Update or clear the sale price too." });
       }
 
       if (req.body?.stock !== undefined) {
@@ -1926,16 +1939,22 @@ async function buildOrder(body = {}) {
         const error = new Error(`Choose an available size for ${product.name} in ${color}.`); error.status = 400; throw error;
       }
     }
+    const originalPrice = Number(product.price);
+    const configuredSalePrice = Number(product.salePrice);
+    const unitPrice = product.salePrice !== null && product.salePrice !== undefined && product.salePrice !== "" && Number.isFinite(configuredSalePrice) && configuredSalePrice > 0 && configuredSalePrice < originalPrice
+      ? configuredSalePrice
+      : originalPrice;
     items.push({
       id: product.id,
       name: product.name,
       color: color || undefined,
       size: size || undefined,
-      unitPrice: Number(product.price),
+      unitPrice,
+      originalPrice,
       quantity
     });
 
-    total += Number(product.price) * quantity;
+    total += unitPrice * quantity;
   }
 
   const subtotal = total;

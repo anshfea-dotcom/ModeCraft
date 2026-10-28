@@ -806,6 +806,7 @@ app.get("/api/orders/track", async (req, res, next) => {
     if (!orderId || !/^\d{10}$/.test(phone)) return res.status(400).json({ error: "Enter the order ID and the 10-digit phone number used at checkout." });
     const order = await getOrder(orderId);
     if (!order || order.customer?.phone !== phone) return res.status(404).json({ error: "No order found for those details." });
+    res.set("Cache-Control", "no-store, max-age=0");
     res.json({ order: { id: order.id, orderStatus: order.orderStatus, paymentStatus: order.paymentStatus, paymentMethod: order.paymentMethod, createdAt: order.createdAt, statusHistory: order.statusHistory || [], items: order.items } });
   } catch (error) { next(error); }
 });

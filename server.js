@@ -214,7 +214,7 @@ function can(user, permission) {
   return effectivePermissions(user).includes(permission);
 }
 function requireOwner(req, res, next) {
-  if (!req.adminSession || req.adminSession.role !== "owner") {
+  if (!(req.session?.admin || req.adminSession) || (req.session?.admin || req.adminSession).role !== "owner") {
     return res.status(403).json({ error: "Only the store owner can perform this action." });
   }
   next();
@@ -310,6 +310,12 @@ async function initDatabase() {
 
     CREATE INDEX IF NOT EXISTS inventory_variants_product_idx
       ON inventory_variants (product_id, color, size);
+
+    CREATE TABLE IF NOT EXISTS store_settings (
+      key TEXT PRIMARY KEY,
+      data JSONB NOT NULL DEFAULT '{}'::jsonb,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
 
     CREATE TABLE IF NOT EXISTS offers (
       id TEXT PRIMARY KEY,
@@ -884,7 +890,7 @@ app.get("/api/products", async (_req, res, next) => {
   try {
     const products = await getProducts();
 
-    const variants = await pool.query("SELECT product_id, color, size, quantity FROM inventory_variants WHERE quantity > 0 ORDER BY color, size");
+    const variants = await pool.query("SELECT product_id, color, size, quantity FROM inventory_variants ORDER BY color, size");
     const inventoryByProduct = new Map();
     for (const row of variants.rows) {
       if (!inventoryByProduct.has(row.product_id)) inventoryByProduct.set(row.product_id, []);
@@ -909,6 +915,37 @@ app.get("/api/config", (_req, res) => {
 });
 
 const loginAttempts = new Map();
+
+app.get("/api/storefront/header", async (_req, res, next) => {
+  try {
+    const result = await pool.query("SELECT data FROM store_settings WHERE key = $1", ["storefront_header"]);
+    res.json({ header: result.rows[0]?.data || {} });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/admin/storefront/header", requireAdmin, async (_req, res, next) => {
+  try {
+    const result = await pool.query("SELECT data FROM store_settings WHERE key = $1", ["storefront_header"]);
+    res.json({ header: result.rows[0]?.data || {} });
+  } catch (error) { next(error); }
+});
+
+app.put("/api/admin/storefront/header", requireAdmin, requireOwner, async (req, res, next) => {
+  try {
+    const input = req.body || {};
+    const header = {
+      announcement: cleanText(input.announcement, 180),
+      brandText: cleanText(input.brandText, 60) || "MODECRAFT",
+      tagline: cleanText(input.tagline, 100) || "Wear Your Identity.",
+      logoUrl: typeof input.logoUrl === "string" && /^https:\/\//i.test(input.logoUrl.trim()) ? input.logoUrl.trim().slice(0, 1500) : "",
+      showAnnouncement: input.showAnnouncement !== false,
+      showTagline: input.showTagline !== false
+    };
+    await pool.query(`INSERT INTO store_settings (key, data, updated_at) VALUES ($1, $2::jsonb, NOW()) ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`, ["storefront_header", JSON.stringify(header)]);
+    await audit(req.session.admin, "storefront.header.update", { brandText: header.brandText });
+    res.json({ ok: true, header });
+  } catch (error) { next(error); }
+});
 
 app.post("/api/admin/login", async (req, res, next) => {
   try {
@@ -1938,6 +1975,18 @@ async function buildOrder(body = {}) {
       const allowedSizes = Array.isArray(product.sizesByColor?.[color]) ? product.sizesByColor[color] : [];
       if (!size || !allowedSizes.includes(size)) {
         const error = new Error(`Choose an available size for ${product.name} in ${color}.`); error.status = 400; throw error;
+      }
+      // If this product is managed in the inventory ledger, require the exact colour/size
+      // variant to exist and have enough quantity. Products not yet migrated to the ledger
+      // retain the legacy configured-size behaviour.
+      const stock = await pool.query("SELECT color, size, quantity FROM inventory_variants WHERE product_id = $1", [product.id]);
+      if (stock.rowCount) {
+        const variant = stock.rows.find(v => String(v.color).toLowerCase() === color.toLowerCase() && String(v.size).toLowerCase() === size.toLowerCase());
+        if (!variant || Number(variant.quantity) < quantity) {
+          const error = new Error(`${product.name} (${color}, size ${size}) is currently out of stock. Please choose another size or update the stock in Admin → Inventory & Stock.`);
+          error.status = 409;
+          throw error;
+        }
       }
     }
     const originalPrice = Number(product.price);

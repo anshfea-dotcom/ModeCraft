@@ -1966,28 +1966,59 @@ async function buildOrder(body = {}) {
       throw error;
     }
 
-    const color = cleanText(item.color, 40);
-    const size = cleanText(item.size, 30);
-    if (Array.isArray(product.colors) && product.colors.length) {
-      if (!color || !product.colors.includes(color)) {
-        const error = new Error(`Choose an available colour for ${product.name}.`); error.status = 400; throw error;
+    // Treat colour/size labels consistently across the storefront, product settings,
+    // and inventory ledger. Admin-entered casing/spacing must not reject a valid choice.
+    const normalizeVariant = value => cleanText(value, 50).replace(/\s+/g, " ").toLocaleLowerCase("en-US");
+    let color = cleanText(item.color, 40).replace(/\s+/g, " ");
+    let size = cleanText(item.size, 30).replace(/\s+/g, " ");
+
+    // Inventory ledger is the source of truth whenever a product has inventory rows.
+    // Do not first reject the selected colour against possibly stale product.colors or
+    // sizesByColor metadata: that caused valid inventory colours to fail at checkout.
+    const stock = await pool.query(
+      "SELECT color, size, quantity FROM inventory_variants WHERE product_id = $1 ORDER BY color, size",
+      [product.id]
+    );
+    if (stock.rowCount) {
+      const variant = stock.rows.find(v =>
+        normalizeVariant(v.color) === normalizeVariant(color) &&
+        normalizeVariant(v.size) === normalizeVariant(size)
+      );
+      if (!color || !size || !variant) {
+        const error = new Error(`Choose an available colour and size for ${product.name}.`);
+        error.status = 400;
+        throw error;
       }
-      const allowedSizes = Array.isArray(product.sizesByColor?.[color]) ? product.sizesByColor[color] : [];
-      if (!size || !allowedSizes.includes(size)) {
-        const error = new Error(`Choose an available size for ${product.name} in ${color}.`); error.status = 400; throw error;
+      if (Number(variant.quantity) < quantity) {
+        const error = new Error(`${product.name} (${variant.color}, size ${variant.size}) is currently out of stock. Please choose another available variant.`);
+        error.status = 409;
+        throw error;
       }
-      // If this product is managed in the inventory ledger, require the exact colour/size
-      // variant to exist and have enough quantity. Products not yet migrated to the ledger
-      // retain the legacy configured-size behaviour.
-      const stock = await pool.query("SELECT color, size, quantity FROM inventory_variants WHERE product_id = $1", [product.id]);
-      if (stock.rowCount) {
-        const variant = stock.rows.find(v => String(v.color).toLowerCase() === color.toLowerCase() && String(v.size).toLowerCase() === size.toLowerCase());
-        if (!variant || Number(variant.quantity) < quantity) {
-          const error = new Error(`${product.name} (${color}, size ${size}) is currently out of stock. Please choose another size or update the stock in Admin → Inventory & Stock.`);
-          error.status = 409;
-          throw error;
-        }
+      // Store the canonical labels from inventory so orders and tracking are consistent.
+      color = cleanText(variant.color, 40).replace(/\s+/g, " ");
+      size = cleanText(variant.size, 30).replace(/\s+/g, " ");
+    } else if (Array.isArray(product.colors) && product.colors.length) {
+      const configuredColors = product.colors.map(value => {
+        if (typeof value === "string") return value;
+        return value?.name || value?.color || value?.colour || "";
+      }).map(value => cleanText(value, 40).replace(/\s+/g, " ")).filter(Boolean);
+      const matchedColor = configuredColors.find(value => normalizeVariant(value) === normalizeVariant(color));
+      if (!color || !matchedColor) {
+        const error = new Error(`Choose an available colour for ${product.name}.`);
+        error.status = 400;
+        throw error;
       }
+      color = matchedColor;
+
+      const sizesEntry = Object.entries(product.sizesByColor || {}).find(([key]) => normalizeVariant(key) === normalizeVariant(color));
+      const allowedSizes = Array.isArray(sizesEntry?.[1]) ? sizesEntry[1] : [];
+      const matchedSize = allowedSizes.map(value => cleanText(value, 30).replace(/\s+/g, " ")).find(value => normalizeVariant(value) === normalizeVariant(size));
+      if (!size || !matchedSize) {
+        const error = new Error(`Choose an available size for ${product.name} in ${color}.`);
+        error.status = 400;
+        throw error;
+      }
+      size = matchedSize;
     }
     const originalPrice = Number(product.price);
     const configuredSalePrice = Number(product.salePrice);

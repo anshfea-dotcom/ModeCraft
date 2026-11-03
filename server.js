@@ -343,6 +343,7 @@ async function initDatabase() {
       phone TEXT NOT NULL UNIQUE,
       password_salt TEXT NOT NULL,
       password_hash TEXT NOT NULL,
+      password_enabled BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -358,6 +359,8 @@ async function initDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE(product_id, customer_id)
     );
+
+    ALTER TABLE customers ADD COLUMN IF NOT EXISTS password_enabled BOOLEAN NOT NULL DEFAULT TRUE;
 
     CREATE INDEX IF NOT EXISTS product_reviews_product_idx
       ON product_reviews (product_id, created_at DESC);
@@ -420,7 +423,7 @@ async function getProducts() {
     "SELECT data FROM products ORDER BY updated_at DESC"
   );
 
-  return result.rows.map(row => row.data);
+  return result.rows.map(row => row.data).sort((a, b) => Number(a.sortOrder ?? 999999) - Number(b.sortOrder ?? 999999));
 }
 
 async function getProduct(id) {
@@ -457,6 +460,39 @@ async function getOrder(id) {
   );
 
   return result.rows[0]?.data || null;
+}
+
+async function ensureCustomerRecord(customer) {
+  const name = cleanText(customer?.name, 120);
+  const email = cleanText(customer?.email, 254).toLowerCase();
+  const phone = cleanText(customer?.phone, 30);
+  if (!name || !email || !phone) return null;
+  const existing = await pool.query(
+    "SELECT id FROM customers WHERE lower(email) = $1 OR phone = $2 LIMIT 1",
+    [email, phone]
+  );
+  if (existing.rowCount) {
+    await pool.query(
+      "UPDATE customers SET name = $1, updated_at = NOW() WHERE id = $2",
+      [name, existing.rows[0].id]
+    );
+    return existing.rows[0].id;
+  }
+  const id = "mc-customer-" + crypto.randomBytes(10).toString("hex");
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.randomBytes(48).toString("hex");
+  try {
+    await pool.query(
+      `INSERT INTO customers (id, name, email, phone, password_salt, password_hash, password_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6, FALSE) ON CONFLICT DO NOTHING`,
+      [id, name, email, phone, salt, hash]
+    );
+    const saved = await pool.query("SELECT id FROM customers WHERE lower(email)=$1 OR phone=$2 LIMIT 1", [email, phone]);
+    return saved.rows[0]?.id || null;
+  } catch (error) {
+    console.error("Customer directory sync failed:", error.message);
+    return null;
+  }
 }
 
 async function putOrder(order) {
@@ -632,15 +668,25 @@ app.post("/api/auth/signup", async (req, res, next) => {
     if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{10}$/.test(phone) || password.length < 8 || password.length > 200) {
       return res.status(400).json({ error: "Enter your name, valid email, 10-digit phone number and a password of at least 8 characters." });
     }
-    const existing = await pool.query("SELECT id FROM customers WHERE email = $1 OR phone = $2 LIMIT 1", [email, phone]);
-    if (existing.rowCount) return res.status(409).json({ error: "An account already exists with this email or phone number." });
+    const existing = await pool.query("SELECT id, email, phone, password_enabled FROM customers WHERE lower(email) = $1 OR phone = $2 LIMIT 1", [email, phone]);
     const { salt, hash } = hashPassword(password);
-    const id = "cus_" + crypto.randomBytes(12).toString("hex");
-    const result = await pool.query(
-      `INSERT INTO customers (id, name, email, phone, password_salt, password_hash)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, email, phone, created_at`,
-      [id, name, email, phone, salt, hash]
-    );
+    let result;
+    if (existing.rowCount) {
+      const guest = existing.rows[0];
+      if (guest.password_enabled !== false || String(guest.email).toLowerCase() !== email || String(guest.phone) !== phone) return res.status(409).json({ error: "An account already exists with this email or phone number." });
+      result = await pool.query(
+        `UPDATE customers SET name=$1, password_salt=$2, password_hash=$3, password_enabled=TRUE, updated_at=NOW()
+         WHERE id=$4 RETURNING id, name, email, phone, created_at`,
+        [name, salt, hash, guest.id]
+      );
+    } else {
+      const id = "cus_" + crypto.randomBytes(12).toString("hex");
+      result = await pool.query(
+        `INSERT INTO customers (id, name, email, phone, password_salt, password_hash, password_enabled)
+         VALUES ($1, $2, $3, $4, $5, $6, TRUE) RETURNING id, name, email, phone, created_at`,
+        [id, name, email, phone, salt, hash]
+      );
+    }
     req.session.regenerate(error => {
       if (error) return next(error);
       req.session.customer = { id: result.rows[0].id };
@@ -669,9 +715,9 @@ app.post("/api/auth/login", async (req, res, next) => {
       attempt = { startedAt: now, count: 0 };
       customerLoginAttempts.set(ip, attempt);
     }
-    const result = await pool.query("SELECT id, name, email, phone, password_salt, password_hash, created_at FROM customers WHERE email = $1", [email]);
+    const result = await pool.query("SELECT id, name, email, phone, password_salt, password_hash, password_enabled, created_at FROM customers WHERE email = $1", [email]);
     const user = result.rows[0];
-    if (!user || !verifyPassword(password, user.password_salt, user.password_hash)) {
+    if (!user || user.password_enabled === false || !verifyPassword(password, user.password_salt, user.password_hash)) {
       attempt.count += 1;
       return res.status(401).json({ error: "Incorrect email or password." });
     }
@@ -1169,18 +1215,11 @@ app.get(
   async (req, res, next) => {
     try {
       const orders = await getOrders();
-      const visibleOrders = req.adminSession?.role === "owner"
-        ? orders
-        : orders.map(order => ({
+      const includeArchived = req.query?.includeArchived === "true";
+      const visibleOrders = (includeArchived ? orders : orders.filter(order => !order.archivedAt))
+        .map(order => req.adminSession?.role === "owner" ? order : ({
             ...order,
-            customer: order.customer ? {
-              name: order.customer.name || "Customer",
-              email: "",
-              phone: "",
-              address: "",
-              city: "",
-              postalCode: ""
-            } : order.customer
+            customer: order.customer ? { name: order.customer.name || "Customer", email: "", phone: "", address: "", city: "", postalCode: "" } : order.customer
           }));
       res.json({ orders: visibleOrders });
     } catch (error) {
@@ -1199,7 +1238,12 @@ app.get(
         "SELECT id, name, email, phone, created_at FROM customers ORDER BY created_at DESC LIMIT 1000"
       );
       const orders = await getOrders();
-      const customers = result.rows.map(row => {
+      // Backfill older guest checkouts into the persistent directory when the owner opens it.
+      for (const order of orders) {
+        if (!order.archivedAt && order.customer?.email && order.customer?.phone) await ensureCustomerRecord(order.customer);
+      }
+      const refreshed = await pool.query("SELECT id, name, email, phone, created_at FROM customers ORDER BY created_at DESC LIMIT 1000");
+      const customers = refreshed.rows.map(row => {
         const history = orders.filter(order =>
           String(order.customer?.email || "").toLowerCase() === String(row.email || "").toLowerCase() ||
           String(order.customer?.phone || "") === String(row.phone || "")
@@ -1222,6 +1266,7 @@ app.get(
           phone: row.phone,
           createdAt: row.created_at,
           orderCount: history.length,
+          totalSpent: history.filter(o => o.paymentStatus === "paid").reduce((sum, o) => sum + Number(o.total || 0), 0),
           orders: history
         };
       });
@@ -1231,6 +1276,21 @@ app.get(
     }
   }
 );
+
+
+app.patch("/api/admin/orders/:id/archive", requireAdmin, requireOwner, async (req, res, next) => {
+  try {
+    const order = await getOrder(req.params.id);
+    if (!order) return res.status(404).json({ error: "Order not found." });
+    const restore = req.body?.restore === true;
+    if (restore) { delete order.archivedAt; delete order.archivedBy; }
+    else { order.archivedAt = new Date().toISOString(); order.archivedBy = req.adminSession.username; }
+    order.updatedAt = new Date().toISOString();
+    await putOrder(order);
+    await audit(req.adminSession, restore ? "order.restored" : "order.archived", { orderId: order.id });
+    res.json({ ok: true, order });
+  } catch (error) { next(error); }
+});
 
 app.patch(
   "/api/admin/orders/:id",
@@ -1449,6 +1509,9 @@ app.post(
         id: "mc-prod-" + crypto.randomBytes(6).toString("hex"),
         name,
         category,
+        audience: cleanText(req.body?.audience, 30) || "Unisex",
+        productType: cleanText(req.body?.productType, 80) || category,
+        sortOrder: Number.isFinite(Number(req.body?.sortOrder)) ? Number(req.body.sortOrder) : Date.now(),
         price,
         salePrice,
         image,
@@ -1491,7 +1554,11 @@ app.patch(
 
       if (req.body?.category !== undefined) {
         product.category = cleanText(req.body.category, 80);
+        product.productType = product.category;
       }
+      if (req.body?.audience !== undefined) product.audience = cleanText(req.body.audience, 30) || "Unisex";
+      if (req.body?.productType !== undefined) product.productType = cleanText(req.body.productType, 80);
+      if (req.body?.sortOrder !== undefined && Number.isFinite(Number(req.body.sortOrder))) product.sortOrder = Number(req.body.sortOrder);
 
       if (req.body?.image !== undefined) {
         product.image = cleanText(req.body.image, 1000);
@@ -1598,6 +1665,30 @@ app.delete(
     }
   }
 );
+
+
+app.post("/api/admin/products/reorder", requireAdmin, requirePermission("products.manage"), async (req, res, next) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(v => String(v)) : [];
+    if (!ids.length || ids.length > 1000 || new Set(ids).size !== ids.length) return res.status(400).json({ error: "Provide a valid ordered product ID list." });
+    const existing = await getProducts();
+    const existingIds = new Set(existing.map(p => String(p.id)));
+    if (ids.some(id => !existingIds.has(id)) || ids.length !== existing.length) return res.status(400).json({ error: "The product list changed. Refresh and try again." });
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      for (let i = 0; i < ids.length; i++) {
+        const product = existing.find(p => String(p.id) === ids[i]);
+        product.sortOrder = i + 1;
+        await client.query("UPDATE products SET data=$1::jsonb, updated_at=NOW() WHERE id=$2", [JSON.stringify(product), ids[i]]);
+      }
+      await client.query("COMMIT");
+    } catch (error) { await client.query("ROLLBACK"); throw error; }
+    finally { client.release(); }
+    await audit(req.adminSession, "products.reordered", { count: ids.length });
+    res.json({ ok: true, products: await getProducts() });
+  } catch (error) { next(error); }
+});
 
 app.get(
   "/api/admin/staff",
@@ -1878,6 +1969,10 @@ app.post("/api/admin/inventory", requireAdmin, requirePermission("products.manag
     }
     const product = await getProduct(productId);
     if (!product) return res.status(404).json({ error: "Product not found." });
+    const configuredColors = (Array.isArray(product.colors) ? product.colors : []).map(v => typeof v === "string" ? v : v?.name || v?.color || v?.colour || "");
+    const canonicalColor = configuredColors.find(v => v.toLowerCase() === color.toLowerCase());
+    const configuredSizes = product.sizesByColor && typeof product.sizesByColor === "object" ? (product.sizesByColor[canonicalColor] || []) : [];
+    if (!canonicalColor || !configuredSizes.some(v => String(v).toLowerCase() === size.toLowerCase())) return res.status(400).json({ error: "Choose a colour and size already configured in this product." });
     const id = "inv_" + crypto.randomBytes(10).toString("hex");
     const result = await pool.query(
       `INSERT INTO inventory_variants (id, product_id, color, size, sku, quantity)
@@ -1906,12 +2001,16 @@ app.post("/api/admin/inventory/bulk", requireAdmin, requirePermission("products.
     }
     const product = await getProduct(productId);
     if (!product) return res.status(404).json({ error: "Product not found." });
+    const configuredColors = (Array.isArray(product.colors) ? product.colors : []).map(v => typeof v === "string" ? v : v?.name || v?.color || v?.colour || "");
+    const canonicalColor = configuredColors.find(v => v.toLowerCase() === color.toLowerCase());
+    const configuredSizes = product.sizesByColor && typeof product.sizesByColor === "object" ? (product.sizesByColor[canonicalColor] || []) : [];
+    if (!canonicalColor) return res.status(400).json({ error: "Choose a colour already configured in this product." });
     const seen = new Set();
     const normalized = variants.map(item => {
       const size = cleanText(item?.size, 30).replace(/\s+/g, " ");
       const quantity = Number(item?.quantity);
       const sku = cleanText(item?.sku, 80);
-      if (!size || !Number.isInteger(quantity) || quantity < 0 || quantity > 1000000 || seen.has(size.toLowerCase())) {
+      if (!size || !configuredSizes.some(v => String(v).toLowerCase() === size.toLowerCase()) || !Number.isInteger(quantity) || quantity < 0 || quantity > 1000000 || seen.has(size.toLowerCase())) {
         const error = new Error("Each size must be unique and have a whole-number quantity between 0 and 1,000,000."); error.status = 400; throw error;
       }
       seen.add(size.toLowerCase()); return { size, quantity, sku };
@@ -1944,15 +2043,6 @@ app.post("/api/admin/inventory/bulk", requireAdmin, requirePermission("products.
       }
       saved.push(result.rows[0]);
     }
-    // Keep the product's descriptive colour/size metadata aligned with the inventory ledger.
-    const currentColors = Array.isArray(product.colors) ? product.colors.map(v => typeof v === "string" ? v : v?.name || v?.color || v?.colour || "") : [];
-    if (!currentColors.some(v => v.toLowerCase() === color.toLowerCase())) currentColors.push(color);
-    product.colors = currentColors.filter(Boolean);
-    product.sizesByColor = product.sizesByColor && typeof product.sizesByColor === "object" ? product.sizesByColor : {};
-    const existingKey = Object.keys(product.sizesByColor).find(v => v.toLowerCase() === color.toLowerCase()) || color;
-    const oldSizes = Array.isArray(product.sizesByColor[existingKey]) ? product.sizesByColor[existingKey] : [];
-    product.sizesByColor[existingKey] = [...new Set([...oldSizes, ...normalized.map(v => v.size)])];
-    await client.query("UPDATE products SET data=$1::jsonb, updated_at=NOW() WHERE id=$2", [JSON.stringify(product), productId]);
     await client.query("COMMIT");
     await audit(req.adminSession, "inventory.bulk.updated", { productId, color, sizes: normalized.map(v => v.size) });
     res.json({ ok: true, saved: saved.length, variants: saved.map(row => ({ id: row.id, productId: row.product_id, productName: product.name, color: row.color, size: row.size, sku: row.sku, quantity: row.quantity, createdAt: row.created_at, updatedAt: row.updated_at })) });
@@ -1976,6 +2066,10 @@ app.patch("/api/admin/inventory/:id", requireAdmin, requirePermission("products.
     }
     const product = await getProduct(productId);
     if (!product) return res.status(404).json({ error: "Product not found." });
+    const configuredColors = (Array.isArray(product.colors) ? product.colors : []).map(v => typeof v === "string" ? v : v?.name || v?.color || v?.colour || "");
+    const canonicalColor = configuredColors.find(v => v.toLowerCase() === color.toLowerCase());
+    const configuredSizes = product.sizesByColor && typeof product.sizesByColor === "object" ? (product.sizesByColor[canonicalColor] || []) : [];
+    if (!canonicalColor || !configuredSizes.some(v => String(v).toLowerCase() === size.toLowerCase())) return res.status(400).json({ error: "Choose a colour and size already configured in this product." });
     const result = await pool.query(
       `UPDATE inventory_variants SET product_id=$1, color=$2, size=$3, sku=$4, quantity=$5, updated_at=NOW()
        WHERE id=$6 RETURNING id, product_id, color, size, sku, quantity, created_at, updated_at`,
@@ -2228,6 +2322,7 @@ app.post("/api/orders/cod", async (req, res) => {
       statusHistory: []
     };
 
+    await ensureCustomerRecord(order.customer);
     await putOrder(order);
     if (order.couponCode) await pool.query("UPDATE offers SET data = jsonb_set(data, '{usageCount}', to_jsonb(COALESCE((data->>'usageCount')::int, 0) + 1), true), updated_at = NOW() WHERE code = $1", [order.couponCode]);
 
@@ -2273,6 +2368,7 @@ app.post("/api/payments/razorpay/order", async (req, res) => {
       }
     });
 
+    await ensureCustomerRecord(orderData.customer);
     await putOrder({
       id: receipt,
       razorpayOrderId: razorpayOrder.id,

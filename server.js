@@ -325,6 +325,17 @@ async function initDatabase() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS sales_banners (
+      id TEXT PRIMARY KEY,
+      data JSONB NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS sales_banners_display_idx
+      ON sales_banners (active, sort_order, created_at DESC);
+
     CREATE TABLE IF NOT EXISTS customers (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -944,6 +955,78 @@ app.put("/api/admin/storefront/header", requireAdmin, requireOwner, async (req, 
     await pool.query(`INSERT INTO store_settings (key, data, updated_at) VALUES ($1, $2::jsonb, NOW()) ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`, ["storefront_header", JSON.stringify(header)]);
     await audit(req.session.admin, "storefront.header.update", { brandText: header.brandText });
     res.json({ ok: true, header });
+  } catch (error) { next(error); }
+});
+
+// Promotional banners are editable by the owner and publicly readable on the storefront.
+app.get("/api/storefront/banners", async (_req, res, next) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, data, sort_order, active FROM sales_banners WHERE active = TRUE ORDER BY sort_order ASC, created_at DESC"
+    );
+    res.json({ banners: result.rows.map(row => ({ id: row.id, ...row.data, sortOrder: row.sort_order, active: row.active })) });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/admin/banners", requireAdmin, requireOwner, async (_req, res, next) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, data, sort_order, active, created_at, updated_at FROM sales_banners ORDER BY sort_order ASC, created_at DESC"
+    );
+    res.json({ banners: result.rows.map(row => ({ id: row.id, ...row.data, sortOrder: row.sort_order, active: row.active, createdAt: row.created_at, updatedAt: row.updated_at })) });
+  } catch (error) { next(error); }
+});
+
+function cleanBanner(input = {}) {
+  const title = cleanText(input.title, 100);
+  const subtitle = cleanText(input.subtitle, 220);
+  const imageUrl = typeof input.imageUrl === "string" && /^https:\/\//i.test(input.imageUrl.trim()) ? input.imageUrl.trim().slice(0, 1800) : "";
+  const buttonText = cleanText(input.buttonText, 40);
+  const buttonUrl = cleanText(input.buttonUrl, 500);
+  const sortOrder = Number(input.sortOrder ?? 0);
+  if (!title || !Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) {
+    const error = new Error("Enter a banner title and a valid display order."); error.status = 400; throw error;
+  }
+  if (buttonUrl && !(/^(https:\/\/|\/|#)/i.test(buttonUrl))) {
+    const error = new Error("Banner button link must be HTTPS or a local path."); error.status = 400; throw error;
+  }
+  return { data: { title, subtitle, imageUrl, buttonText, buttonUrl }, sortOrder, active: input.active !== false };
+}
+
+app.post("/api/admin/banners", requireAdmin, requireOwner, async (req, res, next) => {
+  try {
+    const banner = cleanBanner(req.body);
+    const id = "banner_" + crypto.randomBytes(9).toString("hex");
+    const result = await pool.query(
+      "INSERT INTO sales_banners (id, data, sort_order, active) VALUES ($1, $2::jsonb, $3, $4) RETURNING id, data, sort_order, active, created_at, updated_at",
+      [id, JSON.stringify(banner.data), banner.sortOrder, banner.active]
+    );
+    await audit(req.session.admin, "sales_banner.created", { bannerId: id, title: banner.data.title });
+    const row = result.rows[0]; res.status(201).json({ ok: true, banner: { id: row.id, ...row.data, sortOrder: row.sort_order, active: row.active, createdAt: row.created_at, updatedAt: row.updated_at } });
+  } catch (error) { next(error); }
+});
+
+app.patch("/api/admin/banners/:id", requireAdmin, requireOwner, async (req, res, next) => {
+  try {
+    const existing = await pool.query("SELECT data, sort_order, active FROM sales_banners WHERE id = $1", [req.params.id]);
+    if (!existing.rowCount) return res.status(404).json({ error: "Banner not found." });
+    const input = { ...existing.rows[0].data, sortOrder: existing.rows[0].sort_order, active: existing.rows[0].active, ...(req.body || {}) };
+    const banner = cleanBanner(input);
+    const result = await pool.query(
+      "UPDATE sales_banners SET data=$1::jsonb, sort_order=$2, active=$3, updated_at=NOW() WHERE id=$4 RETURNING id, data, sort_order, active, created_at, updated_at",
+      [JSON.stringify(banner.data), banner.sortOrder, banner.active, req.params.id]
+    );
+    await audit(req.session.admin, "sales_banner.updated", { bannerId: req.params.id, title: banner.data.title });
+    const row = result.rows[0]; res.json({ ok: true, banner: { id: row.id, ...row.data, sortOrder: row.sort_order, active: row.active, createdAt: row.created_at, updatedAt: row.updated_at } });
+  } catch (error) { next(error); }
+});
+
+app.delete("/api/admin/banners/:id", requireAdmin, requireOwner, async (req, res, next) => {
+  try {
+    const result = await pool.query("DELETE FROM sales_banners WHERE id=$1 RETURNING id", [req.params.id]);
+    if (!result.rowCount) return res.status(404).json({ error: "Banner not found." });
+    await audit(req.session.admin, "sales_banner.deleted", { bannerId: req.params.id });
+    res.json({ ok: true });
   } catch (error) { next(error); }
 });
 
@@ -1812,6 +1895,73 @@ app.post("/api/admin/inventory", requireAdmin, requirePermission("products.manag
   }
 });
 
+app.post("/api/admin/inventory/bulk", requireAdmin, requirePermission("products.manage"), async (req, res, next) => {
+  let client;
+  try {
+    const productId = cleanText(req.body?.productId, 100);
+    const color = cleanText(req.body?.color, 50).replace(/\s+/g, " ");
+    const variants = Array.isArray(req.body?.variants) ? req.body.variants : [];
+    if (!productId || !color || !variants.length || variants.length > 20) {
+      return res.status(400).json({ error: "Choose a product, colour and at least one size quantity." });
+    }
+    const product = await getProduct(productId);
+    if (!product) return res.status(404).json({ error: "Product not found." });
+    const seen = new Set();
+    const normalized = variants.map(item => {
+      const size = cleanText(item?.size, 30).replace(/\s+/g, " ");
+      const quantity = Number(item?.quantity);
+      const sku = cleanText(item?.sku, 80);
+      if (!size || !Number.isInteger(quantity) || quantity < 0 || quantity > 1000000 || seen.has(size.toLowerCase())) {
+        const error = new Error("Each size must be unique and have a whole-number quantity between 0 and 1,000,000."); error.status = 400; throw error;
+      }
+      seen.add(size.toLowerCase()); return { size, quantity, sku };
+    });
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const saved = [];
+    for (const item of normalized) {
+      const existingVariant = await client.query(
+        `SELECT id FROM inventory_variants
+         WHERE product_id=$1 AND LOWER(color)=LOWER($2) AND LOWER(size)=LOWER($3)
+         ORDER BY updated_at DESC LIMIT 1 FOR UPDATE`,
+        [productId, color, item.size]
+      );
+      let result;
+      if (existingVariant.rowCount) {
+        result = await client.query(
+          `UPDATE inventory_variants SET color=$1, size=$2, sku=$3, quantity=$4, updated_at=NOW()
+           WHERE id=$5 RETURNING id, product_id, color, size, sku, quantity, created_at, updated_at`,
+          [color, item.size, item.sku, item.quantity, existingVariant.rows[0].id]
+        );
+      } else {
+        const id = "inv_" + crypto.randomBytes(12).toString("hex");
+        result = await client.query(
+          `INSERT INTO inventory_variants (id, product_id, color, size, sku, quantity)
+           VALUES ($1,$2,$3,$4,$5,$6)
+           RETURNING id, product_id, color, size, sku, quantity, created_at, updated_at`,
+          [id, productId, color, item.size, item.sku, item.quantity]
+        );
+      }
+      saved.push(result.rows[0]);
+    }
+    // Keep the product's descriptive colour/size metadata aligned with the inventory ledger.
+    const currentColors = Array.isArray(product.colors) ? product.colors.map(v => typeof v === "string" ? v : v?.name || v?.color || v?.colour || "") : [];
+    if (!currentColors.some(v => v.toLowerCase() === color.toLowerCase())) currentColors.push(color);
+    product.colors = currentColors.filter(Boolean);
+    product.sizesByColor = product.sizesByColor && typeof product.sizesByColor === "object" ? product.sizesByColor : {};
+    const existingKey = Object.keys(product.sizesByColor).find(v => v.toLowerCase() === color.toLowerCase()) || color;
+    const oldSizes = Array.isArray(product.sizesByColor[existingKey]) ? product.sizesByColor[existingKey] : [];
+    product.sizesByColor[existingKey] = [...new Set([...oldSizes, ...normalized.map(v => v.size)])];
+    await client.query("UPDATE products SET data=$1::jsonb, updated_at=NOW() WHERE id=$2", [JSON.stringify(product), productId]);
+    await client.query("COMMIT");
+    await audit(req.adminSession, "inventory.bulk.updated", { productId, color, sizes: normalized.map(v => v.size) });
+    res.json({ ok: true, saved: saved.length, variants: saved.map(row => ({ id: row.id, productId: row.product_id, productName: product.name, color: row.color, size: row.size, sku: row.sku, quantity: row.quantity, createdAt: row.created_at, updatedAt: row.updated_at })) });
+  } catch (error) {
+    if (client) { try { await client.query("ROLLBACK"); } catch {} }
+    res.status(error.status || 500).json({ error: error.message || "Could not save stock quantities." });
+  } finally { if (client) client.release(); }
+});
+
 app.patch("/api/admin/inventory/:id", requireAdmin, requirePermission("products.manage"), async (req, res, next) => {
   try {
     const existing = await pool.query("SELECT id FROM inventory_variants WHERE id = $1", [req.params.id]);
@@ -1949,7 +2099,7 @@ async function buildOrder(body = {}) {
   for (const item of body.items) {
     const product = products.find(
       current =>
-        current.id === item.id &&
+        String(current.id) === String(item.id) &&
         current.active !== false
     );
 

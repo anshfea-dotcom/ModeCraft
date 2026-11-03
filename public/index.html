@@ -499,6 +499,14 @@ body.dark #checkout .checkout-box{border-color:#494037}body.dark .checkout-order
 
 .track-order-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.track-order-meta span{padding:7px 9px;background:var(--cream);border-radius:7px;font-size:10px;color:var(--muted)}.track-items,.track-history{margin-top:22px;padding-top:17px;border-top:1px solid var(--line)}.track-items h4,.track-history h4{font-size:12px;letter-spacing:.6px;margin:0 0 9px}.track-item-line,.track-history-row{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:11px}.track-item-line:last-child,.track-history-row:last-child{border-bottom:0}.track-item-line small,.track-history-row small{color:var(--muted);font-size:10px;text-align:right}.track-history-row{flex-wrap:wrap}.track-history-row strong{text-transform:capitalize}.track-history-row p{width:100%;margin:0;color:var(--muted);font-size:11px}.track-refresh{margin-top:15px;min-height:42px;padding:10px 15px;border-radius:8px}
 
+
+/* Store promotions managed from the admin dashboard */
+.sales-banner-section{width:min(1440px,calc(100% - 44px));margin:18px auto 8px}
+.sales-banner-track{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+.sales-banner{position:relative;min-height:170px;overflow:hidden;border-radius:15px;background:linear-gradient(115deg,#211e19,#51402b);color:#fff;display:flex;align-items:end;padding:22px;background-size:cover;background-position:center;isolation:isolate}
+.sales-banner:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.76),rgba(0,0,0,.12));z-index:-1}
+.sales-banner-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}.sales-banner-copy{position:relative;z-index:1;max-width:520px}.sales-banner h2{font-size:clamp(19px,2.6vw,29px);line-height:1.12;margin:0 0 7px;letter-spacing:-.03em}.sales-banner p{font-size:12px;line-height:1.55;margin:0 0 14px;color:#f1ece4}.sales-banner a{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:6px;background:#d1b27c;color:#17130c;text-decoration:none;font-size:10px;font-weight:850;letter-spacing:.1em}
+@media(max-width:600px){.sales-banner-section{width:calc(100% - 24px);margin:12px auto}.sales-banner-track{grid-template-columns:1fr}.sales-banner{min-height:145px;padding:17px}}
 </style>
 </head>
 <body>
@@ -515,6 +523,7 @@ body.dark #checkout .checkout-box{border-color:#494037}body.dark .checkout-order
 <div class="navactions"><button class="iconbtn menu-trigger" id="menuBtn" title="Open menu" aria-label="Open menu" aria-expanded="false"><span class="hamburger-lines" aria-hidden="true"><i></i><i></i><i></i></span><span class="menu-trigger-label">MENU</span></button><button class="bag-icon-button" id="bagBtn" type="button" aria-label="Open shopping bag, 0 items" title="Shopping bag"><svg class="bag-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 8.5h13l1 12h-15l1-12Z"/><path d="M9 9V6.5a3 3 0 0 1 6 0V9"/></svg><span class="bag-count" id="count">0</span></button></div>
 </div></header>
 <div class="announce" id="announcementStrip" role="region" aria-label="ModeCraft store highlights"><div class="announce-track" aria-hidden="true"><div class="announce-group"><span class="announce-item">YOUR STYLE. YOUR RULES.</span><span class="announce-item">DISCOVER YOUR STYLE.</span><span class="announce-item">EXPLORE THE LATEST COLLECTION.</span><span class="announce-item">FIND YOUR PERFECT FIT.</span></div><div class="announce-group"><span class="announce-item">YOUR STYLE. YOUR RULES.</span><span class="announce-item">DISCOVER YOUR STYLE.</span><span class="announce-item">EXPLORE THE LATEST COLLECTION.</span><span class="announce-item">FIND YOUR PERFECT FIT.</span></div></div><span class="sr-only" id="announcementAccessible" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Your style. Your rules. Discover your style. Explore the latest collection. Find your perfect fit.</span></div>
+<section id="salesBannerSection" class="sales-banner-section" aria-label="Store promotions" hidden><div id="salesBannerTrack" class="sales-banner-track"></div></section>
 <main>
 <section class="hero" id="home">
 <div><div class="eyebrow">MADE FOR YOUR EVERYDAY</div><h1>Wear Your<br>Identity.</h1><p>Modern essentials. Confident silhouettes. Personal style. Discover everyday fashion that feels like you.</p><a class="btn" href="#shop">SHOP THE COLLECTION ↗</a></div>
@@ -657,7 +666,13 @@ async function init(){
       })
       .filter(item => item.id && item.name && !String(item.id).toLowerCase().startsWith("preview-") && item.demo !== true && item.previewOnly !== true && item.isPreview !== true && item.preview_only !== true);
     // Only real active products from the store API are rendered. Never fabricate catalog items.
+    // Reconcile the persisted bag only after the catalogue has loaded. This prevents
+    // the badge showing old items while the bag itself appears empty during page startup.
+    const validProductIds = new Set(products.map(product => String(product.id)));
+    cart = cart.filter(item => validProductIds.has(String(item.id)));
+    safeWrite('modecraft_cart_v1', cart);
     renderProducts();
+    renderCart();
     renderRecent();
     renderWish();
   } catch (e) {
@@ -945,9 +960,32 @@ const settingsLink=document.createElement('button');settingsLink.className='add'
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&byId('settingsModal').classList.contains('show')){closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false')}});
 // Product cards intentionally show no View Product or Wishlist buttons; click the card to open details.
 // Wrap the existing add-to-bag behaviour so cart contents survive refreshes.
-const originalAdd=add;add=function(id){originalAdd(id);safeWrite('modecraft_cart_v1',cart)};
+const originalAdd=add;add=function(id,color='',size=''){originalAdd(id,color,size);safeWrite('modecraft_cart_v1',cart)};
 const oldChange=change;change=function(id,d){oldChange(id,d);safeWrite('modecraft_cart_v1',cart)};
 const oldRenderCart=renderCart;renderCart=function(){oldRenderCart();safeWrite("modecraft_cart_v1",cart);if(byId('checkout')?.classList.contains('show')){renderCheckoutItems();updateCheckoutSummary()}};
+// Load owner-managed promotional banners from the public storefront API.
+async function applySalesBanners(){
+  const section=byId('salesBannerSection'),track=byId('salesBannerTrack');
+  if(!section||!track)return;
+  try{
+    const response=await fetch('/api/storefront/banners',{headers:{'Accept':'application/json'}});
+    if(!response.ok)return;
+    const data=await response.json();
+    const banners=Array.isArray(data.banners)?data.banners.filter(b=>b&&b.active!==false&&b.title):[];
+    track.replaceChildren();
+    banners.forEach(b=>{
+      const card=document.createElement('article');card.className='sales-banner';
+      if(typeof b.imageUrl==='string'&&/^https:\/\//i.test(b.imageUrl)){const image=document.createElement('img');image.className='sales-banner-image';image.src=b.imageUrl;image.alt='';image.loading='lazy';image.referrerPolicy='no-referrer';card.append(image)}
+      const copy=document.createElement('div');copy.className='sales-banner-copy';
+      const title=document.createElement('h2');title.textContent=b.title;copy.append(title);
+      if(b.subtitle){const subtitle=document.createElement('p');subtitle.textContent=b.subtitle;copy.append(subtitle)}
+      if(b.buttonText&&b.buttonUrl){const link=document.createElement('a');link.textContent=b.buttonText;link.href=b.buttonUrl;link.rel='noopener';if(/^https:\/\//i.test(b.buttonUrl)){link.target='_blank'}copy.append(link)}
+      card.append(copy);track.append(card);
+    });
+    section.hidden=!banners.length;
+  }catch(error){console.warn('ModeCraft promotions could not be loaded:',error)}
+}
+
 // Apply owner-managed storefront header settings without blocking the page.
 async function applyStorefrontHeader(){
   try{
@@ -988,7 +1026,8 @@ async function applyStorefrontHeader(){
   }catch(_error){/* Keep the default storefront if settings are unavailable. */}
 }
 applyStorefrontHeader();
-cart=safeRead('modecraft_cart_v1',[]);renderCart();refreshCustomerSession();
+applySalesBanners();
+cart=safeRead('modecraft_cart_v1',[]).filter(item=>item&&item.id&&Number.isInteger(Number(item.quantity))&&Number(item.quantity)>0&&Number(item.quantity)<=10).map(item=>({id:String(item.id),color:String(item.color||''),size:String(item.size||''),quantity:Number(item.quantity)}));safeWrite('modecraft_cart_v1',cart);renderCart();refreshCustomerSession();
 
 byId('successContinueBtn').addEventListener('click',()=>closeModal('orderSuccessModal'));
 byId('successTrackBtn').addEventListener('click',()=>{const id=byId('successOrderId').textContent;closeModal('orderSuccessModal');byId('trackOrderId').value=id==='Reference unavailable'?'':id;byId('trackResult').replaceChildren();openModal('trackModal');});

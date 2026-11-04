@@ -415,44 +415,15 @@ async function initDatabase() {
     }
   }
 
-  // One-time, non-destructive backfill: legacy products without sortOrder receive
-  // stable positions after the highest existing explicit position. This prevents
-  // a newly created product (with a numeric position) jumping ahead of legacy rows.
-  const legacyOrderRows = await pool.query("SELECT id, data FROM products ORDER BY created_at ASC, id ASC");
-  let nextProductOrder = Math.max(0, ...legacyOrderRows.rows
-    .map(row => row.data?.sortOrder)
-    .filter(value => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)))
-    .map(Number));
-  for (const row of legacyOrderRows.rows) {
-    const currentOrder = row.data?.sortOrder;
-    const hasOrder = currentOrder !== null && currentOrder !== undefined && currentOrder !== "" && Number.isFinite(Number(currentOrder));
-    if (hasOrder) continue;
-    nextProductOrder += 1;
-    const updatedData = { ...row.data, sortOrder: nextProductOrder };
-    await pool.query("UPDATE products SET data = $1::jsonb WHERE id = $2", [JSON.stringify(updatedData), row.id]);
-  }
-
   console.log("ModeCraft database initialized.");
 }
 
 async function getProducts() {
-  // sortOrder is the primary storefront order. For legacy products without an
-  // explicit order (or with ties), use the immutable creation timestamp rather
-  // than updated_at, which changes whenever an admin edits a product.
   const result = await pool.query(
-    "SELECT data, created_at FROM products"
+    "SELECT data FROM products ORDER BY updated_at DESC"
   );
-  return result.rows
-    .map(row => ({ data: row.data, createdAt: row.created_at }))
-    .sort((a, b) => {
-      const hasAOrder = a.data?.sortOrder !== null && a.data?.sortOrder !== undefined && a.data?.sortOrder !== "" && Number.isFinite(Number(a.data.sortOrder));
-      const hasBOrder = b.data?.sortOrder !== null && b.data?.sortOrder !== undefined && b.data?.sortOrder !== "" && Number.isFinite(Number(b.data.sortOrder));
-      const ao = hasAOrder ? Number(a.data.sortOrder) : Number.MAX_SAFE_INTEGER;
-      const bo = hasBOrder ? Number(b.data.sortOrder) : Number.MAX_SAFE_INTEGER;
-      if (ao !== bo) return ao - bo;
-      return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
-    })
-    .map(item => item.data);
+
+  return result.rows.map(row => row.data).sort((a, b) => Number(a.sortOrder ?? 999999) - Number(b.sortOrder ?? 999999));
 }
 
 async function getProduct(id) {
@@ -475,17 +446,11 @@ async function putProduct(product) {
 }
 
 async function getOrders() {
-  // The relational timestamp is the durable fallback for older rows whose JSON
-  // payload may predate createdAt. Keep every row; do not cap order history.
   const result = await pool.query(
-    "SELECT data, created_at FROM orders ORDER BY created_at DESC, id DESC"
+    "SELECT data FROM orders ORDER BY created_at DESC"
   );
 
-  return result.rows.map(row => {
-    const order = row.data && typeof row.data === "object" ? row.data : {};
-    if (row.created_at) order.createdAt = new Date(row.created_at).toISOString();
-    return order;
-  }).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  return result.rows.map(row => row.data);
 }
 
 async function getOrder(id) {
@@ -662,26 +627,7 @@ app.use(
   })
 );
 
-// Avoid serving an old HTML/JS shell when mobile browsers restore a discarded tab.
-// The browser may cache images, but it must revalidate the application shell and
-// always fetch live product data from the API.
-app.use((req, res, next) => {
-  if (req.path.startsWith("/api/")) {
-    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-    res.set("Pragma", "no-cache");
-    res.set("Expires", "0");
-  }
-  next();
-});
-app.use(express.static(path.join(ROOT, "public"), {
-  etag: true,
-  lastModified: true,
-  setHeaders(res, filePath) {
-    if (/\.(?:html|js|css)$/i.test(filePath)) {
-      res.setHeader("Cache-Control", "no-cache, must-revalidate");
-    }
-  }
-}));
+app.use(express.static(path.join(ROOT, "public")));
 
 app.get("/health", async (_req, res) => {
   try {
@@ -999,7 +945,6 @@ app.delete("/api/wishlist/:productId", requireCustomer, async (req, res, next) =
 
 app.get("/api/products", async (_req, res, next) => {
   try {
-    res.set("Cache-Control", "no-store, no-cache, must-revalidate");
     const products = await getProducts();
 
     const variants = await pool.query("SELECT product_id, color, size, quantity FROM inventory_variants ORDER BY color, size");
@@ -1016,16 +961,15 @@ app.get("/api/products", async (_req, res, next) => {
       const rawLinks = parent.colorVariants && typeof parent.colorVariants === "object" ? parent.colorVariants : {};
       const safeLinks = {};
       const parentCategory = normalizeProductFamilyValue(parent.category);
+      const parentType = normalizeProductFamilyValue(parent.productType || parent.category);
       for (const [color, rawId] of Object.entries(rawLinks)) {
         const childId = String(rawId);
         const child = byId.get(childId);
         if (!child || childId === String(parent.id) || claimedChildren.has(childId)) continue;
         const childCategory = normalizeProductFamilyValue(child.category);
+        const childType = normalizeProductFamilyValue(child.productType || child.category);
         const childHasChildren = Object.keys(child.colorVariants || {}).length > 0;
-        // Category is the canonical garment family. Legacy records may have
-        // inconsistent/missing productType metadata; do not discard valid sibling
-        // colour SKUs solely because that optional field differs.
-        if (!parentCategory || parentCategory !== childCategory || childHasChildren) continue;
+        if (!parentCategory || parentCategory !== childCategory || parentType !== childType || childHasChildren) continue;
         safeLinks[color] = childId;
         claimedChildren.add(childId);
       }
@@ -1568,6 +1512,7 @@ async function validateColorProductLinks(sourceProduct, links, { isNew = false }
   const allProducts = await getProducts();
   const sourceId = String(sourceProduct.id || "");
   const sourceCategory = normalizeProductFamilyValue(sourceProduct.category);
+  const sourceType = normalizeProductFamilyValue(sourceProduct.productType || sourceProduct.category);
 
   // A linked colour record must be a sibling SKU of the same garment type.
   // It cannot be a different category (e.g. a shirt linked to a hoodie).
@@ -1583,7 +1528,8 @@ async function validateColorProductLinks(sourceProduct, links, { isNew = false }
       throw Object.assign(new Error(`The linked product for ${color} does not exist or is unavailable.`), { status: 400 });
     }
     const linkedCategory = normalizeProductFamilyValue(linkedProduct.category);
-    if (!sourceCategory || !linkedCategory || sourceCategory !== linkedCategory) {
+    const linkedType = normalizeProductFamilyValue(linkedProduct.productType || linkedProduct.category);
+    if (!sourceCategory || !linkedCategory || sourceCategory !== linkedCategory || sourceType !== linkedType) {
       throw Object.assign(new Error(`${color} must link to another ${sourceProduct.category || sourceProduct.productType || "same-type"} product. Cross-category colour links are not allowed.`), { status: 400 });
     }
     const targetLinks = linkedProduct.colorVariants && typeof linkedProduct.colorVariants === "object" ? linkedProduct.colorVariants : {};
@@ -1650,9 +1596,7 @@ app.post(
         category,
         audience: cleanText(req.body?.audience, 30) || "Unisex",
         productType: cleanText(req.body?.productType, 80) || category,
-        sortOrder: Number.isFinite(Number(req.body?.sortOrder))
-          ? Number(req.body.sortOrder)
-          : (Math.max(0, ...(await getProducts()).map(item => Number(item.sortOrder)).filter(Number.isFinite)) + 1),
+        sortOrder: Number.isFinite(Number(req.body?.sortOrder)) ? Number(req.body.sortOrder) : Date.now(),
         price,
         salePrice,
         image,

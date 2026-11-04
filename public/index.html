@@ -634,10 +634,12 @@ async function init(){
     try {
       p = await api("/api/products");
     } catch (apiError) {
-      // Local HTML preview has no same-origin backend. Leave the catalogue empty rather than
-      // showing fabricated products; the live site should load the admin catalogue.
-      console.warn("ModeCraft API unavailable; using preview catalog.", apiError);
-      p = { products: [] };
+      // A local file preview has no same-origin API. On the live site, surface
+      // API failures instead of silently presenting an empty catalogue as if
+      // there were genuinely no products in the store.
+      console.warn("ModeCraft products API unavailable.", apiError);
+      if (location.protocol === "file:") p = { products: [] };
+      else throw apiError;
     }
     if (!p || !Array.isArray(p.products)) {
       throw new Error("Products API returned an unexpected response.");
@@ -764,7 +766,20 @@ function isPreviewOnlyProduct(p){
 }
 let activeCollection="all";
 const collectionMeta={jackets:{title:"Jackets Collection",eyebrow:"LAYER UP IN STYLE",copy:"Versatile outerwear and everyday layers designed to finish your fit with confidence.",mark:"J."},men:{title:"Men’s Collection",eyebrow:"THE EVERYDAY EDIT",copy:"Modern menswear made for everyday confidence. Discover elevated essentials and easy-to-wear favourites.",mark:"M."},women:{title:"Women’s Collection",eyebrow:"YOUR STYLE, YOUR RULES",copy:"Versatile pieces, confident silhouettes and everyday styles made to feel like you.",mark:"W."},sneakers:{title:"Sneaker Collection",eyebrow:"STEP INTO SOMETHING NEW",copy:"Finish your fit with fresh everyday sneakers and street-ready footwear.",mark:"S."}};
-function collectionMatches(p,key){if(key==="all")return true;const audience=String(p.audience||p.gender||p.department||"").trim().toLowerCase();const type=String(p.productType||p.category||p.type||"").toLowerCase();const text=[p.name,type,p.tags,p.collection].flatMap(v=>Array.isArray(v)?v:[v||""]).join(" ").toLowerCase();if(key==="men")return audience==="men"||audience==="unisex"||(!audience&&/\b(men|mens|man|male|boy|boys|menswear)\b/.test(text));if(key==="women")return audience==="women"||audience==="unisex"||(!audience&&/\b(women|womens|woman|female|girl|girls|womenswear|ladies)\b/.test(text));if(key==="jackets")return /\b(jacket|jackets|outerwear|windbreaker|bomber)\b/.test(type+" "+text);return /sneaker|trainer|footwear|shoe|shoes|kick/.test(type+" "+text);}
+function collectionMatches(p,key){
+  if(key==="all")return true;
+  const rawAudience=String(p.audience||p.gender||p.department||"").trim().toLowerCase().replace(/[’']/g,"").replace(/[._-]+/g," ").replace(/\s+/g," ");
+  const audience=rawAudience.replace(/\s/g,"");
+  const type=String(p.productType||p.category||p.type||"").toLowerCase();
+  const text=[p.name,type,p.tags,p.collection].flatMap(v=>Array.isArray(v)?v:[v||""]).join(" ").toLowerCase();
+  const menAudience=new Set(["men","mens","man","male","boy","boys","menswear"]);
+  const womenAudience=new Set(["women","womens","woman","female","girl","girls","womenswear","ladies","lady"]);
+  const unisexAudience=new Set(["unisex","all","allgender","all genders","menandwomen","womenandmen"]);
+  if(key==="men")return menAudience.has(audience)||unisexAudience.has(audience)||(!menAudience.has(audience)&&!womenAudience.has(audience)&&/\b(men|mens|man|male|boy|boys|menswear)\b/.test(text));
+  if(key==="women")return womenAudience.has(audience)||unisexAudience.has(audience)||(!menAudience.has(audience)&&!womenAudience.has(audience)&&/\b(women|womens|woman|female|girl|girls|womenswear|ladies|lady)\b/.test(text));
+  if(key==="jackets")return /\b(jacket|jackets|outerwear|windbreaker|bomber)\b/.test(type+" "+text);
+  return /sneaker|trainer|footwear|shoe|shoes|kick/.test(type+" "+text);
+}
 function setCollectionFromHash(){const key=location.hash.toLowerCase().replace(/^#/ ,"");activeCollection=["men","women","sneakers","jackets"].includes(key)?key:"all";document.body.classList.toggle("collection-page",activeCollection!=="all");document.querySelectorAll("[data-collection]").forEach(a=>{a.classList.toggle("active",a.dataset.collection===activeCollection);if(a.tagName==="BUTTON")a.setAttribute("aria-pressed",String(a.dataset.collection===activeCollection));});const heading=document.querySelector("#shop .heading h2"),sub=document.querySelector("#shop .heading .muted");if(activeCollection!=="all"){heading.textContent=collectionMeta[activeCollection].title;sub.textContent="CURATED FOR YOU."}else{heading.textContent="Shop the collection";sub.textContent="FIND YOUR FIT."}if(typeof renderProducts==="function")renderProducts();}
 document.querySelectorAll(".collection-box[data-collection]").forEach(button=>button.addEventListener("click",()=>{const key=button.dataset.collection;location.hash=activeCollection===key?"shop":key;}));
 window.addEventListener("hashchange",setCollectionFromHash);
@@ -934,7 +949,21 @@ document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{authMode=b.da
 let currentCustomer=null;
 function updateAuthUI(){const session=currentCustomer||safeRead('modecraft_session_v1',null);byId('accountState').textContent=session?'Signed in as '+(session.email||session.phone||session.name||'customer')+'.':'Login or create an account to access your profile and order history.';byId('logoutBtn').hidden=!currentCustomer;byId('authForm').hidden=!!currentCustomer}
 async function refreshCustomerSession(){try{const r=await api('/api/auth/me');currentCustomer=r.authenticated?r.user:null;if(currentCustomer)safeWrite('modecraft_session_v1',currentCustomer);else localStorage.removeItem('modecraft_session_v1')}catch(e){currentCustomer=null}updateAuthUI()}
-byId('authForm').addEventListener('submit',async e=>{e.preventDefault();const btn=byId('authSubmit');btn.disabled=true;try{const payload={name:byId('authName').value.trim(),email:byId('authEmail').value.trim(),phone:byId('authPhone').value.trim(),password:byId('authPassword').value};const endpoint=authMode==='signup'?'/api/auth/signup':authMode==='forgot'?'/api/auth/forgot-password':'/api/auth/login';const result=await api(endpoint,payload);if(authMode==='forgot'){toast(result.message||'If the account exists, reset instructions will be sent.');return}if(result.user){currentCustomer=result.user;safeWrite('modecraft_session_v1',result.user);byId('authPassword').value='';updateAuthUI();closeModal('accountModal');showLoginSuccess(authMode==='signup')}else{throw new Error('Unexpected authentication response.')}}catch(err){byId('authNote').textContent='Could not complete this request: '+err.message;}finally{btn.disabled=false}});
+const resetTokenFromUrl=new URLSearchParams(location.search).get('token')||'';
+if(resetTokenFromUrl){
+  authMode='reset';
+  document.querySelector('.tabs').hidden=true;
+  byId('accountTitle').textContent='Create a new password';
+  byId('authEmail').hidden=true;byId('authEmail').required=false;
+  byId('authName').hidden=true;byId('authNameLabel').hidden=true;byId('authName').required=false;
+  byId('authPhone').hidden=true;byId('authPhoneLabel').hidden=true;byId('authPhone').required=false;
+  byId('authPassword').hidden=false;byId('authPassword').required=true;byId('authPassword').value='';byId('authPassword').autocomplete='new-password';
+  byId('authPasswordLabel').hidden=false;byId('authPassword').placeholder='New password (at least 8 characters)';
+  byId('authSubmit').textContent='UPDATE PASSWORD';
+  byId('authNote').textContent='Choose a new password with at least 8 characters. This reset link expires after 30 minutes.';
+  openModal('accountModal');
+}
+byId('authForm').addEventListener('submit',async e=>{e.preventDefault();const btn=byId('authSubmit');btn.disabled=true;try{const payload={name:byId('authName').value.trim(),email:byId('authEmail').value.trim(),phone:byId('authPhone').value.trim(),password:byId('authPassword').value};let endpoint;if(authMode==='reset'){payload.token=resetTokenFromUrl;endpoint='/api/auth/reset-password'}else endpoint=authMode==='signup'?'/api/auth/signup':authMode==='forgot'?'/api/auth/forgot-password':'/api/auth/login';const result=await api(endpoint,payload);if(authMode==='forgot'){toast(result.message||'If the account exists, reset instructions will be sent.');return}if(authMode==='reset'){history.replaceState({},document.title,location.pathname+location.hash);byId('authPassword').value='';closeModal('accountModal');document.querySelector('.tabs').hidden=false;byId('authEmail').hidden=false;byId('authEmail').required=true;byId('authPassword').placeholder='Password';authMode='login';toast(result.message||'Password updated. You can now sign in.');return}if(result.user){currentCustomer=result.user;safeWrite('modecraft_session_v1',result.user);byId('authPassword').value='';updateAuthUI();closeModal('accountModal');showLoginSuccess(authMode==='signup')}else{throw new Error('Unexpected authentication response.')}}catch(err){byId('authNote').textContent='Could not complete this request: '+err.message;}finally{btn.disabled=false}});
 byId('logoutBtn').onclick=async()=>{try{await api('/api/auth/logout',{});}catch(e){toast('Could not contact server; please try again.');return}currentCustomer=null;localStorage.removeItem('modecraft_session_v1');updateAuthUI();toast('You have been logged out.')};
 byId('trackForm').addEventListener('submit',async e=>{e.preventDefault();const btn=byId('trackSubmit'),root=byId('trackResult');root.replaceChildren();const loading=document.createElement('div');loading.className='track-result-card';loading.style.padding='22px';loading.textContent='Looking up your order securely…';root.append(loading);btn.disabled=true;btn.textContent='CHECKING ORDER…';try{const orderId=byId('trackOrderId').value.trim(),id=encodeURIComponent(orderId),phone=encodeURIComponent(byId('trackPhone').value.trim());const result=await api('/api/orders/track?orderId='+id+'&phone='+phone);renderTrackResult(result,orderId)}catch(err){root.replaceChildren();const error=document.createElement('div');error.className='track-error';error.textContent='We couldn’t retrieve this order right now. '+err.message+' Please check the order reference and mobile number, then try again.';root.append(error)}finally{btn.disabled=false;btn.innerHTML='TRACK MY ORDER <span aria-hidden="true">↗</span>'}});
 byId('reviewForm').addEventListener('submit',async e=>{

@@ -953,8 +953,38 @@ app.get("/api/products", async (_req, res, next) => {
       if (!inventoryByProduct.has(row.product_id)) inventoryByProduct.set(row.product_id, []);
       inventoryByProduct.get(row.product_id).push({ color: row.color, size: row.size, quantity: row.quantity });
     }
+    const activeProducts = products.filter(product => product.active !== false);
+    const byId = new Map(activeProducts.map(product => [String(product.id), product]));
+    const claimedChildren = new Set();
+    const safeLinksByParent = new Map();
+    for (const parent of activeProducts) {
+      const rawLinks = parent.colorVariants && typeof parent.colorVariants === "object" ? parent.colorVariants : {};
+      const safeLinks = {};
+      const parentCategory = normalizeProductFamilyValue(parent.category);
+      const parentType = normalizeProductFamilyValue(parent.productType || parent.category);
+      for (const [color, rawId] of Object.entries(rawLinks)) {
+        const childId = String(rawId);
+        const child = byId.get(childId);
+        if (!child || childId === String(parent.id) || claimedChildren.has(childId)) continue;
+        const childCategory = normalizeProductFamilyValue(child.category);
+        const childType = normalizeProductFamilyValue(child.productType || child.category);
+        const childHasChildren = Object.keys(child.colorVariants || {}).length > 0;
+        if (!parentCategory || parentCategory !== childCategory || parentType !== childType || childHasChildren) continue;
+        safeLinks[color] = childId;
+        claimedChildren.add(childId);
+      }
+      safeLinksByParent.set(String(parent.id), safeLinks);
+    }
     res.json({
-      products: products.filter(product => product.active !== false).map(product => ({ ...product, inventoryVariants: inventoryByProduct.get(product.id) || [] }))
+      // Keep valid linked colour records in the payload for colour selection,
+      // while excluding them from duplicate catalogue cards. Invalid legacy links
+      // (cross-category, nested, cyclic, or multiply claimed) are ignored safely.
+      products: activeProducts.map(product => ({
+        ...product,
+        colorVariants: safeLinksByParent.get(String(product.id)) || {},
+        isColorVariantChild: claimedChildren.has(String(product.id)),
+        inventoryVariants: inventoryByProduct.get(product.id) || []
+      }))
     });
   } catch (error) {
     next(error);
@@ -1472,6 +1502,61 @@ app.get(
   }
 );
 
+function normalizeProductFamilyValue(value) {
+  return cleanText(value, 100).replace(/\s+/g, " ").toLocaleLowerCase("en-US");
+}
+
+async function validateColorProductLinks(sourceProduct, links, { isNew = false } = {}) {
+  const entries = Object.entries(links || {});
+  const seenIds = new Set();
+  const allProducts = await getProducts();
+  const sourceId = String(sourceProduct.id || "");
+  const sourceCategory = normalizeProductFamilyValue(sourceProduct.category);
+  const sourceType = normalizeProductFamilyValue(sourceProduct.productType || sourceProduct.category);
+
+  // A linked colour record must be a sibling SKU of the same garment type.
+  // It cannot be a different category (e.g. a shirt linked to a hoodie).
+  for (const [rawColor, rawId] of entries) {
+    const color = cleanText(rawColor, 40);
+    const linkedId = cleanText(rawId, 150);
+    if (!color || !linkedId || linkedId === sourceId || seenIds.has(linkedId)) {
+      throw Object.assign(new Error("Each colour must link to a different, valid product record."), { status: 400 });
+    }
+    seenIds.add(linkedId);
+    const linkedProduct = allProducts.find(item => String(item.id) === linkedId);
+    if (!linkedProduct || linkedProduct.active === false) {
+      throw Object.assign(new Error(`The linked product for ${color} does not exist or is unavailable.`), { status: 400 });
+    }
+    const linkedCategory = normalizeProductFamilyValue(linkedProduct.category);
+    const linkedType = normalizeProductFamilyValue(linkedProduct.productType || linkedProduct.category);
+    if (!sourceCategory || !linkedCategory || sourceCategory !== linkedCategory || sourceType !== linkedType) {
+      throw Object.assign(new Error(`${color} must link to another ${sourceProduct.category || sourceProduct.productType || "same-type"} product. Cross-category colour links are not allowed.`), { status: 400 });
+    }
+    const targetLinks = linkedProduct.colorVariants && typeof linkedProduct.colorVariants === "object" ? linkedProduct.colorVariants : {};
+    if (Object.keys(targetLinks).length) {
+      throw Object.assign(new Error(`${linkedProduct.name} already acts as a parent product. Link only standalone colour records to avoid circular or nested product families.`), { status: 400 });
+    }
+    const linkedAsChildElsewhere = allProducts.some(item =>
+      String(item.id) !== sourceId &&
+      Object.values(item.colorVariants || {}).some(id => String(id) === linkedId)
+    );
+    if (linkedAsChildElsewhere) {
+      throw Object.assign(new Error(`${linkedProduct.name} is already linked to another product family. A colour product can belong to only one family.`), { status: 400 });
+    }
+  }
+
+  // Do not let a child record become a parent as well; this prevents A -> B -> A loops.
+  if (!isNew) {
+    const sourceIsChild = allProducts.some(item =>
+      String(item.id) !== sourceId &&
+      Object.values(item.colorVariants || {}).some(id => String(id) === sourceId)
+    );
+    if (sourceIsChild && entries.length) {
+      throw Object.assign(new Error("This product is already a colour in another product family. Edit the parent product to manage its colours."), { status: 400 });
+    }
+  }
+}
+
 app.post(
   "/api/admin/products",
   requireAdmin,
@@ -1521,9 +1606,18 @@ app.post(
         active: req.body?.active !== false,
         colors: Array.isArray(req.body?.colors) ? req.body.colors.map(value => cleanText(value, 40)).filter(Boolean).slice(0, 30) : [],
         sizesByColor: req.body?.sizesByColor && typeof req.body.sizesByColor === "object" && !Array.isArray(req.body.sizesByColor) ? req.body.sizesByColor : {},
+        colorVariants: req.body?.colorVariants && typeof req.body.colorVariants === "object" && !Array.isArray(req.body.colorVariants) ? req.body.colorVariants : {},
         createdAt: new Date().toISOString()
       };
 
+      const colorLinks = product.colorVariants || {};
+      const allowedColors = new Set(product.colors || []);
+      for (const rawColor of Object.keys(colorLinks)) {
+        if (!allowedColors.has(cleanText(rawColor, 40))) {
+          return res.status(400).json({ error: "A linked product must use a colour selected for this product." });
+        }
+      }
+      await validateColorProductLinks(product, colorLinks, { isNew: true });
       await putProduct(product);
       await audit(req.adminSession, "product.created", {
         productId: product.id
@@ -1624,7 +1718,23 @@ app.patch(
         const selectedColors = new Set(product.colors || []);
         product.sizesByColor = Object.fromEntries(Object.entries(req.body.sizesByColor).filter(([color, sizes]) => selectedColors.has(color) && Array.isArray(sizes)).map(([color, sizes]) => [color, [...new Set(sizes.map(value => cleanText(value, 30)).filter(Boolean))].slice(0, 20)]));
       }
+      if (req.body?.colorVariants !== undefined) {
+        if (!req.body.colorVariants || typeof req.body.colorVariants !== "object" || Array.isArray(req.body.colorVariants)) return res.status(400).json({ error: "Colour product links must be an object." });
+        const selectedColors = new Set(product.colors || []);
+        const links = {};
+        for (const [rawColor, rawId] of Object.entries(req.body.colorVariants)) {
+          const color = cleanText(rawColor, 40);
+          const linkedId = cleanText(rawId, 150);
+          if (!selectedColors.has(color) || !linkedId) continue;
+          if (linkedId === product.id) return res.status(400).json({ error: `A colour cannot link to the same product (${color}). Leave it unlinked to use this product's own images.` });
+          const linkedProduct = await getProduct(linkedId);
+          if (!linkedProduct || linkedProduct.active === false) return res.status(400).json({ error: `The linked product for ${color} does not exist or is unavailable.` });
+          links[color] = linkedId;
+        }
+        product.colorVariants = links;
+      }
 
+      await validateColorProductLinks(product, product.colorVariants || {});
       await putProduct(product);
 
       await audit(req.adminSession, "product.updated", {
@@ -1650,6 +1760,15 @@ app.delete(
         return res.status(404).json({ error: "Product not found." });
       }
 
+      const allProducts = await getProducts();
+      for (const parent of allProducts) {
+        const links = parent.colorVariants && typeof parent.colorVariants === "object" ? parent.colorVariants : {};
+        const cleaned = Object.fromEntries(Object.entries(links).filter(([, linkedId]) => String(linkedId) !== String(req.params.id)));
+        if (Object.keys(cleaned).length !== Object.keys(links).length) {
+          parent.colorVariants = cleaned;
+          await putProduct(parent);
+        }
+      }
       await pool.query(
         "DELETE FROM products WHERE id = $1",
         [req.params.id]

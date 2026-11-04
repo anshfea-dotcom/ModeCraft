@@ -446,11 +446,17 @@ async function putProduct(product) {
 }
 
 async function getOrders() {
+  // The relational timestamp is the durable fallback for older rows whose JSON
+  // payload may predate createdAt. Keep every row; do not cap order history.
   const result = await pool.query(
-    "SELECT data FROM orders ORDER BY created_at DESC"
+    "SELECT data, created_at FROM orders ORDER BY created_at DESC, id DESC"
   );
 
-  return result.rows.map(row => row.data);
+  return result.rows.map(row => {
+    const order = row.data && typeof row.data === "object" ? row.data : {};
+    if (row.created_at) order.createdAt = new Date(row.created_at).toISOString();
+    return order;
+  }).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 }
 
 async function getOrder(id) {

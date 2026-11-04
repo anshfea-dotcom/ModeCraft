@@ -8,6 +8,7 @@ const { Pool } = require("pg");
 const session = require("express-session");
 const PgSession = require("connect-pg-simple")(session);
 const Razorpay = require("razorpay");
+const nodemailer = require("nodemailer");
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -760,65 +761,74 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
     const found = await pool.query("SELECT id FROM customers WHERE email = $1", [email]);
     if (found.rowCount) {
       const resendApiKey = process.env.RESEND_API_KEY;
-      const fromEmail = (process.env.PASSWORD_RESET_FROM || "ModeCraft <onboarding@resend.dev>").trim();
+      const smtpUser = (process.env.GMAIL_USER || process.env.SMTP_USER || process.env.EMAIL_USER || "").trim();
+      const smtpPassword = String(process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASS || "").replace(/\s+/g, "");
+      const fromEmail = (process.env.PASSWORD_RESET_FROM || (smtpUser ? `ModeCraft <${smtpUser}>` : "ModeCraft <onboarding@resend.dev>")).trim();
       const baseUrl = process.env.PASSWORD_RESET_BASE_URL;
+      const smtpConfigured = Boolean(smtpUser && smtpPassword);
 
-      if (!resendApiKey) {
-        console.error("Password reset email not configured: set RESEND_API_KEY in Render.");
-        return res.status(503).json({ error: "Password reset email is not configured. Check Resend settings in Render." });
-      } else {
-        // Normalize and validate the reset URL before creating a token in the database.
-        // Render sometimes receives values with accidental whitespace or wrapping quotes.
-        const cleanBaseUrl = typeof baseUrl === "string"
-          ? baseUrl.trim().replace(/^([\"'])(.*)\1$/, "$2").trim()
-          : "";
-        let resetUrl;
-        try {
-          const candidate = cleanBaseUrl || process.env.RENDER_EXTERNAL_URL || "https://modecraft-india.onrender.com";
-          resetUrl = new URL(candidate);
-          if (resetUrl.protocol !== "https:" && resetUrl.protocol !== "http:") {
-            throw new TypeError("Password reset URL must use http:// or https://");
-          }
-        } catch (urlError) {
-          console.error("Invalid PASSWORD_RESET_BASE_URL; using the ModeCraft Render URL. Check the Render environment variable.");
-          resetUrl = new URL(process.env.RENDER_EXTERNAL_URL || "https://modecraft-india.onrender.com");
+      if (!smtpConfigured && !resendApiKey) {
+        console.error("Password reset email not configured: set GMAIL_USER + GMAIL_APP_PASSWORD (or SMTP_USER + SMTP_PASS), or RESEND_API_KEY in Render.");
+        return res.status(503).json({ error: "Password reset email is not configured. Add Gmail SMTP credentials or a Resend API key in Render." });
+      }
+
+      // Normalize and validate the reset URL before creating a token in the database.
+      const cleanBaseUrl = typeof baseUrl === "string"
+        ? baseUrl.trim().replace(/^([\"'])(.*)\1$/, "$2").trim()
+        : "";
+      let resetUrl;
+      try {
+        const candidate = cleanBaseUrl || process.env.RENDER_EXTERNAL_URL || "https://modecraft-india.onrender.com";
+        resetUrl = new URL(candidate);
+        if (resetUrl.protocol !== "https:" && resetUrl.protocol !== "http:") {
+          throw new TypeError("Password reset URL must use http:// or https://");
         }
+      } catch (urlError) {
+        console.error("Invalid PASSWORD_RESET_BASE_URL; using the ModeCraft Render URL. Check the Render environment variable.");
+        resetUrl = new URL(process.env.RENDER_EXTERNAL_URL || "https://modecraft-india.onrender.com");
+      }
 
-        const rawToken = crypto.randomBytes(32).toString("hex");
-        const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-        await pool.query("DELETE FROM password_reset_tokens WHERE customer_id = $1", [found.rows[0].id]);
-        await pool.query(
-          "INSERT INTO password_reset_tokens (token_hash, customer_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL '30 minutes')",
-          [tokenHash, found.rows[0].id]
-        );
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+      await pool.query("DELETE FROM password_reset_tokens WHERE customer_id = $1", [found.rows[0].id]);
+      await pool.query(
+        "INSERT INTO password_reset_tokens (token_hash, customer_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL '30 minutes')",
+        [tokenHash, found.rows[0].id]
+      );
 
-        resetUrl.searchParams.set("token", rawToken);
-        try {
+      resetUrl.searchParams.set("token", rawToken);
+      const subject = "Reset your ModeCraft password";
+      const textBody = `We received a request to reset your ModeCraft password. Open this link within 30 minutes: ${resetUrl.toString()}\n\nIf you did not request this, ignore this email.`;
+      const htmlBody = `<p>We received a request to reset your ModeCraft password.</p><p><a href="${resetUrl.toString()}">Reset password</a></p><p>This link expires in 30 minutes. If you did not request this, ignore this email.</p>`;
+      try {
+        if (smtpConfigured) {
+          const smtpPort = Number(process.env.SMTP_PORT || 465);
+          const smtpSecure = process.env.SMTP_SECURE === undefined
+            ? smtpPort === 465
+            : String(process.env.SMTP_SECURE).toLowerCase() === "true";
+          const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST || "smtp.gmail.com",
+            port: smtpPort,
+            secure: smtpSecure,
+            auth: { user: smtpUser, pass: smtpPassword }
+          });
+          await transporter.sendMail({ from: fromEmail, to: email, subject, text: textBody, html: htmlBody });
+          transporter.close();
+          console.log("Password reset email accepted by SMTP provider.");
+        } else {
           const emailResponse = await fetch("https://api.resend.com/emails", {
             method: "POST",
-            headers: {
-              "Authorization": `Bearer ${resendApiKey}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              from: fromEmail,
-              to: [email],
-              subject: "Reset your ModeCraft password",
-              text: `We received a request to reset your ModeCraft password. Open this link within 30 minutes: ${resetUrl.toString()}\n\nIf you did not request this, ignore this email.`,
-              html: `<p>We received a request to reset your ModeCraft password.</p><p><a href="${resetUrl.toString()}">Reset password</a></p><p>This link expires in 30 minutes. If you did not request this, ignore this email.</p>`
-            })
+            headers: { "Authorization": `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ from: fromEmail, to: [email], subject, text: textBody, html: htmlBody })
           });
           const emailResult = await emailResponse.json().catch(() => ({}));
-          if (!emailResponse.ok) {
-            throw new Error(`Resend API returned ${emailResponse.status}: ${emailResult.message || emailResult.name || "email delivery request failed"}`);
-          }
+          if (!emailResponse.ok) throw new Error(`Resend API returned ${emailResponse.status}: ${emailResult.message || emailResult.name || "email delivery request failed"}`);
           console.log("Password reset email accepted by Resend.");
-        } catch (mailError) {
-          // Invalidate the token if the email provider rejects the request.
-          await pool.query("DELETE FROM password_reset_tokens WHERE token_hash = $1", [tokenHash]);
-          console.error("Resend password reset delivery failed:", mailError.message);
-          return res.status(502).json({ error: "Password reset email could not be sent. Check Resend API key, sender and account restrictions." });
         }
+      } catch (mailError) {
+        await pool.query("DELETE FROM password_reset_tokens WHERE token_hash = $1", [tokenHash]);
+        console.error("Password reset email delivery failed:", mailError.message);
+        return res.status(502).json({ error: "Password reset email could not be sent. Check Gmail SMTP credentials/app password or Resend sender settings in Render." });
       }
     }
 
@@ -827,6 +837,7 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
 });
 
 app.post("/api/auth/reset-password", async (req, res, next) => {
+  let client;
   try {
     const token = cleanText(req.body?.token, 200);
     const password = typeof req.body?.password === "string" ? req.body.password : "";
@@ -834,21 +845,36 @@ app.post("/api/auth/reset-password", async (req, res, next) => {
       return res.status(400).json({ error: "Provide a valid reset token and a password of at least 8 characters." });
     }
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    const found = await pool.query(
-      "SELECT customer_id FROM password_reset_tokens WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()",
+    const { salt, hash } = hashPassword(password);
+    // A transaction must use one checked-out PostgreSQL connection. Using pool.query
+    // for BEGIN/UPDATE/COMMIT can run each statement on a different connection.
+    // Locking the token row also prevents two requests consuming the same link.
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const found = await client.query(
+      "SELECT customer_id FROM password_reset_tokens WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW() FOR UPDATE",
       [tokenHash]
     );
-    if (!found.rowCount) return res.status(400).json({ error: "This reset link is invalid or has expired." });
-    const { salt, hash } = hashPassword(password);
-    await pool.query("BEGIN");
-    try {
-      await pool.query("UPDATE customers SET password_salt = $1, password_hash = $2, updated_at = NOW() WHERE id = $3", [salt, hash, found.rows[0].customer_id]);
-      await pool.query("UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = $1", [tokenHash]);
-      await pool.query("DELETE FROM password_reset_tokens WHERE customer_id = $1 AND token_hash <> $2", [found.rows[0].customer_id, tokenHash]);
-      await pool.query("COMMIT");
-    } catch (error) { await pool.query("ROLLBACK"); throw error; }
+    if (!found.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "This reset link is invalid or has expired." });
+    }
+    const customerId = found.rows[0].customer_id;
+    const updated = await client.query(
+      "UPDATE customers SET password_salt = $1, password_hash = $2, updated_at = NOW() WHERE id = $3",
+      [salt, hash, customerId]
+    );
+    if (!updated.rowCount) throw new Error("The customer account for this reset link no longer exists.");
+    await client.query("UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = $1", [tokenHash]);
+    await client.query("DELETE FROM password_reset_tokens WHERE customer_id = $1 AND token_hash <> $2", [customerId, tokenHash]);
+    await client.query("COMMIT");
     res.json({ ok: true, message: "Password updated. You can now sign in." });
-  } catch (error) { next(error); }
+  } catch (error) {
+    if (client) { try { await client.query("ROLLBACK"); } catch {} }
+    next(error);
+  } finally {
+    if (client) client.release();
+  }
 });
 
 app.get("/api/orders/my", requireCustomer, async (req, res, next) => {
@@ -945,45 +971,82 @@ app.delete("/api/wishlist/:productId", requireCustomer, async (req, res, next) =
 
 app.get("/api/products", async (_req, res, next) => {
   try {
-    const products = await getProducts();
+    // Product data is the source of truth for the storefront. Inventory is
+    // supplemental: a stock-table read problem must never blank the catalogue.
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
 
-    const variants = await pool.query("SELECT product_id, color, size, quantity FROM inventory_variants ORDER BY color, size");
+    const products = await getProducts();
+    const activeProducts = products.filter(product =>
+      product && typeof product === "object" && product.active !== false
+    );
+
     const inventoryByProduct = new Map();
-    for (const row of variants.rows) {
-      if (!inventoryByProduct.has(row.product_id)) inventoryByProduct.set(row.product_id, []);
-      inventoryByProduct.get(row.product_id).push({ color: row.color, size: row.size, quantity: row.quantity });
+    try {
+      const variants = await pool.query(
+        "SELECT product_id, color, size, quantity FROM inventory_variants ORDER BY color, size"
+      );
+      for (const row of variants.rows) {
+        const productId = String(row.product_id);
+        if (!inventoryByProduct.has(productId)) inventoryByProduct.set(productId, []);
+        inventoryByProduct.get(productId).push({
+          color: row.color,
+          size: row.size,
+          quantity: Number(row.quantity) || 0
+        });
+      }
+    } catch (inventoryError) {
+      // Keep products visible even if the optional inventory query has a
+      // temporary/schema problem. Log it so the underlying issue is traceable.
+      console.error("Storefront inventory lookup failed; serving products without inventory data:", inventoryError.message);
     }
-    const activeProducts = products.filter(product => product.active !== false);
+
     const byId = new Map(activeProducts.map(product => [String(product.id), product]));
+    // A product already referenced as a colour child cannot also be a parent.
+    // Legacy nested links used to hide both the parent and its child from the
+    // storefront. Only root products may own colour links now.
+    const referencedAsChild = new Set();
+    for (const product of activeProducts) {
+      const links = product.colorVariants && typeof product.colorVariants === "object"
+        ? product.colorVariants : {};
+      for (const linkedId of Object.values(links)) {
+        if (linkedId != null && String(linkedId).trim()) referencedAsChild.add(String(linkedId));
+      }
+    }
+
     const claimedChildren = new Set();
     const safeLinksByParent = new Map();
     for (const parent of activeProducts) {
-      const rawLinks = parent.colorVariants && typeof parent.colorVariants === "object" ? parent.colorVariants : {};
+      const parentId = String(parent.id);
       const safeLinks = {};
-      const parentCategory = normalizeProductFamilyValue(parent.category);
-      const parentType = normalizeProductFamilyValue(parent.productType || parent.category);
-      for (const [color, rawId] of Object.entries(rawLinks)) {
-        const childId = String(rawId);
-        const child = byId.get(childId);
-        if (!child || childId === String(parent.id) || claimedChildren.has(childId)) continue;
-        const childCategory = normalizeProductFamilyValue(child.category);
-        const childType = normalizeProductFamilyValue(child.productType || child.category);
-        const childHasChildren = Object.keys(child.colorVariants || {}).length > 0;
-        if (!parentCategory || parentCategory !== childCategory || parentType !== childType || childHasChildren) continue;
-        safeLinks[color] = childId;
-        claimedChildren.add(childId);
+      // Do not allow a legacy child record to hide another product beneath it.
+      if (!referencedAsChild.has(parentId)) {
+        const rawLinks = parent.colorVariants && typeof parent.colorVariants === "object"
+          ? parent.colorVariants : {};
+        const parentCategory = normalizeProductFamilyValue(parent.category);
+        const parentType = normalizeProductFamilyValue(parent.productType || parent.category);
+        for (const [color, rawId] of Object.entries(rawLinks)) {
+          const childId = String(rawId);
+          const child = byId.get(childId);
+          if (!child || childId === parentId || claimedChildren.has(childId)) continue;
+          const childCategory = normalizeProductFamilyValue(child.category);
+          const childType = normalizeProductFamilyValue(child.productType || child.category);
+          const childHasChildren = Object.keys(child.colorVariants || {}).length > 0;
+          if (!parentCategory || parentCategory !== childCategory || parentType !== childType || childHasChildren) continue;
+          safeLinks[color] = childId;
+          claimedChildren.add(childId);
+        }
       }
-      safeLinksByParent.set(String(parent.id), safeLinks);
+      safeLinksByParent.set(parentId, safeLinks);
     }
+
     res.json({
-      // Keep valid linked colour records in the payload for colour selection,
-      // while excluding them from duplicate catalogue cards. Invalid legacy links
-      // (cross-category, nested, cyclic, or multiply claimed) are ignored safely.
       products: activeProducts.map(product => ({
         ...product,
         colorVariants: safeLinksByParent.get(String(product.id)) || {},
         isColorVariantChild: claimedChildren.has(String(product.id)),
-        inventoryVariants: inventoryByProduct.get(product.id) || []
+        inventoryVariants: inventoryByProduct.get(String(product.id)) || []
       }))
     });
   } catch (error) {

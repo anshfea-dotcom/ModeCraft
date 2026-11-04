@@ -505,8 +505,8 @@ body.dark #checkout .checkout-box{border-color:#494037}body.dark .checkout-order
 .sales-banner-track{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
 .sales-banner{position:relative;min-height:170px;overflow:hidden;border-radius:15px;background:linear-gradient(115deg,#211e19,#51402b);color:#fff;display:flex;align-items:end;padding:22px;background-size:cover;background-position:center;isolation:isolate}
 .sales-banner:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.76),rgba(0,0,0,.12));z-index:-1}
-.sales-banner-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}.sales-banner-copy{position:relative;z-index:1;max-width:520px}.sales-banner h2{font-size:clamp(19px,2.6vw,29px);line-height:1.12;margin:0 0 7px;letter-spacing:-.03em}.sales-banner p{font-size:12px;line-height:1.55;margin:0 0 14px;color:#f1ece4}.sales-banner a{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:6px;background:#d1b27c;color:#17130c;text-decoration:none;font-size:10px;font-weight:850;letter-spacing:.1em}
-@media(max-width:600px){.sales-banner-section{width:calc(100% - 24px);margin:12px auto}.sales-banner-track{grid-template-columns:1fr}.sales-banner{min-height:145px;padding:17px}}
+.sales-banner-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}.sales-banner-copy{position:relative;z-index:1;max-width:520px}.sales-banner.has-designed-art{display:block;min-height:0;height:auto;aspect-ratio:16/9;padding:0;background:#090909}.sales-banner.has-designed-art:before{display:none}.sales-banner.has-designed-art .sales-banner-image{position:relative;inset:auto;display:block;width:100%;height:100%;object-fit:contain;z-index:0}.sales-banner.has-designed-art .sales-banner-copy{display:none}.sales-banner h2{font-size:clamp(19px,2.6vw,29px);line-height:1.12;margin:0 0 7px;letter-spacing:-.03em}.sales-banner p{font-size:12px;line-height:1.55;margin:0 0 14px;color:#f1ece4}.sales-banner a{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:6px;background:#d1b27c;color:#17130c;text-decoration:none;font-size:10px;font-weight:850;letter-spacing:.1em}
+@media(max-width:600px){.sales-banner-section{width:calc(100% - 24px);margin:12px auto}.sales-banner-track{grid-template-columns:1fr}.sales-banner{min-height:145px;padding:17px}.sales-banner.has-designed-art{aspect-ratio:16/9;padding:0;min-height:0}.sales-banner.has-designed-art .sales-banner-image{object-fit:contain}}
 </style>
 </head>
 <body>
@@ -976,12 +976,13 @@ async function applySalesBanners(){
     track.replaceChildren();
     banners.forEach(b=>{
       const card=document.createElement('article');card.className='sales-banner';
-      if(typeof b.imageUrl==='string'&&/^https:\/\//i.test(b.imageUrl)){const image=document.createElement('img');image.className='sales-banner-image';image.src=b.imageUrl;image.alt='';image.loading='lazy';image.referrerPolicy='no-referrer';card.append(image)}
+      const hasDesignedArt=typeof b.imageUrl==='string'&&/^https:\/\//i.test(b.imageUrl);
+      if(hasDesignedArt){card.classList.add('has-designed-art');const image=document.createElement('img');image.className='sales-banner-image';image.src=b.imageUrl;image.alt=b.title||'ModeCraft campaign banner';image.loading='eager';image.decoding='async';image.referrerPolicy='no-referrer';card.append(image)}
       const copy=document.createElement('div');copy.className='sales-banner-copy';
       const title=document.createElement('h2');title.textContent=b.title;copy.append(title);
       if(b.subtitle){const subtitle=document.createElement('p');subtitle.textContent=b.subtitle;copy.append(subtitle)}
       if(b.buttonText&&b.buttonUrl){const link=document.createElement('a');link.textContent=b.buttonText;link.href=b.buttonUrl;link.rel='noopener';if(/^https:\/\//i.test(b.buttonUrl)){link.target='_blank'}copy.append(link)}
-      card.append(copy);track.append(card);
+      if(!hasDesignedArt)card.append(copy);track.append(card);
     });
     section.hidden=!banners.length;
   }catch(error){console.warn('ModeCraft promotions could not be loaded:',error)}

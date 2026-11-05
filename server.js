@@ -706,7 +706,7 @@ app.post("/api/auth/login", async (req, res, next) => {
   try {
     const email = cleanText(req.body?.email, 180).toLowerCase();
     const password = typeof req.body?.password === "string" ? req.body.password : "";
-    const ip = req.socket?.remoteAddress || "unknown";
+    const ip = req.ip || req.socket?.remoteAddress || "unknown";
     const now = Date.now();
     let attempt = customerLoginAttempts.get(ip);
     if (attempt && now - attempt.startedAt < 15 * 60 * 1000 && attempt.count >= 10) {
@@ -904,11 +904,47 @@ app.get("/api/products/:id/reviews", async (req, res, next) => {
   try {
     const product = await getProduct(cleanText(req.params.id, 150));
     if (!product) return res.status(404).json({ error: "Product not found." });
-    const result = await pool.query(
-      `SELECT id, customer_name AS "customerName", rating, title, comment, created_at AS "createdAt"
-       FROM product_reviews WHERE product_id = $1 ORDER BY created_at DESC LIMIT 200`, [product.id]
-    );
-    res.json({ reviews: result.rows });
+    const [reviewsResult, summaryResult] = await Promise.all([
+      pool.query(
+        `SELECT pr.id, pr.customer_name AS "customerName", pr.rating, pr.title,
+                pr.comment, pr.created_at AS "createdAt",
+                EXISTS (
+                  SELECT 1
+                  FROM customers c
+                  JOIN orders o
+                    ON lower(o.data->'customer'->>'email') = lower(c.email)
+                  WHERE c.id = pr.customer_id
+                    AND COALESCE(o.data->>'orderStatus', '') <> 'cancelled'
+                    AND (
+                      o.data->>'paymentStatus' = 'paid'
+                      OR o.data->>'paymentMethod' = 'COD'
+                    )
+                    AND EXISTS (
+                      SELECT 1
+                      FROM jsonb_array_elements(
+                        CASE
+                          WHEN jsonb_typeof(o.data->'items') = 'array' THEN o.data->'items'
+                          ELSE '[]'::jsonb
+                        END
+                      ) AS order_items(item)
+                      WHERE order_items.item->>'id' = pr.product_id
+                    )
+                ) AS "verifiedPurchase"
+         FROM product_reviews pr
+         WHERE pr.product_id = $1
+         ORDER BY pr.created_at DESC
+         LIMIT 200`,
+        [product.id]
+      ),
+      pool.query(
+        `SELECT COUNT(*)::int AS count,
+                COALESCE(ROUND(AVG(rating)::numeric, 1), 0)::float AS average
+         FROM product_reviews WHERE product_id = $1`,
+        [product.id]
+      )
+    ]);
+    res.set("Cache-Control", "no-store, max-age=0");
+    res.json({ reviews: reviewsResult.rows, summary: summaryResult.rows[0] || { count: 0, average: 0 } });
   } catch (error) { next(error); }
 });
 
@@ -1182,7 +1218,7 @@ app.post("/api/admin/login", async (req, res, next) => {
       });
     }
 
-    const ip = req.socket?.remoteAddress || "unknown";
+    const ip = req.ip || req.socket?.remoteAddress || "unknown";
     const now = Date.now();
     let attempt = loginAttempts.get(ip);
 
@@ -2541,7 +2577,7 @@ app.post("/api/payments/razorpay/order", async (req, res) => {
     const receipt = "mc_" + crypto.randomBytes(8).toString("hex");
 
     const razorpayOrder = await razorpay.orders.create({
-      amount: orderData.total * 100,
+      amount: Math.round(orderData.total * 100),
       currency: "INR",
       receipt,
       notes: {
@@ -2561,7 +2597,8 @@ app.post("/api/payments/razorpay/order", async (req, res) => {
       createdAt: new Date().toISOString(),
       statusHistory: []
     });
-    if (orderData.couponCode) await pool.query("UPDATE offers SET data = jsonb_set(data, '{usageCount}', to_jsonb(COALESCE((data->>'usageCount')::int, 0) + 1), true), updated_at = NOW() WHERE code = $1", [orderData.couponCode]);
+    // A coupon is counted only after Razorpay confirms payment, not when the
+    // customer merely opens checkout or abandons the payment window.
 
     res.status(201).json({
       keyId: process.env.RAZORPAY_KEY_ID,
@@ -2583,6 +2620,7 @@ app.post("/api/payments/razorpay/order", async (req, res) => {
 });
 
 app.post("/api/payments/razorpay/verify", async (req, res) => {
+  let client;
   try {
     const {
       razorpay_order_id,
@@ -2612,13 +2650,35 @@ app.post("/api/payments/razorpay/verify", async (req, res) => {
       });
     }
 
-    const orders = await getOrders();
-    const order = orders.find(
-      item => item.razorpayOrderId === razorpay_order_id
+    // Lock the order row so a duplicate callback cannot increment coupon usage
+    // twice or overwrite a different successful payment.
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const found = await client.query(
+      "SELECT id, data FROM orders WHERE data->>'razorpayOrderId' = $1 LIMIT 1 FOR UPDATE",
+      [razorpay_order_id]
     );
-
-    if (!order) {
+    if (!found.rowCount) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Order not found." });
+    }
+
+    const order = found.rows[0].data;
+    if (order.paymentStatus === "paid") {
+      if (order.paymentId === razorpay_payment_id) {
+        await client.query("COMMIT");
+        return res.json({
+          ok: true,
+          orderId: order.id,
+          message: "Payment was already verified. Your order is confirmed."
+        });
+      }
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "This order has already been paid with a different payment reference." });
+    }
+    if (order.paymentStatus !== "created" || order.orderStatus !== "awaiting_payment") {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "This order is not awaiting payment verification." });
     }
 
     order.paymentId = razorpay_payment_id;
@@ -2626,7 +2686,17 @@ app.post("/api/payments/razorpay/verify", async (req, res) => {
     order.orderStatus = "received";
     order.paidAt = new Date().toISOString();
 
-    await putOrder(order);
+    await client.query(
+      "UPDATE orders SET data = $1::jsonb, updated_at = NOW() WHERE id = $2",
+      [JSON.stringify(order), found.rows[0].id]
+    );
+    if (order.couponCode) {
+      await client.query(
+        "UPDATE offers SET data = jsonb_set(data, '{usageCount}', to_jsonb(COALESCE((data->>'usageCount')::int, 0) + 1), true), updated_at = NOW() WHERE code = $1",
+        [order.couponCode]
+      );
+    }
+    await client.query("COMMIT");
 
     res.json({
       ok: true,
@@ -2634,11 +2704,16 @@ app.post("/api/payments/razorpay/verify", async (req, res) => {
       message: "Payment verified. The store owner must confirm supplier availability and delivery."
     });
   } catch (error) {
+    if (client) {
+      try { await client.query("ROLLBACK"); } catch {}
+    }
     console.error("Payment verification failed:", error.message);
-
-    res.status(500).json({
-      error: "Unable to verify payment."
+    if (res.headersSent) return;
+    res.status(error.status || 500).json({
+      error: error.message || "Unable to verify payment."
     });
+  } finally {
+    if (client) client.release();
   }
 });
 

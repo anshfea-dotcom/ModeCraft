@@ -385,6 +385,18 @@ async function initDatabase() {
     CREATE INDEX IF NOT EXISTS stock_notifications_variant_idx
       ON stock_notifications (product_id, LOWER(color), LOWER(size));
 
+    CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+      id BIGSERIAL PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'subscribed' CHECK (status IN ('subscribed', 'unsubscribed')),
+      consent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      source TEXT NOT NULL DEFAULT 'storefront',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS newsletter_subscribers_status_idx
+      ON newsletter_subscribers (status, created_at DESC);
+
     CREATE TABLE IF NOT EXISTS password_reset_tokens (
       token_hash TEXT PRIMARY KEY,
       customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -1141,6 +1153,52 @@ app.get("/api/storefront/header", async (_req, res, next) => {
   try {
     const result = await pool.query("SELECT data FROM store_settings WHERE key = $1", ["storefront_header"]);
     res.json({ header: result.rows[0]?.data || {} });
+  } catch (error) { next(error); }
+});
+
+const newsletterAttempts = new Map();
+app.post("/api/storefront/newsletter", async (req, res, next) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+      return res.status(400).json({ error: "Enter a valid email address." });
+    }
+    if (req.body?.consent !== true) {
+      return res.status(400).json({ error: "Please confirm consent to receive updates." });
+    }
+    const now = Date.now();
+    const ip = String(req.ip || "unknown");
+    const previous = newsletterAttempts.get(ip) || { count: 0, startedAt: now };
+    if (now - previous.startedAt > 15 * 60 * 1000) {
+      previous.count = 0;
+      previous.startedAt = now;
+    }
+    previous.count += 1;
+    newsletterAttempts.set(ip, previous);
+    if (previous.count > 5) {
+      return res.status(429).json({ error: "Too many subscription attempts. Please try again later." });
+    }
+    if (newsletterAttempts.size > 5000) {
+      for (const [key, value] of newsletterAttempts) {
+        if (now - value.startedAt > 15 * 60 * 1000) newsletterAttempts.delete(key);
+      }
+    }
+    await pool.query(
+      `INSERT INTO newsletter_subscribers (email, status, consent_at, source, updated_at)
+       VALUES ($1, 'subscribed', NOW(), 'storefront', NOW())
+       ON CONFLICT (email) DO UPDATE SET status = 'subscribed', consent_at = NOW(), updated_at = NOW()`,
+      [email]
+    );
+    res.json({ ok: true, message: "You're on the ModeCraft update list. Thank you for subscribing." });
+  } catch (error) { next(error); }
+});
+
+app.get("/api/admin/newsletter/subscribers", requireAdmin, requireOwner, async (_req, res, next) => {
+  try {
+    const result = await pool.query(
+      `SELECT email, status, consent_at AS "consentAt", created_at AS "createdAt" FROM newsletter_subscribers ORDER BY created_at DESC LIMIT 5000`
+    );
+    res.json({ subscribers: result.rows });
   } catch (error) { next(error); }
 });
 

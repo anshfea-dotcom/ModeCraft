@@ -660,7 +660,8 @@ body.dark .interactive-stars button.active{color:#edc15b!important;background:#3
 /* ModeCraft luxury footer */
 .mc-footer{background:#101010;color:#f5f1eb;text-align:left;padding:64px 28px 22px;border-top:1px solid #2a251f}
 .mc-footer-inner{max-width:1280px;margin:0 auto}
-.mc-footer-top{display:grid;grid-template-columns:1.15fr .72fr .9fr 1.45fr;gap:clamp(24px,4vw,62px);align-items:start;padding-bottom:46px}
+.mc-footer-top{display:grid;grid-template-columns:1.1fr 2fr 1.35fr;gap:clamp(24px,4vw,58px);align-items:start;padding-bottom:46px}
+.mc-footer-link-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(18px,2.4vw,34px);min-width:0}
 .mc-footer-brand{display:inline-flex;align-items:baseline;color:#f7f3ed;font-size:27px;font-weight:850;letter-spacing:1.3px;line-height:1.1}
 .mc-footer-brand span{color:#d6b36a}
 .mc-footer-tagline{margin:15px 0 7px!important;color:#d6b36a!important;font-size:10px!important;letter-spacing:1.7px!important;text-transform:uppercase}
@@ -693,8 +694,8 @@ body.dark .interactive-stars button.active{color:#edc15b!important;background:#3
 .mc-footer-bottom{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:20px;color:#817b73;font-size:9px;letter-spacing:1px}
 .mc-footer-bottom strong{color:#c6bfb4;font-weight:750}.mc-back-top{display:inline-flex;align-items:center;gap:9px;color:#d6b36a;font-weight:750;white-space:nowrap}.mc-back-top span{font-size:16px;line-height:1}
 body.dark .mc-footer{background:#080808;border-top-color:#29231b}
-@media(max-width:900px){.mc-footer-top{grid-template-columns:1fr 1fr;gap:34px 40px}.mc-footer-newsletter{justify-self:start;max-width:440px}}
-@media(max-width:560px){.mc-footer{padding:44px 20px 18px}.mc-footer-top{grid-template-columns:1fr 1fr;gap:30px 22px;padding-bottom:32px}.mc-footer-brand-block{grid-column:1/-1}.mc-footer-newsletter{grid-column:1/-1;max-width:none}.mc-footer-brand{font-size:25px}.mc-footer-trust{justify-content:flex-start;gap:13px;padding:16px 0}.mc-footer-trust i{display:none}.mc-footer-trust span{font-size:8px;letter-spacing:.65px}.mc-footer-bottom{align-items:flex-start;font-size:8px;letter-spacing:.55px}}
+@media(max-width:900px){.mc-footer-top{grid-template-columns:1fr 1fr;gap:34px 32px}.mc-footer-link-columns{grid-template-columns:repeat(3,minmax(0,1fr));grid-column:1/-1;grid-row:2}.mc-footer-newsletter{grid-column:1/-1;grid-row:3;justify-self:start;max-width:440px}}
+@media(max-width:560px){.mc-footer{padding:44px 20px 18px}.mc-footer-top{grid-template-columns:1fr 1fr;gap:30px 22px;padding-bottom:32px}.mc-footer-brand-block{grid-column:1/-1}.mc-footer-link-columns{grid-template-columns:repeat(2,minmax(0,1fr));grid-column:1/-1;grid-row:auto}.mc-footer-newsletter{grid-column:1/-1;grid-row:auto;max-width:none}.mc-footer-brand{font-size:25px}.mc-footer-trust{justify-content:flex-start;gap:13px;padding:16px 0}.mc-footer-trust i{display:none}.mc-footer-trust span{font-size:8px;letter-spacing:.65px}.mc-footer-bottom{align-items:flex-start;font-size:8px;letter-spacing:.55px}}
 @media(max-width:360px){.mc-footer-top{gap:26px 15px}.mc-footer-links a,.mc-footer-links button{font-size:11px}.mc-footer-trust{display:grid;grid-template-columns:1fr;gap:11px}}
 
 </style>
@@ -739,45 +740,35 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
   <div class="mc-footer-inner">
     <div class="mc-footer-top">
       <div class="mc-footer-brand-block">
-        <a class="brand mc-footer-brand" href="#home" aria-label="ModeCraft home">MODECRAFT<span>.</span></a>
-        <p class="mc-footer-tagline">Defined by style. Built for you.</p>
-        <p class="mc-footer-intro">Contemporary essentials for confident everyday style.</p>
+        <a class="brand mc-footer-brand" id="mcFooterBrand" href="#home" aria-label="ModeCraft home">MODECRAFT<span>.</span></a>
+        <p class="mc-footer-tagline" id="mcFooterTagline">Defined by style. Built for you.</p>
+        <p class="mc-footer-intro" id="mcFooterIntro">Contemporary essentials for confident everyday style.</p>
         <div class="mc-socials" aria-label="Social media">
-          <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram — update with the official ModeCraft profile" title="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.25" y="3.25" width="17.5" height="17.5" rx="5"/><circle cx="12" cy="12" r="4.1"/><circle cx="17.7" cy="6.5" r="1" class="mc-social-fill"/></svg></a>
-          <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook — update with the official ModeCraft page" title="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 21v-8h2.7l.4-3.1h-3.1v-2c0-.9.3-1.5 1.6-1.5h1.7V3.6c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.1H8v3.1h2.8v8z"/></svg></a>
-          <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube — update with the official ModeCraft channel" title="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 7.2a2.8 2.8 0 0 0-2-2C17.3 4.7 12 4.7 12 4.7s-5.3 0-7 .5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2.5 12 29 29 0 0 0 3 16.8a2.8 2.8 0 0 0 2 2c1.7.5 7 .5 7 .5s5.3 0 7-.5a2.8 2.8 0 0 0 2-2 29 29 0 0 0 .5-4.8 29 29 0 0 0-.5-4.8Z"/><path class="mc-social-play" d="m10 15.5 5-3.5-5-3.5z"/></svg></a>
+          <a data-social="instagram" hidden href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram — update with the official ModeCraft profile" title="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.25" y="3.25" width="17.5" height="17.5" rx="5"/><circle cx="12" cy="12" r="4.1"/><circle cx="17.7" cy="6.5" r="1" class="mc-social-fill"/></svg></a>
+          <a data-social="facebook" hidden href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook — update with the official ModeCraft page" title="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 21v-8h2.7l.4-3.1h-3.1v-2c0-.9.3-1.5 1.6-1.5h1.7V3.6c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.1H8v3.1h2.8v8z"/></svg></a>
+          <a data-social="youtube" hidden href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube — update with the official ModeCraft channel" title="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 7.2a2.8 2.8 0 0 0-2-2C17.3 4.7 12 4.7 12 4.7s-5.3 0-7 .5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2.5 12 29 29 0 0 0 3 16.8a2.8 2.8 0 0 0 2 2c1.7.5 7 .5 7 .5s5.3 0 7-.5a2.8 2.8 0 0 0 2-2 29 29 0 0 0 .5-4.8 29 29 0 0 0-.5-4.8Z"/><path class="mc-social-play" d="m10 15.5 5-3.5-5-3.5z"/></svg></a>
         </div>
       </div>
-      <nav class="mc-footer-links" aria-label="Shop links">
-        <h3>SHOP</h3>
-        <a href="#shop">All Collections</a>
-        <a href="#men">Men</a>
-        <a href="#women">Women</a>
-        <a href="#jackets">Jackets</a>
-        <a href="#sneakers">Sneakers</a>
-      </nav>
-      <nav class="mc-footer-links" aria-label="Customer care links">
-        <h3>NEED HELP?</h3>
-        <button type="button" data-footer-action="track">Track Your Order</button>
-        <a href="#about">Customer Care</a>
-        <a href="#about">Delivery Information</a>
-        <a href="#about">About ModeCraft</a>
-      </nav>
-      <div class="mc-footer-newsletter">
-        <p class="mc-footer-kicker">THE MODECRAFT EDIT</p>
-        <h3>Stay a step ahead.</h3>
-        <p>Get first access to new collections, launches and selected offers.</p>
+      <div class="mc-footer-link-columns" id="mcFooterLinks">
+        <nav class="mc-footer-links" aria-label="Shop links"><h3>SHOP</h3><a href="#shop">All Collections</a><a href="#men">Men</a><a href="#women">Women</a><a href="#jackets">Jackets</a><a href="#sneakers">Sneakers</a></nav>
+        <nav class="mc-footer-links" aria-label="Customer care links"><h3>NEED HELP?</h3><button type="button" data-footer-action="track">Track Your Order</button><a href="#about">Customer Care</a><a href="#about">Delivery Information</a><a href="#about">About ModeCraft</a></nav>
+        <nav class="mc-footer-links" aria-label="Information links"><h3>INFORMATION</h3><a href="#about">About ModeCraft</a><a href="#about">Customer Care</a></nav>
+      </div>
+      <div class="mc-footer-newsletter" id="mcFooterNewsletter">
+        <p class="mc-footer-kicker" id="mcFooterNewsletterKicker">THE MODECRAFT EDIT</p>
+        <h3 id="mcFooterNewsletterTitle">Stay a step ahead.</h3>
+        <p id="mcFooterNewsletterDescription">Get first access to new collections, launches and selected offers.</p>
         <form id="footerNewsletterForm" class="mc-newsletter-form" novalidate>
           <label class="sr-only" for="footerNewsletterEmail">Email address</label>
           <input id="footerNewsletterEmail" name="email" type="email" autocomplete="email" placeholder="Your email address" maxlength="254" required>
-          <button type="submit" aria-label="Subscribe to the ModeCraft newsletter"><span>JOIN</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 5l7 7-7 7"/></svg></button>
+          <button type="submit" aria-label="Subscribe to the ModeCraft newsletter"><span id="mcFooterNewsletterButtonText">JOIN</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 5l7 7-7 7"/></svg></button>
         </form>
-        <label class="mc-newsletter-consent"><input id="footerNewsletterConsent" type="checkbox" required><span>I agree to receive occasional ModeCraft updates by email.</span></label>
+        <label class="mc-newsletter-consent"><input id="footerNewsletterConsent" type="checkbox" required><span id="mcFooterNewsletterConsentText">I agree to receive occasional ModeCraft updates by email.</span></label>
         <p id="footerNewsletterStatus" class="mc-newsletter-status" role="status" aria-live="polite"></p>
       </div>
     </div>
-    <div class="mc-footer-trust"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.2c0 4.6 3.2 8.2 7.5 9.8 4.3-1.6 7.5-5.2 7.5-9.8V6z"/><path d="m8.5 12 2.3 2.3 4.8-5"/></svg>SECURE CHECKOUT</span><i></i><span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>PAYMENT OPTIONS AT CHECKOUT</span><i></i><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13H4zM8 7V5a4 4 0 0 1 8 0v2"/><path d="m9 13 2 2 4-4"/></svg>SHOP WITH CONFIDENCE</span></div>
-    <div class="mc-footer-bottom"><span>© <span id="year"></span> <strong>MODECRAFT</strong>. ALL RIGHTS RESERVED.</span><a href="#home" class="mc-back-top">BACK TO TOP <span aria-hidden="true">↑</span></a></div>
+    <div class="mc-footer-trust" id="mcFooterTrust"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.2c0 4.6 3.2 8.2 7.5 9.8 4.3-1.6 7.5-5.2 7.5-9.8V6z"/><path d="m8.5 12 2.3 2.3 4.8-5"/></svg><span class="mc-trust-label">SECURE CHECKOUT</span></span><i></i><span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span class="mc-trust-label">PAYMENT OPTIONS AT CHECKOUT</span></span><i></i><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13H4zM8 7V5a4 4 0 0 1 8 0v2"/><path d="m9 13 2 2 4-4"/></svg><span class="mc-trust-label">SHOP WITH CONFIDENCE</span></span></div>
+    <div class="mc-footer-bottom"><span>© <span id="year"></span> <strong id="mcFooterCopyrightBrand">MODECRAFT</strong>. <span id="mcFooterCopyrightText">ALL RIGHTS RESERVED.</span></span><a href="#home" id="mcFooterBackTop" class="mc-back-top">BACK TO TOP <span aria-hidden="true">↑</span></a></div>
   </div>
 </footer>
 <div class="shade" id="shade"></div>
@@ -1352,6 +1343,41 @@ async function applySalesBanners(){
 }
 
 // Apply owner-managed storefront header settings without blocking the page.
+const defaultFooterSettings={enabled:true,brandText:'MODECRAFT',tagline:'Defined by style. Built for you.',intro:'Contemporary essentials for confident everyday style.',showBrand:true,showTagline:true,showIntro:true,socials:{},columns:[],newsletterEnabled:true,newsletterKicker:'THE MODECRAFT EDIT',newsletterTitle:'Stay a step ahead.',newsletterDescription:'Get first access to new collections, launches and selected offers.',newsletterButtonText:'JOIN',newsletterConsentText:'I agree to receive occasional ModeCraft updates by email.',trustEnabled:true,trustItems:['SECURE CHECKOUT','PAYMENT OPTIONS AT CHECKOUT','SHOP WITH CONFIDENCE'],copyrightText:'ALL RIGHTS RESERVED.',backToTopEnabled:true};
+function applyFooterColumns(columns){
+  const host=byId('mcFooterLinks');if(!host)return;host.replaceChildren();
+  (Array.isArray(columns)?columns:[]).forEach((column,index)=>{
+    const nav=document.createElement('nav');nav.className='mc-footer-links';nav.setAttribute('aria-label',String(column.title||`Footer links ${index+1}`));
+    const heading=document.createElement('h3');heading.textContent=String(column.title||'LINKS');nav.appendChild(heading);
+    (Array.isArray(column.links)?column.links:[]).forEach(link=>{
+      const label=String(link.label||'').trim();if(!label)return;
+      let el;
+      if(link.action==='track'){el=document.createElement('button');el.type='button';el.dataset.footerAction='track';}
+      else{const url=String(link.url||'').trim();if(!(/^(https:\/\/|\/(?!\/)|#|mailto:|tel:)/i.test(url)))return;el=document.createElement('a');el.href=url;if(/^https:\/\//i.test(url)){el.target='_blank';el.rel='noopener noreferrer';}}
+      el.textContent=label;nav.appendChild(el);
+    });
+    host.appendChild(nav);
+  });
+}
+async function applyStorefrontFooter(){
+  try{
+    const response=await fetch('/api/storefront/footer',{headers:{'Accept':'application/json'},cache:'no-store'});if(!response.ok)return;
+    const payload=await response.json();const f={...defaultFooterSettings,...(payload.footer||{}),socials:{...defaultFooterSettings.socials,...(payload.footer?.socials||{})}};
+    const footer=byId('siteFooter');if(!footer)return;footer.hidden=f.enabled===false;
+    const brand=byId('mcFooterBrand');if(brand){brand.hidden=f.showBrand===false;brand.replaceChildren();if(f.logoUrl&&/^https:\/\//i.test(f.logoUrl)){const img=document.createElement('img');img.src=f.logoUrl;img.alt=f.brandText||'ModeCraft';img.loading='lazy';img.style.cssText='max-height:42px;max-width:190px;object-fit:contain';brand.appendChild(img);}else{brand.appendChild(document.createTextNode(f.brandText||'MODECRAFT'));const dot=document.createElement('span');dot.textContent='.';brand.appendChild(dot);}}
+    const tagline=byId('mcFooterTagline');if(tagline){tagline.textContent=f.tagline||'';tagline.hidden=f.showTagline===false||!f.tagline;}
+    const intro=byId('mcFooterIntro');if(intro){intro.textContent=f.intro||'';intro.hidden=f.showIntro===false||!f.intro;}
+    document.querySelectorAll('[data-social]').forEach(link=>{const url=String(f.socials?.[link.dataset.social]||'').trim();const valid=/^https:\/\//i.test(url);link.hidden=!valid;if(valid){link.href=url;link.target='_blank';link.rel='noopener noreferrer';}});
+    if(Array.isArray(f.columns))applyFooterColumns(f.columns);
+    const newsletter=byId('mcFooterNewsletter');if(newsletter)newsletter.hidden=f.newsletterEnabled===false;
+    const setText=(id,value)=>{const el=byId(id);if(el&&typeof value==='string')el.textContent=value;};
+    setText('mcFooterNewsletterKicker',f.newsletterKicker);setText('mcFooterNewsletterTitle',f.newsletterTitle);setText('mcFooterNewsletterDescription',f.newsletterDescription);setText('mcFooterNewsletterButtonText',f.newsletterButtonText);setText('mcFooterNewsletterConsentText',f.newsletterConsentText);
+    const trust=byId('mcFooterTrust');if(trust){trust.hidden=f.trustEnabled===false;(f.trustItems||[]).slice(0,3).forEach((value,index)=>{const label=trust.querySelectorAll('.mc-trust-label')[index];if(label)label.textContent=value||'';});}
+    setText('mcFooterCopyrightBrand',f.brandText||'MODECRAFT');setText('mcFooterCopyrightText',f.copyrightText||'ALL RIGHTS RESERVED.');
+    const back=byId('mcFooterBackTop');if(back)back.hidden=f.backToTopEnabled===false;
+  }catch(_error){/* Keep the default footer if settings are unavailable. */}
+}
+
 async function applyStorefrontHeader(){
   try{
     const response=await fetch('/api/storefront/header',{headers:{'Accept':'application/json'}});
@@ -1377,12 +1403,12 @@ async function applyStorefrontHeader(){
       }
     }
     if(typeof h.brandText==='string'&&h.brandText.trim()){
-      document.querySelectorAll('.nav .brand, footer .brand').forEach(el=>{
+      document.querySelectorAll('.nav .brand').forEach(el=>{
         const text=h.brandText.trim();el.textContent=text;
       });
     }
     if(typeof h.tagline==='string'){
-      const tagline=document.querySelector('footer p');
+      const tagline=document.querySelector('#mcFooterTagline');
       if(tagline){tagline.textContent=h.tagline;tagline.hidden=h.showTagline===false;}
     }
     if(typeof h.logoUrl==='string'&&/^https:\/\//i.test(h.logoUrl.trim())){
@@ -1390,7 +1416,7 @@ async function applyStorefrontHeader(){
     }
   }catch(_error){/* Keep the default storefront if settings are unavailable. */}
 }
-applyStorefrontHeader();
+applyStorefrontHeader().then(applyStorefrontFooter);
 applySalesBanners();
 cart=safeRead('modecraft_cart_v1',[]).filter(item=>item&&item.id&&Number.isInteger(Number(item.quantity))&&Number(item.quantity)>0&&Number(item.quantity)<=10).map(item=>({id:String(item.id),color:String(item.color||''),size:String(item.size||''),quantity:Number(item.quantity)}));safeWrite('modecraft_cart_v1',cart);renderCart();refreshCustomerSession();
 
@@ -1434,9 +1460,8 @@ if(footerNewsletterForm){
     finally{submit.disabled=false;}
   });
 }
-document.querySelectorAll('[data-footer-action="track"]').forEach(button=>button.addEventListener('click',()=>openModal('trackModal')));
-document.querySelectorAll('.mc-footer-links a[href="#men"],.mc-footer-links a[href="#women"],.mc-footer-links a[href="#jackets"],.mc-footer-links a[href="#sneakers"]').forEach(link=>link.addEventListener('click',()=>{setTimeout(()=>byId('shop')?.scrollIntoView({behavior:'smooth',block:'start'}),0)}));
-document.querySelector('.mc-back-top')?.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+byId('siteFooter')?.addEventListener('click',event=>{const track=event.target.closest('[data-footer-action="track"]');if(track){openModal('trackModal');return;}const link=event.target.closest('.mc-footer-links a');if(link&&['#men','#women','#jackets','#sneakers'].includes(link.getAttribute('href'))){setTimeout(()=>byId('shop')?.scrollIntoView({behavior:'smooth',block:'start'}),0);}});
+byId('mcFooterBackTop')?.addEventListener('click',event=>{event.preventDefault();window.scrollTo({top:0,behavior:'smooth'});});
 
 setCollectionFromHash();
 init();

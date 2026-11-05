@@ -656,6 +656,47 @@ body.dark .interactive-stars button.active{color:#edc15b!important;background:#3
 }
 @media(prefers-reduced-motion:reduce){#productModal .productbox .related-product-card{transition:none}}
 
+
+/* ModeCraft luxury footer */
+.mc-footer{background:#101010;color:#f5f1eb;text-align:left;padding:64px 28px 22px;border-top:1px solid #2a251f}
+.mc-footer-inner{max-width:1280px;margin:0 auto}
+.mc-footer-top{display:grid;grid-template-columns:1.15fr .72fr .9fr 1.45fr;gap:clamp(24px,4vw,62px);align-items:start;padding-bottom:46px}
+.mc-footer-brand{display:inline-flex;align-items:baseline;color:#f7f3ed;font-size:27px;font-weight:850;letter-spacing:1.3px;line-height:1.1}
+.mc-footer-brand span{color:#d6b36a}
+.mc-footer-tagline{margin:15px 0 7px!important;color:#d6b36a!important;font-size:10px!important;letter-spacing:1.7px!important;text-transform:uppercase}
+.mc-footer-intro{max-width:260px;margin:0!important;color:#a9a39a!important;font-size:12px!important;line-height:1.8!important;letter-spacing:0!important}
+.mc-socials{display:flex;gap:10px;margin-top:22px}
+.mc-socials a{display:grid;place-items:center;width:36px;height:36px;border:1px solid #4a4032;border-radius:50%;color:#d6b36a;transition:background .2s,border-color .2s,transform .2s}
+.mc-socials a:hover{background:#d6b36a;border-color:#d6b36a;color:#111;transform:translateY(-2px)}
+.mc-socials svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mc-socials a:nth-child(2) svg{fill:currentColor;stroke:none}.mc-socials .mc-social-fill{fill:currentColor;stroke:none}.mc-socials .mc-social-play{fill:#101010;stroke:none}
+.mc-footer-links{display:grid;justify-items:start;gap:13px}
+.mc-footer-links h3,.mc-footer-newsletter h3{margin:0 0 7px;color:#f4f0e9;font-size:11px;font-weight:750;letter-spacing:1.7px}
+.mc-footer-links a,.mc-footer-links button{padding:0;border:0;background:none;color:#aaa49c;font-size:12px;line-height:1.5;text-align:left;transition:color .2s}
+.mc-footer-links a:hover,.mc-footer-links button:hover{color:#d6b36a}
+.mc-footer-newsletter{max-width:390px;justify-self:end;width:100%}
+.mc-footer-kicker{margin:0 0 11px!important;color:#d6b36a!important;font-size:9px!important;font-weight:700;letter-spacing:2px!important}
+.mc-footer-newsletter h3{font-size:21px;letter-spacing:-.45px;margin-bottom:9px}
+.mc-footer-newsletter>p:not(.mc-footer-kicker):not(.mc-newsletter-status){margin:0 0 18px;color:#aaa49c;font-size:12px;line-height:1.75;letter-spacing:0}
+.mc-newsletter-form{display:flex;min-height:48px;border:1px solid #6b583c;background:#171614}
+.mc-newsletter-form:focus-within{border-color:#d6b36a;box-shadow:0 0 0 3px rgba(214,179,106,.12)}
+.mc-newsletter-form input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#f7f3ed;padding:0 14px;font-size:12px}
+.mc-newsletter-form input::placeholder{color:#888178}
+.mc-newsletter-form button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:76px;padding:0 13px;border:0;border-left:1px solid #6b583c;background:#d6b36a;color:#15120d;font-size:10px;font-weight:800;letter-spacing:1px}
+.mc-newsletter-form button:hover{background:#e4c987}.mc-newsletter-form button:disabled{opacity:.65;cursor:wait}
+.mc-newsletter-form button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mc-newsletter-consent{display:flex;align-items:flex-start;gap:8px;margin-top:11px;color:#8e8880;font-size:10px;line-height:1.55}
+.mc-newsletter-consent input{accent-color:#d6b36a;margin:2px 0 0;flex:0 0 auto}
+.mc-newsletter-status{min-height:16px;margin:8px 0 0!important;color:#d6b36a!important;font-size:11px!important;line-height:1.5!important;letter-spacing:0!important}
+.mc-footer-trust{display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;padding:19px 0;border-top:1px solid #302b24;border-bottom:1px solid #302b24;color:#aaa49c;font-size:9px;font-weight:650;letter-spacing:1.1px}
+.mc-footer-trust span{display:inline-flex;align-items:center;gap:8px}.mc-footer-trust svg{width:16px;height:16px;fill:none;stroke:#d6b36a;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.mc-footer-trust i{width:3px;height:3px;border-radius:50%;background:#806b4c}
+.mc-footer-bottom{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:20px;color:#817b73;font-size:9px;letter-spacing:1px}
+.mc-footer-bottom strong{color:#c6bfb4;font-weight:750}.mc-back-top{display:inline-flex;align-items:center;gap:9px;color:#d6b36a;font-weight:750;white-space:nowrap}.mc-back-top span{font-size:16px;line-height:1}
+body.dark .mc-footer{background:#080808;border-top-color:#29231b}
+@media(max-width:900px){.mc-footer-top{grid-template-columns:1fr 1fr;gap:34px 40px}.mc-footer-newsletter{justify-self:start;max-width:440px}}
+@media(max-width:560px){.mc-footer{padding:44px 20px 18px}.mc-footer-top{grid-template-columns:1fr 1fr;gap:30px 22px;padding-bottom:32px}.mc-footer-brand-block{grid-column:1/-1}.mc-footer-newsletter{grid-column:1/-1;max-width:none}.mc-footer-brand{font-size:25px}.mc-footer-trust{justify-content:flex-start;gap:13px;padding:16px 0}.mc-footer-trust i{display:none}.mc-footer-trust span{font-size:8px;letter-spacing:.65px}.mc-footer-bottom{align-items:flex-start;font-size:8px;letter-spacing:.55px}}
+@media(max-width:360px){.mc-footer-top{gap:26px 15px}.mc-footer-links a,.mc-footer-links button{font-size:11px}.mc-footer-trust{display:grid;grid-template-columns:1fr;gap:11px}}
+
 </style>
 <meta name="description" content="Discover elevated everyday fashion at ModeCraft. Explore thoughtfully designed hoodies, clothing and accessories with a premium shopping experience."><meta property="og:site_name" content="ModeCraft"><meta property="og:type" content="website"><meta property="og:title" content="ModeCraft — Elevated Everyday Fashion"><meta property="og:description" content="Explore thoughtfully designed everyday essentials at ModeCraft."><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"ModeCraft","url":"https://modecraft-india.onrender.com/","description":"An online fashion store offering thoughtfully designed everyday clothing and accessories."}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"ModeCraft","url":"https://modecraft-india.onrender.com/","potentialAction":{"@type":"SearchAction","target":"https://modecraft-india.onrender.com/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
 </head>
@@ -694,7 +735,51 @@ body.dark .interactive-stars button.active{color:#edc15b!important;background:#3
 <section class="wrap extras" id="wishlistSection" hidden><div class="heading"><h2>Your wishlist</h2><span class="muted">SAVED FOR LATER.</span></div><div class="grid" id="wishlistProducts"></div></section>
 <section class="benefits" id="about"><div><b>01 / CURATED STYLE</b><p>Easy-to-wear wardrobe essentials.</p></div><div><b>02 / DELIVERY CLARITY</b><p>Delivery estimates shown before purchase.</p></div><div><b>03 / CUSTOMER CARE</b><p>Help with orders, returns and sizing.</p></div></section>
 </main>
-<footer><div class="brand">MODECRAFT.</div><p>Wear Your Identity.</p><p>© <span id="year"></span> ModeCraft. All rights reserved.</p></footer>
+<footer class="mc-footer" id="siteFooter">
+  <div class="mc-footer-inner">
+    <div class="mc-footer-top">
+      <div class="mc-footer-brand-block">
+        <a class="brand mc-footer-brand" href="#home" aria-label="ModeCraft home">MODECRAFT<span>.</span></a>
+        <p class="mc-footer-tagline">Defined by style. Built for you.</p>
+        <p class="mc-footer-intro">Contemporary essentials for confident everyday style.</p>
+        <div class="mc-socials" aria-label="Social media">
+          <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram — update with the official ModeCraft profile" title="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.25" y="3.25" width="17.5" height="17.5" rx="5"/><circle cx="12" cy="12" r="4.1"/><circle cx="17.7" cy="6.5" r="1" class="mc-social-fill"/></svg></a>
+          <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook — update with the official ModeCraft page" title="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 21v-8h2.7l.4-3.1h-3.1v-2c0-.9.3-1.5 1.6-1.5h1.7V3.6c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.1H8v3.1h2.8v8z"/></svg></a>
+          <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube — update with the official ModeCraft channel" title="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 7.2a2.8 2.8 0 0 0-2-2C17.3 4.7 12 4.7 12 4.7s-5.3 0-7 .5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2.5 12 29 29 0 0 0 3 16.8a2.8 2.8 0 0 0 2 2c1.7.5 7 .5 7 .5s5.3 0 7-.5a2.8 2.8 0 0 0 2-2 29 29 0 0 0 .5-4.8 29 29 0 0 0-.5-4.8Z"/><path class="mc-social-play" d="m10 15.5 5-3.5-5-3.5z"/></svg></a>
+        </div>
+      </div>
+      <nav class="mc-footer-links" aria-label="Shop links">
+        <h3>SHOP</h3>
+        <a href="#shop">All Collections</a>
+        <a href="#men">Men</a>
+        <a href="#women">Women</a>
+        <a href="#jackets">Jackets</a>
+        <a href="#sneakers">Sneakers</a>
+      </nav>
+      <nav class="mc-footer-links" aria-label="Customer care links">
+        <h3>NEED HELP?</h3>
+        <button type="button" data-footer-action="track">Track Your Order</button>
+        <a href="#about">Customer Care</a>
+        <a href="#about">Delivery Information</a>
+        <a href="#about">About ModeCraft</a>
+      </nav>
+      <div class="mc-footer-newsletter">
+        <p class="mc-footer-kicker">THE MODECRAFT EDIT</p>
+        <h3>Stay a step ahead.</h3>
+        <p>Get first access to new collections, launches and selected offers.</p>
+        <form id="footerNewsletterForm" class="mc-newsletter-form" novalidate>
+          <label class="sr-only" for="footerNewsletterEmail">Email address</label>
+          <input id="footerNewsletterEmail" name="email" type="email" autocomplete="email" placeholder="Your email address" maxlength="254" required>
+          <button type="submit" aria-label="Subscribe to the ModeCraft newsletter"><span>JOIN</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 5l7 7-7 7"/></svg></button>
+        </form>
+        <label class="mc-newsletter-consent"><input id="footerNewsletterConsent" type="checkbox" required><span>I agree to receive occasional ModeCraft updates by email.</span></label>
+        <p id="footerNewsletterStatus" class="mc-newsletter-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+    <div class="mc-footer-trust"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.2c0 4.6 3.2 8.2 7.5 9.8 4.3-1.6 7.5-5.2 7.5-9.8V6z"/><path d="m8.5 12 2.3 2.3 4.8-5"/></svg>SECURE CHECKOUT</span><i></i><span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>PAYMENT OPTIONS AT CHECKOUT</span><i></i><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13H4zM8 7V5a4 4 0 0 1 8 0v2"/><path d="m9 13 2 2 4-4"/></svg>SHOP WITH CONFIDENCE</span></div>
+    <div class="mc-footer-bottom"><span>© <span id="year"></span> <strong>MODECRAFT</strong>. ALL RIGHTS RESERVED.</span><a href="#home" class="mc-back-top">BACK TO TOP <span aria-hidden="true">↑</span></a></div>
+  </div>
+</footer>
 <div class="shade" id="shade"></div>
 <aside class="drawer" id="drawer" aria-label="Shopping bag"><div class="drawerhead"><h2>Your bag</h2><button type="button" class="drawer-close" id="closeBag" aria-label="Close bag">×</button></div><div class="items" id="cartItems"></div><div class="total"><div class="totalrow"><b>Subtotal</b><b id="subtotal">₹0</b></div><p class="notice">Supplier availability and delivery fees must be confirmed before dispatch.</p><div class="cart-footer-actions">
 <button type="button" class="cart-continue-btn" id="continueShoppingFooter"><span aria-hidden="true">←</span> CONTINUE SHOPPING</button>
@@ -1327,6 +1412,32 @@ syncPaymentButtons();
 
 // Continue shopping now sits beside checkout in the cart footer.
 byId('continueShoppingFooter').addEventListener('click',()=>{showBag(false);const target=document.querySelector('#products')||document.querySelector('#home')||document.querySelector('main')||document.body;requestAnimationFrame(()=>target.scrollIntoView({behavior:'smooth',block:'start'}));});
+
+// Newsletter signups are stored by the storefront API; email campaigns require a mailing provider to be configured.
+const footerNewsletterForm=byId('footerNewsletterForm');
+if(footerNewsletterForm){
+  footerNewsletterForm.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const email=byId('footerNewsletterEmail').value.trim();
+    const consent=byId('footerNewsletterConsent').checked;
+    const status=byId('footerNewsletterStatus');
+    const submit=footerNewsletterForm.querySelector('button[type="submit"]');
+    status.textContent='';
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){status.textContent='Please enter a valid email address.';return;}
+    if(!consent){status.textContent='Please confirm that you agree to receive updates.';return;}
+    submit.disabled=true;
+    try{
+      const result=await api('/api/storefront/newsletter',{email,consent:true});
+      status.textContent=result.message||'Your subscription has been saved.';
+      footerNewsletterForm.reset();
+    }catch(error){status.textContent=error.message||'We could not save your subscription. Please try again.';}
+    finally{submit.disabled=false;}
+  });
+}
+document.querySelectorAll('[data-footer-action="track"]').forEach(button=>button.addEventListener('click',()=>openModal('trackModal')));
+document.querySelectorAll('.mc-footer-links a[href="#men"],.mc-footer-links a[href="#women"],.mc-footer-links a[href="#jackets"],.mc-footer-links a[href="#sneakers"]').forEach(link=>link.addEventListener('click',()=>{setTimeout(()=>byId('shop')?.scrollIntoView({behavior:'smooth',block:'start'}),0)}));
+document.querySelector('.mc-back-top')?.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+
 setCollectionFromHash();
 init();
 </script>

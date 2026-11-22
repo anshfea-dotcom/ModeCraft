@@ -1,0 +1,40 @@
+.sidebar {background:#161b1b;padding:20px 14px;overflow-y:auto}
+.sidebar .brand,.loginbox .brand {font-size:26px;letter-spacing:.22em}
+.sidebar .brand {color:#fcf8ef;padding-bottom:16px}
+.sidebar .nav {display:grid;gap:12px}
+.nav-group {min-width:0}
+.nav-group:not(:has(button:not(.hidden))) {display:none}
+.nav-group h2 {font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#b6aaa0;margin:6px 12px}
+.sidebar .nav button {padding:7px 12px;min-height:34px;border-radius:5px}
+.sidebar .nav button.active {color:#fff5d9;background:#35372f}
+.sidebar .sidebottom {margin-top:16px}
+.workspace-menu {display:none}
+.main .topbar {border-bottom:1px solid var(--line);padding-bottom:20px}
+.topbar h1,.loginbox h1 {font-family:Georgia,serif;font-weight:500;letter-spacing:-.035em}
+.main .card,.main .stat,.loginbox,.media-card {border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 14px #1416160a}
+.main .cardtitle {align-items:flex-start}
+.main .card h2 {letter-spacing:-.025em}
+.main .btn,.loginbox .btn {border-radius:6px}
+.main .tablewrap {max-width:100%;overflow:auto}
+.media-group {margin:24px 0}
+.media-group h2 {font-size:20px}
+.media-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:14px}
+.media-card {min-width:0;background:var(--surface);overflow:hidden}
+.media-card img {width:100%;aspect-ratio:4/3;object-fit:cover;object-position:center 38%;display:block}
+.media-card>div {padding:14px}
+.media-card h3 {margin:0 0 10px}
+.media-card label,.media-card small {display:block;color:var(--muted)}
+.media-card input {width:100%;margin:6px 0 14px;font-size:12px}
+.media-card small {margin-top:8px}
+@media(max-width:700px){
+ .sidebar {display:grid;grid-template-columns:1fr auto;align-items:center;gap:5px;padding:12px 15px}
+ .sidebar .brand {padding:0;font-size:21px}
+ .workspace-menu {display:block;background:transparent;border:1px solid #645e50;color:white;border-radius:6px;padding:10px}
+ .sidebar .nav {grid-column:1/-1;display:none;overflow:visible;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:10px 0}
+ .workspace-menu[aria-expanded=true]+.nav {display:grid}
+ .sidebar .nav button {width:100%;white-space:normal}
+ .sidebar .sidebottom {grid-column:1/-1;margin-top:5px}
+ .main .topbar {gap:12px}
+ .main .cardtitle {flex-wrap:wrap}
+ .media-grid {grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr))}
+}

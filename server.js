@@ -1283,6 +1283,8 @@ async function getFooterSettings() {
 }
 
 
+require('./storefront-images')(app, pool, requireAdmin, requireOwner, audit);
+
 app.get("/api/storefront/header", async (_req, res, next) => {
   try {
     const result = await pool.query("SELECT data FROM store_settings WHERE key = $1", ["storefront_header"]);

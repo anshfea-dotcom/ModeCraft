@@ -788,6 +788,124 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 .mc-footer-bottom{color:#b6aea4}
 @media(max-width:900px){.mc-footer-top{row-gap:32px}}
 @media(max-width:560px){.mc-footer{padding:46px 20px 20px}.mc-footer-top{row-gap:30px;padding-bottom:34px}.mc-footer-link-columns{gap:28px 18px}.mc-footer-links a,.mc-footer-links button{min-height:28px}.mc-footer-bottom{line-height:1.8}}
+
+/* AERLON mobile-first storefront. Desktop layout is intentionally unchanged. */
+.site-wordmark{font-size:27px;letter-spacing:3px;font-weight:800;line-height:1.1}
+.site-wordmark span{font-size:.8em;margin-left:1px}
+.mobile-promo,.mobile-search-button,.mobile-benefits,.mobile-category-heading,.mobile-store-menu,.mobile-menu-account-label{display:none}
+.mc-footer-accordion-button{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0;border:0;background:none;color:inherit;text-align:left;font:inherit;letter-spacing:inherit;pointer-events:none}
+.mc-footer-accordion-caret{display:none}
+.mc-footer-link-list{display:grid;justify-items:start;gap:12px}
+.mc-footer-links h3{width:100%}
+@media(max-width:720px){
+ html{scroll-padding-top:76px}
+ .mobile-promo{display:flex;min-height:33px;padding:7px 15px;align-items:center;justify-content:center;gap:11px;background:#111;color:#f6f0e8;font-size:9px;letter-spacing:1.1px;font-weight:650}
+ .mobile-promo a{color:#f0d7b1;text-decoration:underline;text-underline-offset:3px}
+ .announce{display:none}
+ .nav{top:0;z-index:25;background:rgba(255,255,255,.97);backdrop-filter:blur(14px)}
+ .navin{display:grid;grid-template-columns:42px minmax(0,1fr) 96px;gap:6px;align-items:center;min-height:65px;padding:9px 14px;max-width:none}
+ .navin>.site-wordmark{grid-column:2;grid-row:1;justify-self:center;margin:0;min-width:0;font-size:clamp(18px,5vw,24px);font-weight:780;letter-spacing:clamp(2px,.9vw,4px)}
+ .navactions{display:contents}
+ #menuBtn{grid-row:1;grid-column:1;justify-self:start;display:grid;place-items:center;min-width:42px;width:42px;height:44px;min-height:44px;margin:0;padding:0;border:0;background:none;box-shadow:none}
+ #menuBtn .hamburger-lines,#menuBtn .hamburger-lines i{width:21px}
+ #menuBtn .hamburger-lines{gap:5px}
+ #menuBtn .menu-trigger-label{display:none}
+ #mobileSearchBtn{grid-column:3;grid-row:1;justify-self:start;align-self:center;display:grid;place-items:center;width:42px;height:44px;border:0;background:none;color:#171717}
+ #mobileSearchBtn svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+ #bagBtn{grid-column:3;grid-row:1;justify-self:end;align-self:center;margin:0;width:43px;height:43px;min-width:43px;flex:none;border:0;border-radius:0;background:none;box-shadow:none}
+ .bag-count{top:0;right:0}
+ .mobile-search-button:focus-visible,#menuBtn:focus-visible,#bagBtn:focus-visible,.mobile-promo a:focus-visible{outline:2px solid #ac8050;outline-offset:2px}
+ .hero{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;isolation:isolate;position:relative;min-height:480px;padding:72px 24px 42px!important;gap:0;background:#231f1b;overflow:hidden}
+ .hero::before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(180deg,rgba(10,9,8,.10) 5%,rgba(10,9,8,.20) 35%,rgba(10,9,8,.77) 100%);pointer-events:none}
+ .hero>div:first-child{position:relative;z-index:2;max-width:390px;color:#fff}
+ .hero .eyebrow{color:#f7e7c9;letter-spacing:3.2px}
+ .hero h1{font-size:clamp(43px,10.9vw,64px);line-height:.99;letter-spacing:-2.4px;margin:17px 0 18px;max-width:380px}
+ .hero p{color:#f4f0eb;font-size:13px;line-height:1.75;max-width:330px}
+ .hero .btn{background:#fff;border-color:#fff;color:#171717;border-radius:999px;min-height:48px;padding:14px 23px;font-weight:750}
+ .hero .btn:hover{background:#f2e5d4;border-color:#f2e5d4}
+ .heroimg{position:absolute;inset:0;z-index:-2;width:100%;height:100%;min-height:100%;border:0;border-radius:0;box-shadow:none;background:#6e6255}
+ .heroimg img{width:100%;height:100%;object-fit:cover;object-position:center 32%}
+ .heroimg:after{display:none}
+ .mobile-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:15px 12px;background:#fff;border-bottom:1px solid #eae5df;gap:3px;text-align:center}
+ .mobile-benefits a{display:flex;align-items:center;flex-direction:column;justify-content:center;gap:6px;padding:5px 2px;min-width:0;font-size:10px;line-height:1.3;font-weight:650;color:#312d28}
+ .mobile-benefits svg{width:25px;height:25px;fill:none;stroke:#25211e;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+ #shop.wrap{padding:34px 17px 52px}
+ .mobile-category-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px}
+ .mobile-category-heading h2{font-size:24px;line-height:1.2;letter-spacing:-.9px;margin:0}
+ .mobile-category-heading a{font-size:11px;white-space:nowrap;text-decoration:underline;text-underline-offset:4px}
+ .collection-boxes{display:flex;grid-template-columns:none;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;gap:12px;margin:0 0 30px;padding:0 2px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+ .collection-box{flex:0 0 clamp(126px,34vw,164px);height:162px;min-height:162px;max-width:164px;position:relative;display:flex;align-items:flex-end;justify-content:center;padding:0;border-radius:14px;overflow:hidden;scroll-snap-align:start;background:linear-gradient(140deg,#c5bbae,#554d44);border:1px solid #e2dad0;white-space:normal;box-shadow:0 4px 11px rgba(31,24,17,.05)}
+ .collection-box:nth-child(2){background:linear-gradient(140deg,#d6d0c8,#655953)}
+ .collection-box:nth-child(3){background:linear-gradient(140deg,#b9a997,#3f3e3a)}
+ .collection-box:nth-child(4){background:linear-gradient(140deg,#b4a391,#49403b)}
+ .collection-box::after{content:"";position:absolute;inset:40% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.72));pointer-events:none}
+ .collection-box .collection-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
+ .collection-box .collection-label{position:relative;z-index:2;display:block;width:100%;padding:14px 7px;color:#fff;font-size:12px;line-height:1.2;font-weight:750;letter-spacing:.2px;text-transform:capitalize;text-align:center}
+ .collection-box.active{border:2px solid #b78a56;background:linear-gradient(140deg,#b1a49a,#2f2923)}
+ .collection-box.active .collection-label{color:#fff}
+ #shop .tools input,#shop .tools select{min-height:48px}
+ #shop .heading{margin-top:15px}
+ #shop .heading h2{font-size:25px}
+ #settingsModal.menu-modal{align-items:stretch;justify-content:flex-start;padding:0;background:rgba(13,12,11,.55)}
+ #settingsModal .menu-box{height:100dvh;max-height:100dvh;width:min(365px,90vw);max-width:90vw;padding:23px 23px 40px;border-radius:0 21px 21px 0;margin-right:auto;background:#fff;box-shadow:15px 0 50px rgba(0,0,0,.16);animation:aerlonDrawerIn .26s ease-out}
+ @keyframes aerlonDrawerIn{from{transform:translateX(-22px);opacity:.8}to{transform:translateX(0);opacity:1}}
+ #settingsModal .modalhead{position:sticky;top:-23px;z-index:2;padding:4px 0 18px;background:#fff;border-bottom:1px solid #e6e1da}
+ #settingsModal .modalhead h2{font-size:24px;letter-spacing:1.2px;font-weight:750}
+ #settingsModal .modalhead button{font-size:29px;min-width:44px;min-height:44px}
+ .mobile-store-menu{display:block;margin:14px 0 25px}
+ .mobile-store-menu>a,.mobile-menu-collections>summary{min-height:48px;display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #ece7e0;font-size:15px;font-weight:600;color:#272421;list-style:none}
+ .mobile-menu-collections summary::-webkit-details-marker{display:none}
+ .mobile-menu-collections summary{cursor:pointer}
+ .mobile-menu-collections[open] summary span{transform:rotate(180deg)}
+ .mobile-menu-collections>div{display:grid;gap:0;padding:5px 0 10px 13px;background:#f8f6f2}
+ .mobile-menu-collections>div a{padding:10px 8px;font-size:13px;color:#51483e}
+ .mobile-menu-account-label{display:block;color:#927149;font-size:10px;font-weight:750;letter-spacing:1.6px;margin:0 0 14px}
+ #settingsModal .menu-actions{margin-top:0;gap:6px}
+ #settingsModal .menu-item{min-height:58px;padding:9px 10px}
+ #settingsModal .menu-icon{width:32px;height:32px;flex-basis:32px;font-size:18px}
+ #settingsModal .menu-item small{display:none}
+ .mc-footer{padding:43px 21px 22px}
+ .mc-footer-top{display:grid;grid-template-columns:minmax(0,1fr);gap:25px;padding-bottom:28px}
+ .mc-footer-brand-block,.mc-footer-link-columns,.mc-footer-newsletter{grid-column:1;grid-row:auto;min-width:0}
+ .mc-footer-brand{font-size:29px;letter-spacing:3px}
+ .mc-footer-intro{max-width:350px}
+ .mc-footer-link-columns{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+ .mc-footer-links{display:block;margin:0;border-bottom:1px solid #403931}
+ .mc-footer-links h3{margin:0;min-height:0}
+ .mc-footer-links h3 .mc-footer-accordion-button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:55px;pointer-events:auto;color:#f6efe6;font-size:13px;letter-spacing:.3px;font-weight:720;text-transform:none}
+ .mc-footer-accordion-caret{display:inline-block;color:#d4b483;font-size:20px;transition:transform .2s}
+ .mc-footer-accordion-button[aria-expanded="true"] .mc-footer-accordion-caret{transform:rotate(180deg)}
+ .mc-footer-link-list{display:none;gap:10px;padding:0 0 18px 7px}
+ .mc-footer-accordion-button[aria-expanded="true"] + .mc-footer-link-list{display:grid}
+ .mc-footer-links a,.mc-footer-links button:not(.mc-footer-accordion-button){min-height:30px;font-size:13px}
+ .mc-footer-newsletter{margin-top:7px;max-width:none;justify-self:stretch;border-radius:18px;background:#242321;padding:22px 18px}
+ .mc-footer-newsletter h3{font-size:19px}
+ .mc-newsletter-form input{min-height:48px}
+ .mc-footer-trust{display:flex;justify-content:space-between;gap:9px;padding:18px 0}
+ .mc-footer-trust>span{display:flex;flex:1 1 0;align-items:center;flex-direction:column;justify-content:center;gap:7px;text-align:center}
+ .mc-footer-trust>span>svg{width:22px;height:22px}
+ .mc-footer-trust>span>span{font-size:8px;letter-spacing:.2px;line-height:1.3}
+ .mc-footer-trust>i{display:none}
+ .mc-footer-bottom{flex-wrap:wrap;gap:14px;font-size:9px;color:#c1b6a8}
+ .mc-back-top{font-size:10px}
+ body.dark .nav{background:rgba(24,24,24,.97)}
+ body.dark #mobileSearchBtn{color:#f4f0e9}
+ body.dark .mobile-benefits{background:#1b1917;border-color:#403931}
+ body.dark .mobile-benefits a,body.dark .mobile-benefits svg{color:#f4f0e9;stroke:#f4f0e9}
+ body.dark #settingsModal .menu-box,body.dark #settingsModal .modalhead{background:#1f1d1a}
+ body.dark .mobile-store-menu>a,body.dark .mobile-menu-collections>summary{color:#f4f0e9;border-color:#3b342b}
+ body.dark .mobile-menu-collections>div{background:#29251f}
+ body.dark .mobile-menu-collections>div a{color:#ddd3c6}
+}
+@media(max-width:360px){
+ .navin{grid-template-columns:38px minmax(0,1fr) 88px;padding:8px 10px}
+ .navin>.site-wordmark{font-size:18px;letter-spacing:1.7px}
+ #mobileSearchBtn{width:40px}
+ #bagBtn{width:40px}
+ .mobile-promo{font-size:8px}
+ .mobile-benefits a{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){#settingsModal .menu-box{animation:none}}
 </style>
 <meta name="description" content="Discover elevated everyday fashion at AERLON. Explore thoughtfully designed hoodies, clothing and accessories with a premium shopping experience."><meta property="og:site_name" content="AERLON"><meta property="og:type" content="website"><meta property="og:title" content="AERLON — Elevated Everyday Fashion"><meta property="og:description" content="Explore thoughtfully designed everyday essentials at AERLON."><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AERLON","url":"https://modecraft-india.onrender.com/","description":"An online fashion store offering thoughtfully designed everyday clothing and accessories."}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"AERLON","url":"https://modecraft-india.onrender.com/","potentialAction":{"@type":"SearchAction","target":"https://modecraft-india.onrender.com/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
 </head>

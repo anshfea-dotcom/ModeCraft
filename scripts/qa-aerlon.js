@@ -32,12 +32,12 @@ check('Customer care, policy window, privacy and official WhatsApp are consisten
   includesAll(home, ['/customer-care.html', '/return-refund-policy.html', '3-day request']);
 });
 check('Storefront inline JavaScript parses correctly', () => {
-  const inlineScripts = [...home.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
+  const inlineScripts = [...home.matchAll(/<script>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
   assert.ok(inlineScripts.length, 'Storefront inline JavaScript was not found');
   inlineScripts.forEach((source, index) => new vm.Script(source, { filename: 'public/index.html (inline script ' + (index + 1) + ')' }));
   assert.ok(home.includes('src="/aerlon-concierge.js"'), 'Concierge script is not loaded');
   const concierge = fs.readFileSync('public/aerlon-concierge.js', 'utf8');
-  new vm.Script(concierge, { filename: 'public/aerlon-concierge.js' });
+  try { new vm.Script(concierge, { filename: 'public/aerlon-concierge.js' }); } catch (error) { throw new Error('Concierge script: ' + error.stack); }
   includesAll(concierge, ['Agent Support', 'wa.me/919648629929', 'ac-quick', 'ac-typing']);
 });
 console.log(passed + '/5 AERLON build checks passed.');

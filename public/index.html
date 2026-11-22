@@ -337,19 +337,30 @@ body.dark .track-error{background:#321f1b;border-color:#684038;color:#f0b8aa}
 /* ================= END ORDER / AUTH UI EXPERIENCE ================= */
 
 
-/* ===== AERLON minimal premium intro, cart actions and payment cards ===== */
-.mc-intro{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;background:#10100f;color:#f4f0e9;transition:opacity .65s ease,visibility .65s ease}
+/* AERLON puzzle-logo entry */
+.mc-intro{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at center,#292018 0%,#14110e 43%,#080808 86%);color:#e6bf88;transition:opacity .55s ease,visibility .55s ease}
 .mc-intro.is-leaving{opacity:0;visibility:hidden;pointer-events:none}
-.intro-grain{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 48%,rgba(184,145,91,.09),transparent 42%),#10100f}
-.intro-grain:after{content:"";position:absolute;inset:0;opacity:.08;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.3'/%3E%3C/svg%3E")}
-.intro-center{position:relative;z-index:1;width:min(280px,72vw);display:flex;flex-direction:column;align-items:center;animation:introAppear .8s cubic-bezier(.2,.7,.2,1) both}
-.intro-logo{display:inline-flex;align-items:baseline;white-space:nowrap;color:#f4f0e9!important;font-size:clamp(29px,5vw,43px)!important;font-weight:900!important;letter-spacing:-1.8px!important;line-height:1!important;text-decoration:none!important}
-.intro-logo span{font-weight:400!important;color:#c8a478!important}
-.intro-loader{width:100%;margin-top:34px}
-.intro-loader-track{width:100%;height:2px;background:rgba(255,255,255,.13);overflow:hidden}
-.intro-loader-fill{height:100%;width:0;background:#c8a478;animation:introProgress 3s cubic-bezier(.4,0,.2,1) forwards;transform-origin:left}
-@keyframes introAppear{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
-@keyframes introProgress{from{width:0}to{width:100%}}
+.intro-grain{position:absolute;inset:0;background:radial-gradient(circle at center,rgba(232,165,80,.08),transparent 60%);pointer-events:none}
+.intro-tiles{position:absolute;inset:0;pointer-events:none}
+.intro-tile{position:absolute;width:clamp(110px,19vw,255px);height:clamp(90px,15vw,200px);background:linear-gradient(135deg,rgba(166,118,66,.22),#0b0a09 65%,rgba(126,87,44,.21));border:1px solid rgba(229,172,94,.4);box-shadow:inset 1px 1px rgba(245,196,133,.18),0 22px 50px #0009;opacity:0;animation:puzzleTile 1.7s cubic-bezier(.17,.82,.24,1) var(--delay) both}
+.intro-tile:nth-child(1){left:13%;top:13%;--x:-210px;--y:-150px;--r:-22deg;--delay:0s}
+.intro-tile:nth-child(2){right:14%;top:14%;--x:210px;--y:-130px;--r:19deg;--delay:.12s}
+.intro-tile:nth-child(3){left:20%;bottom:15%;--x:-200px;--y:200px;--r:18deg;--delay:.23s}
+.intro-tile:nth-child(4){right:20%;bottom:12%;--x:220px;--y:180px;--r:-20deg;--delay:.1s}
+.intro-center{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:min(92vw,850px);padding:24px 12px;text-align:center}
+.intro-wordmark{display:flex;justify-content:center;align-items:baseline;white-space:nowrap;gap:clamp(1px,.5vw,5px);font-family:Georgia,'Times New Roman',serif;font-size:clamp(47px,10.5vw,103px);line-height:1.1;letter-spacing:.02em;color:#e9c38d;text-shadow:0 2px 23px rgba(234,169,79,.28)}
+.intro-letter{display:inline-block;opacity:0;filter:blur(7px);animation:puzzleLetter 1.3s cubic-bezier(.16,.85,.26,1) calc(.12s + var(--i) * .11s) forwards}
+.intro-letter:nth-child(odd){--x:-110px;--y:-44px;--r:-12deg}.intro-letter:nth-child(even){--x:110px;--y:69px;--r:12deg}
+.intro-eyebrow,.intro-tagline{font:500 clamp(9px,1.4vw,11px)/1.5 Arial,sans-serif;letter-spacing:.29em;color:#c5a47e;opacity:0;animation:puzzleFade .7s ease 1.55s forwards}
+.intro-tagline{margin-top:18px;letter-spacing:.2em}
+.intro-flare{width:min(350px,54vw);height:1px;margin-top:20px;background:linear-gradient(90deg,transparent,#f5d2a0,transparent);box-shadow:0 0 22px #e9b76b9c;transform:scaleX(0);animation:puzzleShine .85s ease 1.24s forwards}
+.intro-skip{position:absolute;top:24px;right:clamp(18px,4vw,50px);z-index:2;background:none;color:#c7ac89;padding:8px 0;border:0;border-bottom:1px solid #9c7952;font:600 10px Arial,sans-serif;letter-spacing:.16em;cursor:pointer}
+.intro-skip:focus-visible{outline:2px solid #e9c38d;outline-offset:4px}
+@keyframes puzzleTile{0%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(1.1)}55%{opacity:.62}100%{opacity:.37;transform:translate(0,0) rotate(0) scale(1)}}
+@keyframes puzzleLetter{0%{opacity:0;filter:blur(7px);transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(.91)}65%{opacity:.9;filter:blur(1px)}100%{opacity:1;filter:none;transform:translate(0,0) rotate(0) scale(1)}}
+@keyframes puzzleFade{to{opacity:1}}@keyframes puzzleShine{to{transform:scaleX(1)}}
+@media(max-width:560px){.intro-wordmark{font-size:clamp(43px,11vw,62px);gap:0}.intro-tile{width:35vw;height:27vw}.intro-skip{top:18px}}
+@media(prefers-reduced-motion:reduce){.intro-tile{animation:none;opacity:.13;transform:none}.intro-letter{animation:none;opacity:1;filter:none;transform:none}.intro-eyebrow,.intro-tagline{animation:none;opacity:1}.intro-flare{animation:none;transform:none}.mc-intro{transition:none}}
 
 .cart-footer-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin-top:14px}
 .cart-footer-actions .cart-continue-btn,.cart-footer-actions .cart-checkout-btn{width:100%;min-width:0;min-height:48px;margin:0;padding:12px 10px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:9px;font-weight:750;letter-spacing:.75px;line-height:1.3;text-align:center}
@@ -943,14 +954,16 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 </style>
 </head>
 <body>
-<div class="mc-intro" id="mcIntro" role="status" aria-label="Loading AERLON">
+<div class="mc-intro" id="mcIntro" role="status" aria-label="Opening AERLON" aria-live="off">
   <div class="intro-grain" aria-hidden="true"></div>
+  <div class="intro-tiles" aria-hidden="true"><span class="intro-tile"></span><span class="intro-tile"></span><span class="intro-tile"></span><span class="intro-tile"></span></div>
   <div class="intro-center">
-    <a class="brand intro-logo" href="#" aria-label="AERLON">AERLON<span>.</span></a>
-    <div class="intro-loader" aria-label="Loading">
-      <div class="intro-loader-track"><div class="intro-loader-fill"></div></div>
-    </div>
+    <span class="intro-eyebrow">THE AERLON EDIT</span>
+    <div class="intro-wordmark" aria-label="AERLON"><span class="intro-letter" style="--i:0">A</span><span class="intro-letter" style="--i:1">E</span><span class="intro-letter" style="--i:2">R</span><span class="intro-letter" style="--i:3">L</span><span class="intro-letter" style="--i:4">O</span><span class="intro-letter" style="--i:5">N</span></div>
+    <div class="intro-flare" aria-hidden="true"></div>
+    <span class="intro-tagline">WEAR YOUR IDENTITY</span>
   </div>
+  <button class="intro-skip" type="button" aria-label="Skip AERLON intro">SKIP INTRO</button>
 </div><div class="mobile-promo"><span>THE AERLON EDIT</span><span aria-hidden="true">·</span><a href="/customer-care.html">WHATSAPP CUSTOMER CARE ↗</a></div><header class="nav"><div class="navin">
 <a class="brand site-wordmark" href="#home" aria-label="AERLON home">AERLON<span>.</span></a>
 <div class="navactions"><button class="iconbtn menu-trigger" id="menuBtn" title="Open menu" aria-label="Open menu" aria-expanded="false"><span class="hamburger-lines" aria-hidden="true"><i></i><i></i><i></i></span><span class="menu-trigger-label">MENU</span></button><button class="mobile-search-button" id="mobileSearchBtn" type="button" aria-label="Search products" title="Search products"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 5 5"/></svg></button><button class="bag-icon-button" id="bagBtn" type="button" aria-label="Open shopping bag, 0 items" title="Shopping bag"><svg class="bag-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 8.5h13l1 12h-15l1-12Z"/><path d="M9 9V6.5a3 3 0 0 1 6 0V9"/></svg><span class="bag-count" id="count">0</span></button></div>
@@ -1785,12 +1798,13 @@ byId('successContinueBtn').addEventListener('click',()=>closeModal('orderSuccess
 byId('successTrackBtn').addEventListener('click',()=>{const id=byId('successOrderId').textContent;closeModal('orderSuccessModal');byId('trackOrderId').value=id==='Reference unavailable'?'':id;byId('trackResult').replaceChildren();openModal('trackModal');});
 byId('loginSuccessContinue').addEventListener('click',()=>closeModal('loginSuccessModal'));
 
-// Minimal premium logo intro with a three-second loading timer.
+// Luxury puzzle entry: show once per tab; skip for reduced-motion users.
 const intro=byId('mcIntro');
 let introDismissed=false;
-function dismissIntro(){if(introDismissed||!intro)return;introDismissed=true;intro.classList.add('is-leaving');document.body.style.overflow='';setTimeout(()=>intro.remove(),650)}
-document.body.style.overflow='hidden';
-const introTimer=setTimeout(dismissIntro,3000);
+function dismissIntro(){if(introDismissed||!intro)return;introDismissed=true;intro.classList.add('is-leaving');document.body.style.overflow='';setTimeout(()=>intro.remove(),560)}
+let introSeen=false;try{introSeen=sessionStorage.getItem('aerlon-puzzle-entry-v1')==='1'}catch(_e){}
+const reduceIntroMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(intro){if(introSeen||reduceIntroMotion){dismissIntro()}else{document.body.style.overflow='hidden';intro.querySelector('.intro-skip')?.addEventListener('click',dismissIntro);try{sessionStorage.setItem('aerlon-puzzle-entry-v1','1')}catch(_e){}setTimeout(dismissIntro,2800)}}
 
 // Keep the existing payment value used by the checkout/API logic, while presenting premium selection cards.
 function syncPaymentButtons(){document.querySelectorAll('[data-payment]').forEach(button=>{const active=button.dataset.payment===byId('payment').value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active))})}

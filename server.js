@@ -440,7 +440,7 @@ async function initDatabase() {
     }
   }
 
-  console.log("ModeCraft database initialized.");
+  console.log("AERLON database initialized.");
 }
 
 async function getProducts() {
@@ -787,7 +787,7 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
       const resendApiKey = process.env.RESEND_API_KEY;
       const smtpUser = (process.env.GMAIL_USER || process.env.SMTP_USER || process.env.EMAIL_USER || "").trim();
       const smtpPassword = String(process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASS || "").replace(/\s+/g, "");
-      const fromEmail = (process.env.PASSWORD_RESET_FROM || (smtpUser ? `ModeCraft <${smtpUser}>` : "ModeCraft <onboarding@resend.dev>")).trim();
+      const fromEmail = (process.env.PASSWORD_RESET_FROM || (smtpUser ? `AERLON <${smtpUser}>` : "AERLON <onboarding@resend.dev>")).trim();
       const baseUrl = process.env.PASSWORD_RESET_BASE_URL;
       const smtpConfigured = Boolean(smtpUser && smtpPassword);
 
@@ -808,7 +808,7 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
           throw new TypeError("Password reset URL must use http:// or https://");
         }
       } catch (urlError) {
-        console.error("Invalid PASSWORD_RESET_BASE_URL; using the ModeCraft Render URL. Check the Render environment variable.");
+        console.error("Invalid PASSWORD_RESET_BASE_URL; using the AERLON Render URL. Check the Render environment variable.");
         resetUrl = new URL(process.env.RENDER_EXTERNAL_URL || "https://modecraft-india.onrender.com");
       }
 
@@ -821,9 +821,9 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
       );
 
       resetUrl.searchParams.set("token", rawToken);
-      const subject = "Reset your ModeCraft password";
-      const textBody = `We received a request to reset your ModeCraft password. Open this link within 30 minutes: ${resetUrl.toString()}\n\nIf you did not request this, ignore this email.`;
-      const htmlBody = `<p>We received a request to reset your ModeCraft password.</p><p><a href="${resetUrl.toString()}">Reset password</a></p><p>This link expires in 30 minutes. If you did not request this, ignore this email.</p>`;
+      const subject = "Reset your AERLON password";
+      const textBody = `We received a request to reset your AERLON password. Open this link within 30 minutes: ${resetUrl.toString()}\n\nIf you did not request this, ignore this email.`;
+      const htmlBody = `<p>We received a request to reset your AERLON password.</p><p><a href="${resetUrl.toString()}">Reset password</a></p><p>This link expires in 30 minutes. If you did not request this, ignore this email.</p>`;
       try {
         if (smtpConfigured) {
           const smtpPort = Number(process.env.SMTP_PORT || 465);
@@ -1151,7 +1151,7 @@ const loginAttempts = new Map();
 
 const DEFAULT_FOOTER_SETTINGS = {
   enabled: true,
-  brandText: "MODECRAFT",
+  brandText: "AERLON",
   tagline: "Defined by style. Built for you.",
   intro: "Contemporary essentials for confident everyday style.",
   logoUrl: "",
@@ -1167,15 +1167,15 @@ const DEFAULT_FOOTER_SETTINGS = {
       { label: "Track Your Order", action: "track" }, { label: "Customer Care", url: "#about" }, { label: "Delivery Information", url: "#about" }
     ]},
     { id: "information", title: "INFORMATION", links: [
-      { label: "About ModeCraft", url: "#about" }, { label: "Customer Care", url: "#about" }
+      { label: "About AERLON", url: "#about" }, { label: "Customer Care", url: "#about" }
     ]}
   ],
   newsletterEnabled: true,
-  newsletterKicker: "THE MODECRAFT EDIT",
+  newsletterKicker: "THE AERLON EDIT",
   newsletterTitle: "Stay a step ahead.",
   newsletterDescription: "Get first access to new collections, launches and selected offers.",
   newsletterButtonText: "JOIN",
-  newsletterConsentText: "I agree to receive occasional ModeCraft updates by email.",
+  newsletterConsentText: "I agree to receive occasional AERLON updates by email.",
   trustEnabled: true,
   trustItems: ["SECURE CHECKOUT", "PAYMENT OPTIONS AT CHECKOUT", "SHOP WITH CONFIDENCE"],
   copyrightText: "ALL RIGHTS RESERVED.",
@@ -1305,7 +1305,7 @@ app.post("/api/storefront/newsletter", async (req, res, next) => {
        ON CONFLICT (email) DO UPDATE SET status = 'subscribed', consent_at = NOW(), updated_at = NOW()`,
       [email]
     );
-    res.json({ ok: true, message: "You're on the ModeCraft update list. Thank you for subscribing." });
+    res.json({ ok: true, message: "You're on the AERLON update list. Thank you for subscribing." });
   } catch (error) { next(error); }
 });
 
@@ -1330,7 +1330,7 @@ app.put("/api/admin/storefront/header", requireAdmin, requireOwner, async (req, 
     const input = req.body || {};
     const header = {
       announcement: cleanText(input.announcement, 180),
-      brandText: cleanText(input.brandText, 60) || "MODECRAFT",
+      brandText: cleanText(input.brandText, 60) || "AERLON",
       tagline: cleanText(input.tagline, 100) || "Wear Your Identity.",
       logoUrl: typeof input.logoUrl === "string" && /^https:\/\//i.test(input.logoUrl.trim()) ? input.logoUrl.trim().slice(0, 1500) : "",
       showAnnouncement: input.showAnnouncement !== false,
@@ -2407,13 +2407,13 @@ async function notifyRestockedVariant(productId, color, size) {
     const smtpUser = (process.env.GMAIL_USER || process.env.SMTP_USER || process.env.EMAIL_USER || "").trim();
     const smtpPassword = String(process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASS || "").replace(/\s+/g, "");
     const resendApiKey = process.env.RESEND_API_KEY;
-    const fromEmail = (process.env.PASSWORD_RESET_FROM || (smtpUser ? `ModeCraft <${smtpUser}>` : "onboarding@resend.dev")).trim();
+    const fromEmail = (process.env.PASSWORD_RESET_FROM || (smtpUser ? `AERLON <${smtpUser}>` : "onboarding@resend.dev")).trim();
     if (!((smtpUser && smtpPassword) || resendApiKey)) {
       console.warn("Back-in-stock subscribers are queued; configure SMTP or RESEND_API_KEY to send alerts.");
       return;
     }
-    const subject = `Back in stock: ${subscribers.rows[0].product_name || "ModeCraft product"}`;
-    const textBody = `${subscribers.rows[0].product_name || "Your ModeCraft product"} is back in stock in ${color}, size ${size}. Visit https://modecraft-india.onrender.com/ to shop.`;
+    const subject = `Back in stock: ${subscribers.rows[0].product_name || "AERLON product"}`;
+    const textBody = `${subscribers.rows[0].product_name || "Your AERLON product"} is back in stock in ${color}, size ${size}. Visit https://modecraft-india.onrender.com/ to shop.`;
     if (smtpUser && smtpPassword) {
       const port = Number(process.env.SMTP_PORT || 465);
       const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST || "smtp.gmail.com", port, secure: process.env.SMTP_SECURE === undefined ? port === 465 : String(process.env.SMTP_SECURE).toLowerCase() === "true", auth: { user: smtpUser, pass: smtpPassword } });
@@ -2869,7 +2869,7 @@ app.post("/api/payments/razorpay/order", async (req, res) => {
       currency: "INR",
       receipt,
       notes: {
-        store: "ModeCraft",
+        store: "AERLON",
         customer_email: orderData.customer.email
       }
     });
@@ -2893,7 +2893,7 @@ app.post("/api/payments/razorpay/order", async (req, res) => {
       razorpayOrderId: razorpayOrder.id,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
-      storeName: "ModeCraft",
+      storeName: "AERLON",
       customer: {
         name: orderData.customer.name,
         email: orderData.customer.email,
@@ -3034,12 +3034,12 @@ async function start() {
   await initDatabase();
 
   app.listen(PORT, () => {
-    console.log(`ModeCraft running on port ${PORT}`);
+    console.log(`AERLON running on port ${PORT}`);
   });
 }
 
 start().catch(error => {
-  console.error("Could not start ModeCraft:", error.message);
+  console.error("Could not start AERLON:", error.message);
   process.exit(1);
 });
 

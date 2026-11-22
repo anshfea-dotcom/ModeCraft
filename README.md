@@ -1,6 +1,6 @@
-# ModeCraft Store
+# AERLON Store
 
-A starter custom storefront for ModeCraft using HTML/CSS/JavaScript, Node.js/Express, server-side order validation, Cash on Delivery, and Razorpay checkout scaffolding.
+A starter custom storefront for AERLON using HTML/CSS/JavaScript, Node.js/Express, server-side order validation, Cash on Delivery, and Razorpay checkout scaffolding.
 
 ## Requirements
 - Node.js 20 or newer
@@ -9,7 +9,7 @@ A starter custom storefront for ModeCraft using HTML/CSS/JavaScript, Node.js/Exp
 
 ## Run locally
 1. Extract this project folder.
-2. Open a terminal in the `modecraft-store` folder.
+2. Open a terminal in the `AERLON-store` folder.
 3. Install dependencies:
    ```bash
    npm install

@@ -788,6 +788,124 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 .mc-footer-bottom{color:#b6aea4}
 @media(max-width:900px){.mc-footer-top{row-gap:32px}}
 @media(max-width:560px){.mc-footer{padding:46px 20px 20px}.mc-footer-top{row-gap:30px;padding-bottom:34px}.mc-footer-link-columns{gap:28px 18px}.mc-footer-links a,.mc-footer-links button{min-height:28px}.mc-footer-bottom{line-height:1.8}}
+
+/* AERLON mobile-first storefront. Desktop layout is intentionally unchanged. */
+.site-wordmark{font-size:27px;letter-spacing:3px;font-weight:800;line-height:1.1}
+.site-wordmark span{font-size:.8em;margin-left:1px}
+.mobile-promo,.mobile-search-button,.mobile-benefits,.mobile-category-heading,.mobile-store-menu,.mobile-menu-account-label{display:none}
+.mc-footer-accordion-button{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0;border:0;background:none;color:inherit;text-align:left;font:inherit;letter-spacing:inherit;pointer-events:none}
+.mc-footer-accordion-caret{display:none}
+.mc-footer-link-list{display:grid;justify-items:start;gap:12px}
+.mc-footer-links h3{width:100%}
+@media(max-width:720px){
+ html{scroll-padding-top:76px}
+ .mobile-promo{display:flex;min-height:33px;padding:7px 15px;align-items:center;justify-content:center;gap:11px;background:#111;color:#f6f0e8;font-size:9px;letter-spacing:1.1px;font-weight:650}
+ .mobile-promo a{color:#f0d7b1;text-decoration:underline;text-underline-offset:3px}
+ .announce{display:none}
+ .nav{top:0;z-index:25;background:rgba(255,255,255,.97);backdrop-filter:blur(14px)}
+ .navin{display:grid;grid-template-columns:42px minmax(0,1fr) 96px;gap:6px;align-items:center;min-height:65px;padding:9px 14px;max-width:none}
+ .navin>.site-wordmark{grid-column:2;grid-row:1;justify-self:center;margin:0;min-width:0;font-size:clamp(18px,5vw,24px);font-weight:780;letter-spacing:clamp(2px,.9vw,4px)}
+ .navactions{display:contents}
+ #menuBtn{grid-row:1;grid-column:1;justify-self:start;display:grid;place-items:center;min-width:42px;width:42px;height:44px;min-height:44px;margin:0;padding:0;border:0;background:none;box-shadow:none}
+ #menuBtn .hamburger-lines,#menuBtn .hamburger-lines i{width:21px}
+ #menuBtn .hamburger-lines{gap:5px}
+ #menuBtn .menu-trigger-label{display:none}
+ #mobileSearchBtn{grid-column:3;grid-row:1;justify-self:start;align-self:center;display:grid;place-items:center;width:42px;height:44px;border:0;background:none;color:#171717}
+ #mobileSearchBtn svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+ #bagBtn{grid-column:3;grid-row:1;justify-self:end;align-self:center;margin:0;width:43px;height:43px;min-width:43px;flex:none;border:0;border-radius:0;background:none;box-shadow:none}
+ .bag-count{top:0;right:0}
+ .mobile-search-button:focus-visible,#menuBtn:focus-visible,#bagBtn:focus-visible,.mobile-promo a:focus-visible{outline:2px solid #ac8050;outline-offset:2px}
+ .hero{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;isolation:isolate;position:relative;min-height:480px;padding:72px 24px 42px!important;gap:0;background:#231f1b;overflow:hidden}
+ .hero::before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(180deg,rgba(10,9,8,.10) 5%,rgba(10,9,8,.20) 35%,rgba(10,9,8,.77) 100%);pointer-events:none}
+ .hero>div:first-child{position:relative;z-index:2;max-width:390px;color:#fff}
+ .hero .eyebrow{color:#f7e7c9;letter-spacing:3.2px}
+ .hero h1{font-size:clamp(43px,10.9vw,64px);line-height:.99;letter-spacing:-2.4px;margin:17px 0 18px;max-width:380px}
+ .hero p{color:#f4f0eb;font-size:13px;line-height:1.75;max-width:330px}
+ .hero .btn{background:#fff;border-color:#fff;color:#171717;border-radius:999px;min-height:48px;padding:14px 23px;font-weight:750}
+ .hero .btn:hover{background:#f2e5d4;border-color:#f2e5d4}
+ .heroimg{position:absolute;inset:0;z-index:-2;width:100%;height:100%;min-height:100%;border:0;border-radius:0;box-shadow:none;background:#6e6255}
+ .heroimg img{width:100%;height:100%;object-fit:cover;object-position:center 32%}
+ .heroimg:after{display:none}
+ .mobile-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:15px 12px;background:#fff;border-bottom:1px solid #eae5df;gap:3px;text-align:center}
+ .mobile-benefits a{display:flex;align-items:center;flex-direction:column;justify-content:center;gap:6px;padding:5px 2px;min-width:0;font-size:10px;line-height:1.3;font-weight:650;color:#312d28}
+ .mobile-benefits svg{width:25px;height:25px;fill:none;stroke:#25211e;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+ #shop.wrap{padding:34px 17px 52px}
+ .mobile-category-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px}
+ .mobile-category-heading h2{font-size:24px;line-height:1.2;letter-spacing:-.9px;margin:0}
+ .mobile-category-heading a{font-size:11px;white-space:nowrap;text-decoration:underline;text-underline-offset:4px}
+ .collection-boxes{display:flex;grid-template-columns:none;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;gap:12px;margin:0 0 30px;padding:0 2px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+ .collection-box{flex:0 0 clamp(126px,34vw,164px);height:162px;min-height:162px;max-width:164px;position:relative;display:flex;align-items:flex-end;justify-content:center;padding:0;border-radius:14px;overflow:hidden;scroll-snap-align:start;background:linear-gradient(140deg,#c5bbae,#554d44);border:1px solid #e2dad0;white-space:normal;box-shadow:0 4px 11px rgba(31,24,17,.05)}
+ .collection-box:nth-child(2){background:linear-gradient(140deg,#d6d0c8,#655953)}
+ .collection-box:nth-child(3){background:linear-gradient(140deg,#b9a997,#3f3e3a)}
+ .collection-box:nth-child(4){background:linear-gradient(140deg,#b4a391,#49403b)}
+ .collection-box::after{content:"";position:absolute;inset:40% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.72));pointer-events:none}
+ .collection-box .collection-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
+ .collection-box .collection-label{position:relative;z-index:2;display:block;width:100%;padding:14px 7px;color:#fff;font-size:12px;line-height:1.2;font-weight:750;letter-spacing:.2px;text-transform:capitalize;text-align:center}
+ .collection-box.active{border:2px solid #b78a56;background:linear-gradient(140deg,#b1a49a,#2f2923)}
+ .collection-box.active .collection-label{color:#fff}
+ #shop .tools input,#shop .tools select{min-height:48px}
+ #shop .heading{margin-top:15px}
+ #shop .heading h2{font-size:25px}
+ #settingsModal.menu-modal{align-items:stretch;justify-content:flex-start;padding:0;background:rgba(13,12,11,.55)}
+ #settingsModal .menu-box{height:100dvh;max-height:100dvh;width:min(365px,90vw);max-width:90vw;padding:23px 23px 40px;border-radius:0 21px 21px 0;margin-right:auto;background:#fff;box-shadow:15px 0 50px rgba(0,0,0,.16);animation:aerlonDrawerIn .26s ease-out}
+ @keyframes aerlonDrawerIn{from{transform:translateX(-22px);opacity:.8}to{transform:translateX(0);opacity:1}}
+ #settingsModal .modalhead{position:sticky;top:-23px;z-index:2;padding:4px 0 18px;background:#fff;border-bottom:1px solid #e6e1da}
+ #settingsModal .modalhead h2{font-size:24px;letter-spacing:1.2px;font-weight:750}
+ #settingsModal .modalhead button{font-size:29px;min-width:44px;min-height:44px}
+ .mobile-store-menu{display:block;margin:14px 0 25px}
+ .mobile-store-menu>a,.mobile-menu-collections>summary{min-height:48px;display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #ece7e0;font-size:15px;font-weight:600;color:#272421;list-style:none}
+ .mobile-menu-collections summary::-webkit-details-marker{display:none}
+ .mobile-menu-collections summary{cursor:pointer}
+ .mobile-menu-collections[open] summary span{transform:rotate(180deg)}
+ .mobile-menu-collections>div{display:grid;gap:0;padding:5px 0 10px 13px;background:#f8f6f2}
+ .mobile-menu-collections>div a{padding:10px 8px;font-size:13px;color:#51483e}
+ .mobile-menu-account-label{display:block;color:#927149;font-size:10px;font-weight:750;letter-spacing:1.6px;margin:0 0 14px}
+ #settingsModal .menu-actions{margin-top:0;gap:6px}
+ #settingsModal .menu-item{min-height:58px;padding:9px 10px}
+ #settingsModal .menu-icon{width:32px;height:32px;flex-basis:32px;font-size:18px}
+ #settingsModal .menu-item small{display:none}
+ .mc-footer{padding:43px 21px 22px}
+ .mc-footer-top{display:grid;grid-template-columns:minmax(0,1fr);gap:25px;padding-bottom:28px}
+ .mc-footer-brand-block,.mc-footer-link-columns,.mc-footer-newsletter{grid-column:1;grid-row:auto;min-width:0}
+ .mc-footer-brand{font-size:29px;letter-spacing:3px}
+ .mc-footer-intro{max-width:350px}
+ .mc-footer-link-columns{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+ .mc-footer-links{display:block;margin:0;border-bottom:1px solid #403931}
+ .mc-footer-links h3{margin:0;min-height:0}
+ .mc-footer-links h3 .mc-footer-accordion-button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:55px;pointer-events:auto;color:#f6efe6;font-size:13px;letter-spacing:.3px;font-weight:720;text-transform:none}
+ .mc-footer-accordion-caret{display:inline-block;color:#d4b483;font-size:20px;transition:transform .2s}
+ .mc-footer-accordion-button[aria-expanded="true"] .mc-footer-accordion-caret{transform:rotate(180deg)}
+ .mc-footer-link-list{display:none;gap:10px;padding:0 0 18px 7px}
+ .mc-footer-accordion-button[aria-expanded="true"] + .mc-footer-link-list{display:grid}
+ .mc-footer-links a,.mc-footer-links button:not(.mc-footer-accordion-button){min-height:30px;font-size:13px}
+ .mc-footer-newsletter{margin-top:7px;max-width:none;justify-self:stretch;border-radius:18px;background:#242321;padding:22px 18px}
+ .mc-footer-newsletter h3{font-size:19px}
+ .mc-newsletter-form input{min-height:48px}
+ .mc-footer-trust{display:flex;justify-content:space-between;gap:9px;padding:18px 0}
+ .mc-footer-trust>span{display:flex;flex:1 1 0;align-items:center;flex-direction:column;justify-content:center;gap:7px;text-align:center}
+ .mc-footer-trust>span>svg{width:22px;height:22px}
+ .mc-footer-trust>span>span{font-size:8px;letter-spacing:.2px;line-height:1.3}
+ .mc-footer-trust>i{display:none}
+ .mc-footer-bottom{flex-wrap:wrap;gap:14px;font-size:9px;color:#c1b6a8}
+ .mc-back-top{font-size:10px}
+ body.dark .nav{background:rgba(24,24,24,.97)}
+ body.dark #mobileSearchBtn{color:#f4f0e9}
+ body.dark .mobile-benefits{background:#1b1917;border-color:#403931}
+ body.dark .mobile-benefits a,body.dark .mobile-benefits svg{color:#f4f0e9;stroke:#f4f0e9}
+ body.dark #settingsModal .menu-box,body.dark #settingsModal .modalhead{background:#1f1d1a}
+ body.dark .mobile-store-menu>a,body.dark .mobile-menu-collections>summary{color:#f4f0e9;border-color:#3b342b}
+ body.dark .mobile-menu-collections>div{background:#29251f}
+ body.dark .mobile-menu-collections>div a{color:#ddd3c6}
+}
+@media(max-width:360px){
+ .navin{grid-template-columns:38px minmax(0,1fr) 88px;padding:8px 10px}
+ .navin>.site-wordmark{font-size:18px;letter-spacing:1.7px}
+ #mobileSearchBtn{width:40px}
+ #bagBtn{width:40px}
+ .mobile-promo{font-size:8px}
+ .mobile-benefits a{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){#settingsModal .menu-box{animation:none}}
 </style>
 <meta name="description" content="Discover elevated everyday fashion at AERLON. Explore thoughtfully designed hoodies, clothing and accessories with a premium shopping experience."><meta property="og:site_name" content="AERLON"><meta property="og:type" content="website"><meta property="og:title" content="AERLON — Elevated Everyday Fashion"><meta property="og:description" content="Explore thoughtfully designed everyday essentials at AERLON."><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AERLON","url":"https://modecraft-india.onrender.com/","description":"An online fashion store offering thoughtfully designed everyday clothing and accessories."}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"AERLON","url":"https://modecraft-india.onrender.com/","potentialAction":{"@type":"SearchAction","target":"https://modecraft-india.onrender.com/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
 </head>
@@ -800,9 +918,9 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
       <div class="intro-loader-track"><div class="intro-loader-fill"></div></div>
     </div>
   </div>
-</div><header class="nav"><div class="navin">
-<a class="brand" href="#">AERLON<span>.</span></a>
-<div class="navactions"><button class="iconbtn menu-trigger" id="menuBtn" title="Open menu" aria-label="Open menu" aria-expanded="false"><span class="hamburger-lines" aria-hidden="true"><i></i><i></i><i></i></span><span class="menu-trigger-label">MENU</span></button><button class="bag-icon-button" id="bagBtn" type="button" aria-label="Open shopping bag, 0 items" title="Shopping bag"><svg class="bag-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 8.5h13l1 12h-15l1-12Z"/><path d="M9 9V6.5a3 3 0 0 1 6 0V9"/></svg><span class="bag-count" id="count">0</span></button></div>
+</div><div class="mobile-promo"><span>THE AERLON EDIT</span><span aria-hidden="true">·</span><a href="/customer-care.html">WHATSAPP CUSTOMER CARE ↗</a></div><header class="nav"><div class="navin">
+<a class="brand site-wordmark" href="#home" aria-label="AERLON home">AERLON<span>.</span></a>
+<div class="navactions"><button class="iconbtn menu-trigger" id="menuBtn" title="Open menu" aria-label="Open menu" aria-expanded="false"><span class="hamburger-lines" aria-hidden="true"><i></i><i></i><i></i></span><span class="menu-trigger-label">MENU</span></button><button class="mobile-search-button" id="mobileSearchBtn" type="button" aria-label="Search products" title="Search products"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 5 5"/></svg></button><button class="bag-icon-button" id="bagBtn" type="button" aria-label="Open shopping bag, 0 items" title="Shopping bag"><svg class="bag-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 8.5h13l1 12h-15l1-12Z"/><path d="M9 9V6.5a3 3 0 0 1 6 0V9"/></svg><span class="bag-count" id="count">0</span></button></div>
 </div></header>
 <div class="announce" id="announcementStrip" role="region" aria-label="AERLON store highlights"><div class="announce-track" aria-hidden="true"><div class="announce-group"><span class="announce-item">YOUR STYLE. YOUR RULES.</span><span class="announce-item">DISCOVER YOUR STYLE.</span><span class="announce-item">EXPLORE THE LATEST COLLECTION.</span><span class="announce-item">FIND YOUR PERFECT FIT.</span></div><div class="announce-group"><span class="announce-item">YOUR STYLE. YOUR RULES.</span><span class="announce-item">DISCOVER YOUR STYLE.</span><span class="announce-item">EXPLORE THE LATEST COLLECTION.</span><span class="announce-item">FIND YOUR PERFECT FIT.</span></div></div><span class="sr-only" id="announcementAccessible" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Your style. Your rules. Discover your style. Explore the latest collection. Find your perfect fit.</span></div>
 <section id="salesBannerSection" class="sales-banner-section" aria-label="Store promotions" hidden><div id="salesBannerTrack" class="sales-banner-track"></div></section>
@@ -811,12 +929,18 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 <div><div class="eyebrow">MADE FOR YOUR EVERYDAY</div><h1>Wear Your<br>Identity.</h1><p>Modern essentials. Confident silhouettes. Personal style. Discover everyday fashion that feels like you.</p><a class="btn" href="#shop">SHOP THE COLLECTION ↗</a></div>
 <div class="heroimg"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1000&q=85" alt="Modern fashion editorial"></div>
 </section>
+<div class="mobile-benefits" aria-label="Shopping assistance">
+  <a href="#shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v13H3zM3 11h18M8 6V4h8v2"/></svg><span>Explore<br>collections</span></a>
+  <a href="/return-refund-policy.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15h6"/></svg><span>3-day request<br>window</span></a>
+  <a href="/customer-care.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13v-2a8 8 0 0 1 16 0v2M4 13h3v6H5a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2Zm16 0h-3v6h2a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2ZM19 19a4 4 0 0 1-4 3h-3"/></svg><span>Customer<br>care</span></a>
+</div>
 <section class="wrap" id="shop">
+<div class="mobile-category-heading"><h2>Shop by collection</h2><a href="#products">View all <span aria-hidden="true">↗</span></a></div>
 <div class="collection-boxes" role="group" aria-label="Choose a collection">
-<button type="button" class="collection-box" data-collection="men" aria-pressed="false">MENS</button>
-<button type="button" class="collection-box" data-collection="women" aria-pressed="false">WOMENS</button>
-<button type="button" class="collection-box" data-collection="sneakers" aria-pressed="false">SNEAKERS</button>
-<button type="button" class="collection-box" data-collection="jackets" aria-pressed="false">JACKETS</button>
+<button type="button" class="collection-box" data-collection="men" aria-pressed="false"><span class="collection-label">Men</span></button>
+<button type="button" class="collection-box" data-collection="women" aria-pressed="false"><span class="collection-label">Women</span></button>
+<button type="button" class="collection-box" data-collection="sneakers" aria-pressed="false"><span class="collection-label">Sneakers</span></button>
+<button type="button" class="collection-box" data-collection="jackets" aria-pressed="false"><span class="collection-label">Jackets</span></button>
 </div>
 <div class="heading"><h2>Shop the collection</h2><span class="muted">FIND YOUR FIT.</span></div>
 <div class="tools"><input id="search" type="search" placeholder="Search products…"><select id="category" aria-label="Filter products by category"><option>All Categories</option></select><select id="sort"><option value="featured">Featured</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select></div>
@@ -846,12 +970,12 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
       </div>
       <div class="mc-footer-newsletter" id="mcFooterNewsletter">
         <p class="mc-footer-kicker" id="mcFooterNewsletterKicker">THE AERLON EDIT</p>
-        <h3 id="mcFooterNewsletterTitle">Stay a step ahead.</h3>
-        <p id="mcFooterNewsletterDescription">Get first access to new collections, launches and selected offers.</p>
+        <h3 id="mcFooterNewsletterTitle">A considered edit, delivered.</h3>
+        <p id="mcFooterNewsletterDescription">Discover new arrivals, style stories and occasional AERLON updates.</p>
         <form id="footerNewsletterForm" class="mc-newsletter-form" novalidate>
           <label class="sr-only" for="footerNewsletterEmail">Email address</label>
           <input id="footerNewsletterEmail" name="email" type="email" autocomplete="email" placeholder="Your email address" maxlength="254" required>
-          <button type="submit" aria-label="Subscribe to the AERLON newsletter"><span id="mcFooterNewsletterButtonText">JOIN</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 5l7 7-7 7"/></svg></button>
+          <button type="submit" aria-label="Subscribe to the AERLON newsletter"><span id="mcFooterNewsletterButtonText">SUBSCRIBE</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 5l7 7-7 7"/></svg></button>
         </form>
         <label class="mc-newsletter-consent"><input id="footerNewsletterConsent" type="checkbox" required><span id="mcFooterNewsletterConsentText">I agree to receive occasional AERLON updates by email.</span></label>
         <p id="footerNewsletterStatus" class="mc-newsletter-status" role="status" aria-live="polite"></p>
@@ -908,7 +1032,14 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 <div class="modal" id="productModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><div class="modalbox productbox"><div class="modalhead"><div><p class="detail-kicker">AERLON / PRODUCT DETAILS</p><h2 id="detailTitle">Product details</h2></div><button type="button" data-close="productModal" aria-label="Close product details">×</button></div><div class="detailgrid"><div><div class="detailhero"><img id="detailImage" alt="Product image"></div><div class="detail-image-counter" id="detailImageCounter" aria-live="polite"></div><div class="thumbs slider-dots" id="detailThumbs" aria-label="Product image selector"></div></div><div><p class="muted" id="detailCategory"></p><div class="detail-price-row"><div class="price" id="detailPrice"></div><span class="product-offer-badge detail-offer-badge" id="detailOffer" hidden></span></div><p id="detailDescription">Discover your next everyday favourite.</p><label id="detailColourLabel">Colour</label><div class="colour-swatches" id="detailColourSwatches" role="group" aria-labelledby="detailColourLabel"></div><input type="hidden" id="detailColour" value=""><label id="detailSizeLabel">Select Size</label><div class="size-options" id="detailSizeOptions" role="group" aria-labelledby="detailSizeLabel"></div><input type="hidden" id="detailSize" value=""><div class="detail-utility-row"><button type="button" class="add" id="sizeGuideToggle">SIZE GUIDE</button><button type="button" class="add" id="shareProductBtn">SHARE PRODUCT</button></div><div id="sizeGuidePanel" class="size-guide-panel" hidden><strong>AERLON size guide (approx. body measurements)</strong><div class="size-guide-scroll"><table><thead><tr><th>Size</th><th>Chest (in)</th><th>Length (in)</th></tr></thead><tbody><tr><td>S</td><td>36–38</td><td>26</td></tr><tr><td>M</td><td>38–40</td><td>27</td></tr><tr><td>L</td><td>40–42</td><td>28</td></tr><tr><td>XL</td><td>42–44</td><td>29</td></tr><tr><td>XXL</td><td>44–46</td><td>30</td></tr></tbody></table></div><small>Approximate guide only. Check the product fit description; measurements may vary by style.</small></div><div class="detail-purchase-actions"><div class="detail-primary-actions"><button class="add detail-wishlist-btn" id="detailWish" type="button">♡ WISHLIST</button><button class="add detail-cart-btn" id="detailAdd" type="button">ADD TO CART</button></div><button class="btn detail-buy-btn" id="detailBuyNow" type="button">BUY NOW</button></div></div></div><section class="related-products" id="relatedProductsSection" hidden><div class="related-heading"><div><p class="detail-kicker">CURATED FOR YOU</p><h3>You may also like</h3></div><div class="related-controls"><button type="button" id="relatedPrev" aria-label="Scroll products left">‹</button><button type="button" id="relatedNext" aria-label="Scroll products right">›</button></div></div><div id="relatedProductsGrid" class="product-grid"></div></section><details class="delivery-dropdown" id="deliveryDropdown"><summary><span class="delivery-summary-icon" aria-hidden="true">⌖</span><span><strong>Check delivery estimate</strong><small>Enter your PIN code for an estimated delivery window</small></span><span class="delivery-chevron" aria-hidden="true">⌄</span></summary><div class="delivery-checker"><div class="delivery-heading"><span class="delivery-icon" aria-hidden="true">⌖</span><div><label for="deliveryPin">Check delivery estimate</label><small>Enter your 6-digit PIN code to see an estimated delivery window.</small></div></div><div class="delivery-pin-row"><input id="deliveryPin" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="postal-code" placeholder="e.g. 273001" aria-describedby="deliveryHelp deliveryEstimate"><button type="button" class="add" id="checkDeliveryBtn"><span aria-hidden="true">→</span> CHECK</button></div><small id="deliveryHelp" class="delivery-help">India PIN code · 6 digits</small><p id="deliveryEstimate" class="muted" aria-live="polite">Delivery dates are indicative and subject to courier serviceability.</p></div></details><section class="customer-review-section"><div class="section-heading-row"><div><p class="detail-kicker">THE AERLON COMMUNITY</p><h3>Customer reviews</h3></div><span class="review-heading-icon" aria-hidden="true">✧</span></div><div id="reviewList" class="notice">No reviews available yet.</div></section><form id="reviewForm"><div class="rating-form-heading"><div><p class="detail-kicker">YOUR EXPERIENCE MATTERS</p><label for="reviewRating">Your rating</label></div><span class="rating-caption">Tap a star</span></div><div class="interactive-stars" id="interactiveStars" role="radiogroup" aria-label="Choose your rating"><button type="button" data-rating="1" role="radio" aria-checked="false" aria-label="1 star">☆</button><button type="button" data-rating="2" role="radio" aria-checked="false" aria-label="2 stars">☆</button><button type="button" data-rating="3" role="radio" aria-checked="false" aria-label="3 stars">☆</button><button type="button" data-rating="4" role="radio" aria-checked="false" aria-label="4 stars">☆</button><button type="button" data-rating="5" role="radio" aria-checked="false" aria-label="5 stars">☆</button></div><select id="reviewRating" aria-label="Your rating" hidden><option value="" selected disabled>Select a rating</option><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option></select><label for="reviewName">Review title (optional)</label><input id="reviewName" maxlength="80" placeholder="Add a short title"><label for="reviewText">Your review</label><input id="reviewText" required maxlength="1000" placeholder="Share your experience"><button class="btn" type="submit">SUBMIT REVIEW</button><p class="notice">Reviews are submitted to the backend. If the review API is not implemented, the site will tell you instead of pretending it saved.</p></form></div></div>
 <div class="image-zoom-overlay" id="imageZoomOverlay" role="dialog" aria-modal="true" aria-label="Zoomed product image" hidden><button type="button" class="zoom-back-btn" id="zoomBackBtn"><span aria-hidden="true">←</span> BACK TO PRODUCT</button><button type="button" class="zoom-close-btn" id="zoomCloseBtn" aria-label="Close image zoom">×</button><img id="zoomedProductImage" alt="Zoomed product view"></div>
 <div class="modal" id="recentOrdersModal"><div class="modalbox"><div class="modalhead"><h2>Recent orders</h2><button data-close="recentOrdersModal">×</button></div><div id="recentOrdersList" class="notice">Login and connect an order-history API to view orders across devices.</div></div></div>
-<div class="modal menu-modal" id="settingsModal"><div class="modalbox menu-box"><div class="modalhead"><div><p class="menu-kicker">AERLON ACCOUNT</p><h2>Menu & Settings</h2></div><button data-close="settingsModal" aria-label="Close menu">×</button></div><div class="menu-actions"><button class="menu-item" id="profileMenuBtn"><span class="menu-icon">♙</span><span><strong>Profile</strong><small>Login, account details and logout</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="recentOrdersBtn"><span class="menu-icon">▤</span><span><strong>My Orders</strong><small>View your recent orders and status</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="wishlistMenuBtn"><span class="menu-icon">♡</span><span><strong>Wishlist <span class="menu-count" id="menuWishCount">0</span></strong><small>Your saved styles and favourites</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="trackMenuBtn"><span class="menu-icon">⌁</span><span><strong>Track Order</strong><small>Check an order using its reference</small></span><span class="menu-arrow">›</span></button></div><div class="menu-divider"></div><section class="menu-settings"><p class="menu-section-title">SETTINGS</p><label for="themeSelect">Appearance</label><div class="theme-control"><span class="theme-symbol" id="themeSymbol">☼</span><span class="theme-copy"><strong id="themeLabel">Light mode</strong><small>Choose your preferred appearance</small></span><select id="themeSelect" aria-label="Light or dark mode"><option value="light">Light</option><option value="dark">Dark</option></select></div></section><p class="menu-footer">Your theme preference is saved on this device.</p></div></div>
+<div class="modal menu-modal" id="settingsModal"><div class="modalbox menu-box"><div class="modalhead"><div><p class="menu-kicker">AERLON / BROWSE</p><h2>Explore AERLON</h2></div><button data-close="settingsModal" aria-label="Close menu">×</button></div><nav class="mobile-store-menu" aria-label="Store navigation">
+<a href="#home" data-menu-close>Home <span aria-hidden="true">↗</span></a>
+<a href="#shop" data-menu-close>Shop all <span aria-hidden="true">↗</span></a>
+<details class="mobile-menu-collections"><summary>Collections <span aria-hidden="true">⌄</span></summary>
+<div><a href="#men" data-menu-close>Men</a><a href="#women" data-menu-close>Women</a><a href="#jackets" data-menu-close>Jackets</a><a href="#sneakers" data-menu-close>Sneakers</a></div></details>
+<a href="/customer-care.html">Customer care <span aria-hidden="true">↗</span></a>
+<a href="/return-refund-policy.html">Return &amp; refund policy <span aria-hidden="true">↗</span></a>
+</nav><p class="mobile-menu-account-label">ACCOUNT &amp; SETTINGS</p><div class="menu-actions"><button class="menu-item" id="profileMenuBtn"><span class="menu-icon">♙</span><span><strong>Profile</strong><small>Login, account details and logout</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="recentOrdersBtn"><span class="menu-icon">▤</span><span><strong>My Orders</strong><small>View your recent orders and status</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="wishlistMenuBtn"><span class="menu-icon">♡</span><span><strong>Wishlist <span class="menu-count" id="menuWishCount">0</span></strong><small>Your saved styles and favourites</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="trackMenuBtn"><span class="menu-icon">⌁</span><span><strong>Track Order</strong><small>Check an order using its reference</small></span><span class="menu-arrow">›</span></button></div><div class="menu-divider"></div><section class="menu-settings"><p class="menu-section-title">SETTINGS</p><label for="themeSelect">Appearance</label><div class="theme-control"><span class="theme-symbol" id="themeSymbol">☼</span><span class="theme-copy"><strong id="themeLabel">Light mode</strong><small>Choose your preferred appearance</small></span><select id="themeSelect" aria-label="Light or dark mode"><option value="light">Light</option><option value="dark">Dark</option></select></div></section><p class="menu-footer">Your theme preference is saved on this device.</p></div></div>
 <div class="modal success-modal" id="orderSuccessModal" role="dialog" aria-modal="true" aria-labelledby="orderSuccessTitle"><div class="modalbox success-box"><div class="success-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"></path></svg></div><div class="success-kicker">AERLON / ORDER CONFIRMED</div><h2 id="orderSuccessTitle">You’re all set.</h2><p class="success-copy" id="orderSuccessMessage">Your order has been accepted by the store.</p><div class="order-reference"><span>YOUR ORDER REFERENCE</span><strong id="successOrderId">—</strong></div><p class="success-copy" id="successPaymentNote">Keep this reference handy to check your order status.</p><div class="success-actions"><button class="btn" type="button" id="successTrackBtn">TRACK ORDER ↗</button><button class="btn success-secondary" type="button" id="successContinueBtn">CONTINUE SHOPPING</button></div></div></div><div class="modal success-modal" id="loginSuccessModal" role="dialog" aria-modal="true" aria-labelledby="loginSuccessTitle"><div class="modalbox success-box"><div class="success-mark auth-success-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5 14.4 8.4 19.8 9.2 15.9 13 16.8 18.4 12 15.9 7.2 18.4 8.1 13 4.2 9.2 9.6 8.4Z"></path></svg></div><div class="success-kicker">WELCOME TO AERLON</div><h2 id="loginSuccessTitle">You’re signed in.</h2><p class="success-copy" id="loginSuccessMessage">Your account is ready. You can now continue exploring your saved styles and orders.</p><div class="success-actions" style="grid-template-columns:1fr"><button class="btn" type="button" id="loginSuccessContinue">CONTINUE EXPLORING ↗</button></div></div></div><div class="toast" id="toast" role="status"></div>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
@@ -990,6 +1121,7 @@ async function init(){
     const validProductIds = new Set(products.map(product => String(product.id)));
     cart = cart.filter(item => validProductIds.has(String(item.id)));
     safeWrite('modecraft_cart_v1', cart);
+    hydrateCategoryCards();
     renderProducts();
     renderCart();
     renderRecent();
@@ -1035,7 +1167,7 @@ function renderProducts(){
   const tools=document.querySelector("#shop .tools");
   if(activeCollection==="sneakers"){
     if(tools)tools.style.display="none";
-    root.innerHTML='<section class="sneaker-coming-simple" aria-label="Sneakers coming soon"><span class="sneaker-coming-mark">MC.</span><p class="sneaker-coming-label">THE NEXT DROP</p><h3> sneakers <span>coming soon.</span></h3><p>We’re working on something fresh. Stay tuned.</p></section>';
+    root.innerHTML='<section class="sneaker-coming-simple" aria-label="Sneakers coming soon"><span class="sneaker-coming-mark">A.</span><p class="sneaker-coming-label">THE NEXT DROP</p><h3> sneakers <span>coming soon.</span></h3><p>We’re working on something fresh. Stay tuned.</p></section>';
     return;
   }
   if(tools)tools.style.display="";
@@ -1098,6 +1230,22 @@ function collectionMatches(p,key){
   if(key==="women")return womenAudience.has(audience)||unisexAudience.has(audience)||(!menAudience.has(audience)&&!womenAudience.has(audience)&&/\b(women|womens|woman|female|girl|girls|womenswear|ladies|lady)\b/.test(text));
   if(key==="jackets")return /\b(jacket|jackets|outerwear|windbreaker|bomber)\b/.test(type+" "+text);
   return /sneaker|trainer|footwear|shoe|shoes|kick/.test(type+" "+text);
+}
+function hydrateCategoryCards(){
+  document.querySelectorAll('.collection-box[data-collection]').forEach(button=>{
+    button.querySelector('.collection-photo')?.remove();
+    const category=button.dataset.collection;
+    const sample=products.find(product=>collectionMatches(product,category) && (product.image || (Array.isArray(product.images) && product.images.length)));
+    if(!sample)return;
+    const image=document.createElement('img');
+    image.className='collection-photo';
+    image.src=String(sample.image || sample.images[0]);
+    image.alt='';
+    image.loading='lazy';
+    image.decoding='async';
+    image.onerror=()=>image.remove();
+    button.prepend(image);
+  });
 }
 function setCollectionFromHash(){const key=location.hash.toLowerCase().replace(/^#/ ,"");activeCollection=["men","women","sneakers","jackets"].includes(key)?key:"all";document.body.classList.toggle("collection-page",activeCollection!=="all");document.querySelectorAll("[data-collection]").forEach(a=>{a.classList.toggle("active",a.dataset.collection===activeCollection);if(a.tagName==="BUTTON")a.setAttribute("aria-pressed",String(a.dataset.collection===activeCollection));});const heading=document.querySelector("#shop .heading h2"),sub=document.querySelector("#shop .heading .muted");if(activeCollection!=="all"){heading.textContent=collectionMeta[activeCollection].title;sub.textContent="CURATED FOR YOU."}else{heading.textContent="Shop the collection";sub.textContent="FIND YOUR FIT."}if(typeof renderProducts==="function")renderProducts();}
 document.querySelectorAll(".collection-box[data-collection]").forEach(button=>button.addEventListener("click",()=>{const key=button.dataset.collection;location.hash=activeCollection===key?"shop":key;}));
@@ -1339,7 +1487,29 @@ byId('detailAdd').onclick=()=>{if(!selectedProduct)return;const color=byId('deta
 byId('detailBuyNow').onclick=()=>{if(!selectedProduct)return;const color=byId('detailColour').value,size=byId('detailSize').value;if(!color||!size)return toast('Please select a colour and an available size.');add((selectedColorProduct||selectedProduct).id,color,size);closeModal('productModal');showBag(false);updateCheckoutSummary();showCheckout(true)};
 byId('detailWish').onclick=()=>{if(selectedProduct){toggleWish(selectedProduct.id);byId('detailWish').textContent=isWished(selectedProduct.id)?'♥ WISHLISTED':'♡ WISHLIST'}};
 
-byId('menuBtn').onclick=()=>{const opening=!byId('settingsModal').classList.contains('show');openModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded',String(opening))};byId('wishlistMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');wishlistSectionOpened=true;renderWish();byId('wishlistSection').scrollIntoView({behavior:'smooth'})};byId('profileMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');openModal('accountModal');updateAuthUI()};byId('trackMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');openModal('trackModal')};
+byId('menuBtn').onclick=()=>{
+  const opening=!byId('settingsModal').classList.contains('show');
+  if(opening)openModal('settingsModal');else closeModal('settingsModal');
+  byId('menuBtn').setAttribute('aria-expanded',String(opening));
+};
+byId('mobileSearchBtn')?.addEventListener('click',()=>{
+  if(activeCollection==='sneakers'){location.hash='#shop';setCollectionFromHash();}
+  byId('shop')?.scrollIntoView({behavior:'smooth',block:'start'});
+  requestAnimationFrame(()=>byId('search')?.focus({preventScroll:true}));
+});
+document.querySelectorAll('[data-menu-close]').forEach(link=>link.addEventListener('click',()=>{
+  closeModal('settingsModal');
+  byId('menuBtn').setAttribute('aria-expanded','false');
+  if(/^#(men|women|jackets|sneakers)$/.test(link.getAttribute('href')||'')){
+    requestAnimationFrame(()=>byId('shop')?.scrollIntoView({behavior:'smooth',block:'start'}));
+  }
+}));
+byId('settingsModal')?.addEventListener('click',event=>{
+  if(event.target===byId('settingsModal')){
+    closeModal('settingsModal');
+    byId('menuBtn').setAttribute('aria-expanded','false');
+  }
+});byId('wishlistMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');wishlistSectionOpened=true;renderWish();byId('wishlistSection').scrollIntoView({behavior:'smooth'})};byId('profileMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');openModal('accountModal');updateAuthUI()};byId('trackMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');openModal('trackModal')};
 
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{closeModal(b.dataset.close);if(b.dataset.close==='settingsModal')byId('menuBtn').setAttribute('aria-expanded','false')});
 document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{authMode=b.dataset.auth;document.querySelectorAll('[data-auth]').forEach(x=>x.classList.toggle('active',x===b));const signup=authMode==='signup',forgot=authMode==='forgot';byId('accountTitle').textContent=forgot?'Reset your password':signup?'Create your account':'Welcome back';byId('authName').hidden=!signup;byId('authNameLabel').hidden=!signup;byId('authName').required=signup;byId('authPhone').hidden=!signup;byId('authPhoneLabel').hidden=!signup;byId('authPhone').required=signup;byId('authPassword').hidden=forgot;byId('authPasswordLabel').hidden=forgot;byId('authPassword').required=!forgot;byId('authPassword').autocomplete=signup?'new-password':'current-password';byId('authSubmit').textContent=forgot?'SEND RESET LINK':signup?'CREATE ACCOUNT':'LOGIN';byId('authNote').textContent='This form needs matching server-side authentication routes; no password is stored in this browser.'});
@@ -1433,7 +1603,7 @@ async function applySalesBanners(){
 }
 
 // Apply owner-managed storefront header settings without blocking the page.
-const defaultFooterSettings={enabled:true,brandText:'AERLON',tagline:'Defined by style. Built for you.',intro:'Contemporary essentials for confident everyday style.',showBrand:true,showTagline:true,showIntro:true,socials:{},columns:[],newsletterEnabled:true,newsletterKicker:'THE AERLON EDIT',newsletterTitle:'Stay a step ahead.',newsletterDescription:'Get first access to new collections, launches and selected offers.',newsletterButtonText:'JOIN',newsletterConsentText:'I agree to receive occasional AERLON updates by email.',trustEnabled:true,trustItems:['SECURE CHECKOUT','PAYMENT OPTIONS AT CHECKOUT','SHOP WITH CONFIDENCE'],copyrightText:'ALL RIGHTS RESERVED.',backToTopEnabled:true};
+const defaultFooterSettings={enabled:true,brandText:'AERLON',tagline:'Defined by style. Built for you.',intro:'Considered fashion and everyday essentials, curated for a distinctive point of view.',showBrand:true,showTagline:true,showIntro:true,socials:{},columns:[],newsletterEnabled:true,newsletterKicker:'THE AERLON EDIT',newsletterTitle:'A considered edit, delivered.',newsletterDescription:'Discover new arrivals, style stories and occasional AERLON updates.',newsletterButtonText:'SUBSCRIBE',newsletterConsentText:'I agree to receive occasional AERLON updates by email.',trustEnabled:true,trustItems:['SECURE CHECKOUT','PAYMENT OPTIONS AT CHECKOUT','SHOP WITH CONFIDENCE'],copyrightText:'ALL RIGHTS RESERVED.',backToTopEnabled:true};
 function applyFooterColumns(columns){
   const host=byId('mcFooterLinks');if(!host)return;host.replaceChildren();
   (Array.isArray(columns)?columns:[]).forEach((column,index)=>{
@@ -1455,6 +1625,29 @@ function applyFooterColumns(columns){
       nav.appendChild(el);
     });
     host.appendChild(nav);
+  });
+  prepareFooterAccordions();
+}
+function prepareFooterAccordions(){
+  document.querySelectorAll('#mcFooterLinks .mc-footer-links').forEach((nav,index)=>{
+    if(nav.querySelector('.mc-footer-accordion-button'))return;
+    const heading=nav.querySelector('h3');if(!heading)return;
+    const text=heading.textContent.trim();
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='mc-footer-accordion-button';
+    button.setAttribute('aria-expanded','false');
+    const panel=document.createElement('div');
+    panel.className='mc-footer-link-list';
+    panel.id='mcFooterPanel'+index;
+    button.setAttribute('aria-controls',panel.id);
+    const caption=document.createElement('span');caption.textContent=text;
+    const caret=document.createElement('span');caret.className='mc-footer-accordion-caret';caret.textContent='⌄';caret.setAttribute('aria-hidden','true');
+    button.append(caption,caret);
+    heading.replaceChildren(button);
+    for(const item of [...nav.children]){if(item!==heading)panel.appendChild(item);}
+    nav.appendChild(panel);
+    button.addEventListener('click',()=>button.setAttribute('aria-expanded',String(button.getAttribute('aria-expanded')!=='true')));
   });
 }
 async function applyStorefrontFooter(){
@@ -1561,6 +1754,7 @@ if(footerNewsletterForm){
 byId('siteFooter')?.addEventListener('click',event=>{const track=event.target.closest('[data-footer-action="track"]');if(track){openModal('trackModal');return;}const link=event.target.closest('.mc-footer-links a');if(link&&['#men','#women','#jackets','#sneakers'].includes(link.getAttribute('href'))){setTimeout(()=>byId('shop')?.scrollIntoView({behavior:'smooth',block:'start'}),0);}});
 byId('mcFooterBackTop')?.addEventListener('click',event=>{event.preventDefault();window.scrollTo({top:0,behavior:'smooth'});});
 
+prepareFooterAccordions();
 setCollectionFromHash();
 init();
 </script>

@@ -38,3 +38,68 @@
  .main .cardtitle {flex-wrap:wrap}
  .media-grid {grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr))}
 }
+
+/* AERLON Admin Panel 2.0 — dark luxury workspace, responsive navigation */
+:root[data-theme="dark"]{--bg:#0b0e14;--surface:#171b24;--surface2:#222734;--text:#f8f7f4;--muted:#a8afbc;--line:#303743;--accent:#d9b875;--accent2:#f2d69c;--shadow:0 14px 40px rgba(0,0,0,.23)}
+:root[data-theme="dark"] .sidebar{background:linear-gradient(165deg,#0c1018,#11151d 65%,#171914);border-right:1px solid #30343d}
+.sidebar .brand{font-family:Georgia,serif;font-weight:400;letter-spacing:.17em}
+.sidebar .brand small{font-family:Inter,system-ui,sans-serif;letter-spacing:.15em;color:#c4a979}
+.sidebar .nav{gap:6px}
+.sidebar .nav button{border-radius:10px;min-height:42px;font-weight:550;transition:background .18s,color .18s}
+.sidebar .nav button.active{background:linear-gradient(105deg,#5d4729,#3a3429);color:#ffe5ad}
+.sidebar .nav button:focus-visible,.admin20-bottom button:focus-visible,.admin20-quick button:focus-visible{outline:2px solid #f1cc86;outline-offset:2px}
+.main{max-width:1800px;width:100%;padding-bottom:50px}
+.main .topbar{align-items:center}
+.main .topbar h1{font-family:Inter,system-ui,sans-serif;font-weight:750;letter-spacing:-.04em}
+.admin20-welcome{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 22px}
+.admin20-welcome h2{font-size:clamp(22px,3vw,31px);line-height:1.15;letter-spacing:-.045em;margin:8px 0 5px}
+.admin20-welcome h2 span{color:var(--accent)}
+.admin20-welcome p{margin:0;color:var(--muted)}
+.admin20-live{border:1px solid var(--line);border-radius:30px;padding:8px 12px;white-space:nowrap;color:var(--muted);font-size:12px}
+.admin20-live span{color:#53cf95}
+.main .stat,.main .card{border-radius:16px;background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.07)}
+.main .stat{min-width:0}
+.main .stat strong{font-size:clamp(22px,2.4vw,33px);overflow-wrap:anywhere}
+.main .stat .staticon{border-radius:11px}
+.admin20-quick{margin-top:20px;padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.admin20-quick-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.admin20-quick-head h2{margin:0;font-size:18px}
+.admin20-quick-head span{font-size:12px;color:var(--muted)}
+.admin20-quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.admin20-quick button{display:flex;align-items:center;gap:10px;text-align:left;padding:15px;background:var(--surface2);border:1px solid var(--line);border-radius:12px;color:var(--text);cursor:pointer;font:inherit;font-weight:600}
+.admin20-quick button:hover{border-color:var(--accent)}
+.admin20-quick button span{display:grid;place-items:center;flex:0 0 35px;width:35px;height:35px;border-radius:10px;background:rgba(205,165,90,.15);color:var(--accent2);font-size:20px}
+.admin20-quick button[hidden],.admin20-bottom button[hidden]{display:none!important}
+.admin20-bottom{display:none}
+@media(max-width:950px){.admin20-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){
+ .app{min-width:0}
+ .sidebar{position:relative;z-index:3;padding:12px 15px}
+ .sidebar .brand{font-size:23px}
+ .sidebar .nav{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .sidebar .nav button{font-size:12px;min-height:42px}
+ .sidebar .sidebottom{margin-top:0}
+ .main{padding:17px 13px calc(105px + env(safe-area-inset-bottom))}
+ .main .topbar{margin-bottom:17px}
+ .main .topbar h1{font-size:24px}
+ .main .topbar .actions{gap:7px}
+ .main .topbar .actions .btn{min-height:37px;font-size:11px}
+ .admin20-welcome{margin-bottom:16px}
+ .admin20-welcome h2{font-size:23px}
+ .admin20-welcome p{font-size:12px}
+ .admin20-live{display:none}
+ #section-overview .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ #section-overview .stat{padding:13px;min-width:0}
+ #section-overview .stat strong{font-size:clamp(19px,5.2vw,27px)}
+ #section-overview .stat small{font-size:10px}
+ .main .contentgrid{grid-template-columns:1fr}
+ .admin20-quick{padding:14px;margin-top:14px}
+ .admin20-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .admin20-quick button{font-size:11px;padding:10px;gap:6px;flex-direction:column;align-items:flex-start}
+ .admin20-bottom{position:fixed;z-index:20;bottom:0;left:0;right:0;display:flex;justify-content:space-around;gap:3px;background:#10151e;border-top:1px solid #343a44;padding:8px 7px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -9px 25px rgba(0,0,0,.25)}
+ .admin20-bottom button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:0;border-radius:10px;padding:7px 2px;background:transparent;color:#b8bdc7;font:600 10px/1.3 Inter,system-ui,sans-serif;cursor:pointer}
+ .admin20-bottom button span{font-size:22px;line-height:1.2}
+ .admin20-bottom button.active{background:linear-gradient(120deg,#5d4627,#8c6731);color:#fff0cf}
+}
+@media(max-width:360px){.main{padding-left:9px;padding-right:9px}.admin20-bottom button{font-size:9px}.main .stat{padding:10px}}
+@media(prefers-reduced-motion:reduce){.sidebar .nav button{transition:none}}

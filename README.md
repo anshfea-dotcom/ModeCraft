@@ -9,7 +9,7 @@ A starter custom storefront for AERLON using HTML/CSS/JavaScript, Node.js/Expres
 
 ## Run locally
 1. Extract this project folder.
-2. Open a terminal in the `aerlon-store` folder.
+2. Open a terminal in the `AERLON-store` folder.
 3. Install dependencies:
    ```bash
    npm install

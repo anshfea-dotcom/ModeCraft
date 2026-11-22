@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "check": "node --check server.js && node scripts/qa-modecraft.js",
-    "qa": "node scripts/qa-modecraft.js"
+    "qa": "node scripts/qa-modecraft.js",
+    "postinstall": "npm run check"
   },
   "engines": {
     "node": ">=20"

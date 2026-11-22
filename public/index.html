@@ -876,7 +876,6 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
  .mc-footer-accordion-caret{display:inline-block;color:#d4b483;font-size:20px;transition:transform .2s}
  .mc-footer-accordion-button[aria-expanded="true"] .mc-footer-accordion-caret{transform:rotate(180deg)}
  .mc-footer-link-list{display:none;gap:10px;padding:0 0 18px 7px}
- .mc-footer-accordion-button[aria-expanded="true"] + .mc-footer-link-list{display:grid}
  .mc-footer-links a,.mc-footer-links button:not(.mc-footer-accordion-button){min-height:30px;font-size:13px}
  .mc-footer-newsletter{margin-top:7px;max-width:none;justify-self:stretch;border-radius:18px;background:#242321;padding:22px 18px}
  .mc-footer-newsletter h3{font-size:19px}
@@ -908,6 +907,40 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 @media(prefers-reduced-motion:reduce){#settingsModal .menu-box{animation:none}}
 </style>
 <meta name="description" content="Discover elevated everyday fashion at AERLON. Explore thoughtfully designed hoodies, clothing and accessories with a premium shopping experience."><meta property="og:site_name" content="AERLON"><meta property="og:type" content="website"><meta property="og:title" content="AERLON — Elevated Everyday Fashion"><meta property="og:description" content="Explore thoughtfully designed everyday essentials at AERLON."><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AERLON","url":"https://modecraft-india.onrender.com/","description":"An online fashion store offering thoughtfully designed everyday clothing and accessories."}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"AERLON","url":"https://modecraft-india.onrender.com/","potentialAction":{"@type":"SearchAction","target":"https://modecraft-india.onrender.com/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
+<style>
+.mc-footer-links h3 .mc-footer-accordion-button {pointer-events:auto}
+.mc-footer-links:has(.mc-footer-accordion-button[aria-expanded="true"]) > .mc-footer-link-list {display:grid}
+.mc-footer-links:has(.mc-footer-accordion-button[aria-expanded="false"]) > .mc-footer-link-list {display:none}
+#bagBtn {position:relative}
+#bagBtn .bag-count {right:0}
+.lookbook {position:relative;min-width:0;width:100%;background:#423d36;overflow:hidden}
+.lookbook-track {display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;height:clamp(330px,36vw,540px)}
+.lookbook-track::-webkit-scrollbar {display:none}
+.lookbook-track img {width:100%;min-width:0;flex:0 0 100%;object-fit:cover;object-position:center 38%;scroll-snap-align:start}
+.lookbook-controls {position:absolute;bottom:12px;right:12px;display:flex;background:#171717e8;border-radius:28px}
+.lookbook-controls button {width:44px;height:44px;color:white;background:none;border:0;font-size:22px}
+.lookbook-controls button:focus-visible {outline:2px solid #e5ba78;outline-offset:-3px}
+.collection-box {position:relative;overflow:hidden;align-items:flex-end;padding:0;min-height:clamp(170px,21vw,300px)}
+.collection-box .collection-photo {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 38%}
+.collection-box .collection-label {position:relative;width:100%;padding:24px 10px 14px;background:linear-gradient(transparent,#12100ee6);color:white;z-index:2}
+.collection-box.active {outline:2px solid #a67643;outline-offset:-2px}
+.newsletter-envelope {display:grid;place-items:center;flex:0 0 36px;background:white;color:#403930;cursor:text}
+.newsletter-envelope svg {width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6}
+#footerNewsletterEmail {flex:1 1 0;min-width:0;padding-inline:3px;background:white;color:#171717}
+@media(max-width:720px){
+  #home.hero {display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0!important;min-height:0;background:#201d1b}
+  #home.hero::before {display:none}
+  #home .lookbook {order:-1}
+  .lookbook-track {height:clamp(230px,78vw,420px)}
+  #home.hero>div:first-child {max-width:none;padding:22px clamp(18px,5vw,32px) 26px}
+  #home.hero h1 {color:white;font-size:clamp(35px,8.2vw,51px);letter-spacing:-1.6px;margin:10px 0}
+  #home.hero h1 br {display:none}
+  #home.hero p {color:#f3eee7;max-width:42ch;font-size:14px;line-height:1.5;margin:0}
+  #home.hero .btn {margin-top:16px}
+  .collection-box {min-height:162px}
+  .collection-box::after {display:none}
+}
+</style>
 </head>
 <body>
 <div class="mc-intro" id="mcIntro" role="status" aria-label="Loading AERLON">
@@ -926,8 +959,19 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 <section id="salesBannerSection" class="sales-banner-section" aria-label="Store promotions" hidden><div id="salesBannerTrack" class="sales-banner-track"></div></section>
 <main>
 <section class="hero" id="home">
-<div><div class="eyebrow">MADE FOR YOUR EVERYDAY</div><h1>Wear Your<br>Identity.</h1><p>Modern essentials. Confident silhouettes. Personal style. Discover everyday fashion that feels like you.</p><a class="btn" href="#shop">SHOP THE COLLECTION ↗</a></div>
-<div class="heroimg"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1000&q=85" alt="Modern fashion editorial"></div>
+<div><div class="eyebrow">MADE FOR YOUR EVERYDAY</div><h1>Wear Your <br>Identity.</h1><p>Modern essentials. Confident silhouettes. Personal style. Discover everyday fashion that feels like you.</p><a class="btn" href="#shop">SHOP THE COLLECTION ↗</a></div>
+<div class="lookbook" aria-label="AERLON model lookbook">
+  <div class="lookbook-track" tabindex="0" aria-label="Scroll through three looks">
+    <img src="/editorial/men.webp" alt="Model in a dark jacket and ochre trousers beside a round window" fetchpriority="high">
+    <img src="/editorial/women.webp" alt="Model in a blue coat outside Milan Cathedral">
+    <img src="/editorial/jackets.webp" alt="Model in a black jacket against a brick wall">
+  </div>
+  <div class="lookbook-controls">
+    <button type="button" data-look="previous" aria-label="Previous look">‹</button>
+    <button type="button" data-look="play" aria-label="Pause slideshow">Ⅱ</button>
+    <button type="button" data-look="next" aria-label="Next look">›</button>
+  </div>
+</div>
 </section>
 <div class="mobile-benefits" aria-label="Shopping assistance">
   <a href="#shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v13H3zM3 11h18M8 6V4h8v2"/></svg><span>Explore<br>collections</span></a>
@@ -937,10 +981,10 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 <section class="wrap" id="shop">
 <div class="mobile-category-heading"><h2>Shop by collection</h2><a href="#products">View all <span aria-hidden="true">↗</span></a></div>
 <div class="collection-boxes" role="group" aria-label="Choose a collection">
-<button type="button" class="collection-box" data-collection="men" aria-pressed="false"><span class="collection-label">Men</span></button>
-<button type="button" class="collection-box" data-collection="women" aria-pressed="false"><span class="collection-label">Women</span></button>
-<button type="button" class="collection-box" data-collection="sneakers" aria-pressed="false"><span class="collection-label">Sneakers</span></button>
-<button type="button" class="collection-box" data-collection="jackets" aria-pressed="false"><span class="collection-label">Jackets</span></button>
+<button type="button" class="collection-box" data-collection="men" aria-pressed="false"><img class="collection-photo" src="/editorial/men.webp" alt="" loading="lazy"><span class="collection-label">Men</span></button>
+<button type="button" class="collection-box" data-collection="women" aria-pressed="false"><img class="collection-photo" src="/editorial/women.webp" alt="" loading="lazy"><span class="collection-label">Women</span></button>
+<button type="button" class="collection-box" data-collection="sneakers" aria-pressed="false"><img class="collection-photo" src="/editorial/sneakers.webp" alt="" loading="lazy"><span class="collection-label">Sneakers</span></button>
+<button type="button" class="collection-box" data-collection="jackets" aria-pressed="false"><img class="collection-photo" src="/editorial/jackets.webp" alt="" loading="lazy"><span class="collection-label">Jackets</span></button>
 </div>
 <div class="heading"><h2>Shop the collection</h2><span class="muted">FIND YOUR FIT.</span></div>
 <div class="tools"><input id="search" type="search" placeholder="Search products…"><select id="category" aria-label="Filter products by category"><option>All Categories</option></select><select id="sort"><option value="featured">Featured</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select></div>
@@ -973,8 +1017,8 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
         <h3 id="mcFooterNewsletterTitle">A considered edit, delivered.</h3>
         <p id="mcFooterNewsletterDescription">Discover new arrivals, style stories and occasional AERLON updates.</p>
         <form id="footerNewsletterForm" class="mc-newsletter-form" novalidate>
-          <label class="sr-only" for="footerNewsletterEmail">Email address</label>
-          <input id="footerNewsletterEmail" name="email" type="email" autocomplete="email" placeholder="Your email address" maxlength="254" required>
+          <label class="newsletter-envelope" for="footerNewsletterEmail" aria-label="Email address"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg></label>
+          <input id="footerNewsletterEmail" name="email" type="email" aria-label="Email address" autocomplete="email" placeholder="Your email address" maxlength="254" required>
           <button type="submit" aria-label="Subscribe to the AERLON newsletter"><span id="mcFooterNewsletterButtonText">SUBSCRIBE</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 5l7 7-7 7"/></svg></button>
         </form>
         <label class="mc-newsletter-consent"><input id="footerNewsletterConsent" type="checkbox" required><span id="mcFooterNewsletterConsentText">I agree to receive occasional AERLON updates by email.</span></label>
@@ -1121,7 +1165,7 @@ async function init(){
     const validProductIds = new Set(products.map(product => String(product.id)));
     cart = cart.filter(item => validProductIds.has(String(item.id)));
     safeWrite('modecraft_cart_v1', cart);
-    hydrateCategoryCards();
+
     renderProducts();
     renderCart();
     renderRecent();
@@ -1231,22 +1275,37 @@ function collectionMatches(p,key){
   if(key==="jackets")return /\b(jacket|jackets|outerwear|windbreaker|bomber)\b/.test(type+" "+text);
   return /sneaker|trainer|footwear|shoe|shoes|kick/.test(type+" "+text);
 }
-function hydrateCategoryCards(){
-  document.querySelectorAll('.collection-box[data-collection]').forEach(button=>{
-    button.querySelector('.collection-photo')?.remove();
-    const category=button.dataset.collection;
-    const sample=products.find(product=>collectionMatches(product,category) && (product.image || (Array.isArray(product.images) && product.images.length)));
-    if(!sample)return;
-    const image=document.createElement('img');
-    image.className='collection-photo';
-    image.src=String(sample.image || sample.images[0]);
-    image.alt='';
-    image.loading='lazy';
-    image.decoding='async';
-    image.onerror=()=>image.remove();
-    button.prepend(image);
-  });
+function initialiseLookbook() {
+  const track = document.querySelector('.lookbook-track');
+  const play = document.querySelector('[data-look="play"]');
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  let playing = !motion.matches;
+  let timer;
+  function move(step) {
+    const width = track.clientWidth;
+    if (!width) return;
+    const count = track.children.length;
+    const next = (Math.round(track.scrollLeft / width) + step + count) % count;
+    track.scrollTo({left: next * width, behavior: motion.matches ? 'instant' : 'smooth'});
+  }
+  function sync() {
+    clearInterval(timer);
+    play.textContent = playing ? 'Ⅱ' : '▷';
+    play.setAttribute('aria-label', playing ? 'Pause slideshow' : 'Play slideshow');
+    if (playing && !document.hidden) timer = setInterval(() => move(1), 5500);
+  }
+  function pause() { playing = false; sync(); }
+  document.querySelectorAll('[data-look]').forEach(button => button.addEventListener('click', () => {
+    if (button === play) { playing = !playing; sync(); }
+    else { pause(); move(button.dataset.look === 'next' ? 1 : -1); }
+  }));
+  track.addEventListener('pointerdown', pause);
+  track.addEventListener('focus', pause);
+  motion.addEventListener('change', () => { if (motion.matches) pause(); });
+  document.addEventListener('visibilitychange', sync);
+  sync();
 }
+initialiseLookbook();
 function setCollectionFromHash(){const key=location.hash.toLowerCase().replace(/^#/ ,"");activeCollection=["men","women","sneakers","jackets"].includes(key)?key:"all";document.body.classList.toggle("collection-page",activeCollection!=="all");document.querySelectorAll("[data-collection]").forEach(a=>{a.classList.toggle("active",a.dataset.collection===activeCollection);if(a.tagName==="BUTTON")a.setAttribute("aria-pressed",String(a.dataset.collection===activeCollection));});const heading=document.querySelector("#shop .heading h2"),sub=document.querySelector("#shop .heading .muted");if(activeCollection!=="all"){heading.textContent=collectionMeta[activeCollection].title;sub.textContent="CURATED FOR YOU."}else{heading.textContent="Shop the collection";sub.textContent="FIND YOUR FIT."}if(typeof renderProducts==="function")renderProducts();}
 document.querySelectorAll(".collection-box[data-collection]").forEach(button=>button.addEventListener("click",()=>{const key=button.dataset.collection;location.hash=activeCollection===key?"shop":key;}));
 window.addEventListener("hashchange",setCollectionFromHash);
@@ -1636,7 +1695,7 @@ function prepareFooterAccordions(){
     const button=document.createElement('button');
     button.type='button';
     button.className='mc-footer-accordion-button';
-    button.setAttribute('aria-expanded','false');
+    button.setAttribute('aria-expanded',String(!matchMedia('(max-width:720px)').matches));
     const panel=document.createElement('div');
     panel.className='mc-footer-link-list';
     panel.id='mcFooterPanel'+index;

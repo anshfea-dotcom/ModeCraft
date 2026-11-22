@@ -1153,7 +1153,7 @@ const DEFAULT_FOOTER_SETTINGS = {
   enabled: true,
   brandText: "AERLON",
   tagline: "Defined by style. Built for you.",
-  intro: "Contemporary essentials for confident everyday style.",
+  intro: "Considered fashion and everyday essentials, curated for a distinctive point of view.",
   logoUrl: "",
   showBrand: true,
   showTagline: true,
@@ -1164,17 +1164,17 @@ const DEFAULT_FOOTER_SETTINGS = {
       { label: "All Collections", url: "#shop" }, { label: "Men", url: "#men" }, { label: "Women", url: "#women" }, { label: "Jackets", url: "#jackets" }, { label: "Sneakers", url: "#sneakers" }
     ]},
     { id: "help", title: "NEED HELP?", links: [
-      { label: "Track Your Order", action: "track" }, { label: "Customer Care", url: "/customer-care.html" }, { label: "Returns & Requests", url: "/return-refund-policy.html" }
+      { label: "Track Your Order", action: "track" }, { label: "Customer Care", url: "/customer-care.html" }, { label: "Return & Refund Policy", url: "/return-refund-policy.html" }
     ]},
     { id: "information", title: "INFORMATION", links: [
-      { label: "About AERLON", url: "#about" }, { label: "Customer Care", url: "/customer-care.html" }, { label: "Return & Refund Policy", url: "/return-refund-policy.html" }
+      { label: "About AERLON", url: "#about" }, { label: "Contact Support", url: "https://wa.me/919648629929" }
     ]}
   ],
   newsletterEnabled: true,
   newsletterKicker: "THE AERLON EDIT",
-  newsletterTitle: "Stay a step ahead.",
-  newsletterDescription: "Get first access to new collections, launches and selected offers.",
-  newsletterButtonText: "JOIN",
+  newsletterTitle: "A considered edit, delivered.",
+  newsletterDescription: "Discover new arrivals, style stories and occasional AERLON updates.",
+  newsletterButtonText: "SUBSCRIBE",
   newsletterConsentText: "I agree to receive occasional AERLON updates by email.",
   trustEnabled: true,
   trustItems: ["SECURE CHECKOUT", "PAYMENT OPTIONS AT CHECKOUT", "SHOP WITH CONFIDENCE"],
@@ -1271,7 +1271,7 @@ async function getFooterSettings() {
     }
   };
   appendMissing("help", "help", DEFAULT_FOOTER_SETTINGS.columns.find(column => column.id === "help").links.filter(link => link.url === "/customer-care.html" || link.url === "/return-refund-policy.html"));
-  appendMissing("information", "information", DEFAULT_FOOTER_SETTINGS.columns.find(column => column.id === "information").links.filter(link => link.url === "/customer-care.html" || link.url === "/return-refund-policy.html"));
+  // Keep the customer-care and policy links together under Help; avoid duplicating them in Information.
   return cleanFooterSettings({
     ...DEFAULT_FOOTER_SETTINGS,
     brandText: legacyHeader.brandText || DEFAULT_FOOTER_SETTINGS.brandText,

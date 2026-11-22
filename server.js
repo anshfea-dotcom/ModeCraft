@@ -1257,17 +1257,21 @@ async function getFooterSettings() {
   const legacyHeader = settings.storefront_header || {};
   const savedFooter = settings.storefront_footer || {};
   const columns = Array.isArray(savedFooter.columns) ? savedFooter.columns.map(column => ({ ...column, links: Array.isArray(column.links) ? [...column.links] : [] })) : DEFAULT_FOOTER_SETTINGS.columns.map(column => ({ ...column, links: [...column.links] }));
-  const appendMissing = (columnId, requiredLinks) => {
-    let column = columns.find(item => item.id === columnId);
-    if (!column) { column = DEFAULT_FOOTER_SETTINGS.columns.find(item => item.id === columnId); if (column) columns.push({ ...column, links: [...column.links] }); }
+  const appendMissing = (columnId, titleHint, requiredLinks) => {
+    let column = columns.find(item => item.id === columnId) || columns.find(item => String(item.title || "").toLowerCase().includes(titleHint));
+    if (!column) {
+      const fallback = DEFAULT_FOOTER_SETTINGS.columns.find(item => item.id === columnId);
+      if (columns.length < 4 && fallback) { column = { ...fallback, links: [] }; columns.push(column); }
+      else column = columns.find(item => String(item.title || "").toLowerCase().includes("help")) || columns[columns.length - 1];
+    }
     if (!column) return;
     for (const required of requiredLinks) {
-      const exists = column.links.some(link => link.action === required.action && required.action || link.url === required.url || link.label === required.label);
+      const exists = column.links.some(link => link.url === required.url || link.label === required.label);
       if (!exists) column.links.push(required);
     }
   };
-  appendMissing("help", DEFAULT_FOOTER_SETTINGS.columns.find(column => column.id === "help").links.filter(link => link.url === "/customer-care.html" || link.url === "/return-refund-policy.html"));
-  appendMissing("information", DEFAULT_FOOTER_SETTINGS.columns.find(column => column.id === "information").links.filter(link => link.url === "/customer-care.html" || link.url === "/return-refund-policy.html"));
+  appendMissing("help", "help", DEFAULT_FOOTER_SETTINGS.columns.find(column => column.id === "help").links.filter(link => link.url === "/customer-care.html" || link.url === "/return-refund-policy.html"));
+  appendMissing("information", "information", DEFAULT_FOOTER_SETTINGS.columns.find(column => column.id === "information").links.filter(link => link.url === "/customer-care.html" || link.url === "/return-refund-policy.html"));
   return cleanFooterSettings({
     ...DEFAULT_FOOTER_SETTINGS,
     brandText: legacyHeader.brandText || DEFAULT_FOOTER_SETTINGS.brandText,

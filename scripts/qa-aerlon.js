@@ -38,7 +38,7 @@ check('Storefront inline JavaScript parses correctly', () => {
   assert.ok(home.includes('src="/aerlon-concierge.js"'), 'Concierge script is not loaded');
   const concierge = fs.readFileSync('public/aerlon-concierge.js', 'utf8');
   try { new vm.Script(concierge, { filename: 'public/aerlon-concierge.js' }); } catch (error) { throw new Error('Concierge script: ' + error.stack); }
-  includesAll(concierge, ['Agent Support', 'wa.me/919648629929', 'ac-quick', 'ac-typing']);
+  includesAll(concierge, ['Contact Customer Agent', 'wa.me/919648629929', 'ac-quick', 'ac-typing', 'Step-by-Step Guide', '/api/orders/track']);
 });
 console.log(passed + '/5 AERLON build checks passed.');
 if (process.exitCode) process.exit(process.exitCode);

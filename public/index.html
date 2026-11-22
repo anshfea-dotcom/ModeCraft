@@ -917,6 +917,16 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 }
 @media(prefers-reduced-motion:reduce){#settingsModal .menu-box{animation:none}}
 .aerlon-camera-link{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:50%;color:inherit;flex:0 0 auto;transition:background .2s,border-color .2s,transform .2s}.aerlon-camera-link:hover{background:rgba(183,138,86,.09);border-color:rgba(183,138,86,.45);transform:translateY(-1px)}.aerlon-camera-link:focus-visible{outline:2px solid #b78a56;outline-offset:2px}@media(prefers-reduced-motion:reduce){.aerlon-camera-link{transition:none}}
+/* AERLON compact luxury header: keep camera, search and bag on one mobile row */
+@media(max-width:720px){
+.navin{grid-template-columns:44px minmax(0,1fr) 132px;gap:5px;min-height:68px;padding:9px 12px}
+.navin>.site-wordmark{font-size:clamp(18px,4.6vw,24px);letter-spacing:clamp(1.5px,.7vw,3px)}
+.aerlon-camera-link{grid-column:3;grid-row:1;justify-self:start;align-self:center;width:42px;height:44px;border:0;border-radius:0}
+.aerlon-camera-link svg{width:23px;height:23px}
+#mobileSearchBtn{grid-column:3;grid-row:1;justify-self:center;width:42px;height:44px}
+#bagBtn{grid-column:3;grid-row:1;justify-self:end;width:42px;height:44px;min-width:42px}
+}
+@media(max-width:365px){.navin{grid-template-columns:40px minmax(0,1fr) 120px;padding:8px}.navin>.site-wordmark{font-size:18px;letter-spacing:1.5px}.aerlon-camera-link,#mobileSearchBtn,#bagBtn{width:40px}}
 </style>
 <meta name="description" content="Discover elevated everyday fashion at AERLON. Explore thoughtfully designed hoodies, clothing and accessories with a premium shopping experience."><meta property="og:site_name" content="AERLON"><meta property="og:type" content="website"><meta property="og:title" content="AERLON — Elevated Everyday Fashion"><meta property="og:description" content="Explore thoughtfully designed everyday essentials at AERLON."><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AERLON","url":"/","description":"An online fashion store offering thoughtfully designed everyday clothing and accessories."}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"AERLON","url":"/","potentialAction":{"@type":"SearchAction","target":"/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
 <style>

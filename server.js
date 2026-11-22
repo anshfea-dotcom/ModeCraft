@@ -1164,10 +1164,10 @@ const DEFAULT_FOOTER_SETTINGS = {
       { label: "All Collections", url: "#shop" }, { label: "Men", url: "#men" }, { label: "Women", url: "#women" }, { label: "Jackets", url: "#jackets" }, { label: "Sneakers", url: "#sneakers" }
     ]},
     { id: "help", title: "NEED HELP?", links: [
-      { label: "Track Your Order", action: "track" }, { label: "Customer Care", url: "#about" }, { label: "Delivery Information", url: "#about" }
+      { label: "Track Your Order", action: "track" }, { label: "Customer Care", url: "/customer-care.html" }, { label: "Returns & Requests", url: "/return-refund-policy.html" }
     ]},
     { id: "information", title: "INFORMATION", links: [
-      { label: "About AERLON", url: "#about" }, { label: "Customer Care", url: "#about" }
+      { label: "About AERLON", url: "#about" }, { label: "Customer Care", url: "/customer-care.html" }, { label: "Return & Refund Policy", url: "/return-refund-policy.html" }
     ]}
   ],
   newsletterEnabled: true,
@@ -1255,12 +1255,26 @@ async function getFooterSettings() {
   const result = await pool.query("SELECT key, data FROM store_settings WHERE key = ANY($1::text[])", [["storefront_footer", "storefront_header"]]);
   const settings = Object.fromEntries(result.rows.map(row => [row.key, row.data || {}]));
   const legacyHeader = settings.storefront_header || {};
+  const savedFooter = settings.storefront_footer || {};
+  const columns = Array.isArray(savedFooter.columns) ? savedFooter.columns.map(column => ({ ...column, links: Array.isArray(column.links) ? [...column.links] : [] })) : DEFAULT_FOOTER_SETTINGS.columns.map(column => ({ ...column, links: [...column.links] }));
+  const appendMissing = (columnId, requiredLinks) => {
+    let column = columns.find(item => item.id === columnId);
+    if (!column) { column = DEFAULT_FOOTER_SETTINGS.columns.find(item => item.id === columnId); if (column) columns.push({ ...column, links: [...column.links] }); }
+    if (!column) return;
+    for (const required of requiredLinks) {
+      const exists = column.links.some(link => link.action === required.action && required.action || link.url === required.url || link.label === required.label);
+      if (!exists) column.links.push(required);
+    }
+  };
+  appendMissing("help", DEFAULT_FOOTER_SETTINGS.columns.find(column => column.id === "help").links.filter(link => link.url === "/customer-care.html" || link.url === "/return-refund-policy.html"));
+  appendMissing("information", DEFAULT_FOOTER_SETTINGS.columns.find(column => column.id === "information").links.filter(link => link.url === "/customer-care.html" || link.url === "/return-refund-policy.html"));
   return cleanFooterSettings({
     ...DEFAULT_FOOTER_SETTINGS,
     brandText: legacyHeader.brandText || DEFAULT_FOOTER_SETTINGS.brandText,
     tagline: legacyHeader.tagline || DEFAULT_FOOTER_SETTINGS.tagline,
     logoUrl: legacyHeader.logoUrl || "",
-    ...(settings.storefront_footer || {})
+    ...savedFooter,
+    columns
   });
 }
 

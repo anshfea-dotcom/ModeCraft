@@ -1229,7 +1229,7 @@ function cleanFooterSettings(input = {}) {
   if (logoUrl && !/^https:\/\//i.test(logoUrl)) throw Object.assign(new Error("Footer logo URL must use HTTPS."), { status: 400 });
   return {
     enabled: source.enabled !== false,
-    brandText: (() => { const value = cleanText(source.brandText, 60); return !value || value === "ModeCraft" ? "AERLON" : value; })(),
+    brandText: cleanText(source.brandText, 60) || DEFAULT_FOOTER_SETTINGS.brandText,
     tagline: cleanText(source.tagline, 120),
     intro: cleanText(source.intro, 240),
     logoUrl,
@@ -1268,8 +1268,7 @@ async function getFooterSettings() {
 app.get("/api/storefront/header", async (_req, res, next) => {
   try {
     const result = await pool.query("SELECT data FROM store_settings WHERE key = $1", ["storefront_header"]);
-    const saved = result.rows[0]?.data || {};
-    res.json({ header: { ...saved, brandText: saved.brandText === "ModeCraft" ? "AERLON" : (saved.brandText || "AERLON") } });
+    res.json({ header: result.rows[0]?.data || {} });
   } catch (error) { next(error); }
 });
 

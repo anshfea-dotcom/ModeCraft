@@ -1121,6 +1121,7 @@ async function init(){
     const validProductIds = new Set(products.map(product => String(product.id)));
     cart = cart.filter(item => validProductIds.has(String(item.id)));
     safeWrite('modecraft_cart_v1', cart);
+    hydrateCategoryCards();
     renderProducts();
     renderCart();
     renderRecent();
@@ -1229,6 +1230,22 @@ function collectionMatches(p,key){
   if(key==="women")return womenAudience.has(audience)||unisexAudience.has(audience)||(!menAudience.has(audience)&&!womenAudience.has(audience)&&/\b(women|womens|woman|female|girl|girls|womenswear|ladies|lady)\b/.test(text));
   if(key==="jackets")return /\b(jacket|jackets|outerwear|windbreaker|bomber)\b/.test(type+" "+text);
   return /sneaker|trainer|footwear|shoe|shoes|kick/.test(type+" "+text);
+}
+function hydrateCategoryCards(){
+  document.querySelectorAll('.collection-box[data-collection]').forEach(button=>{
+    button.querySelector('.collection-photo')?.remove();
+    const category=button.dataset.collection;
+    const sample=products.find(product=>collectionMatches(product,category) && (product.image || (Array.isArray(product.images) && product.images.length)));
+    if(!sample)return;
+    const image=document.createElement('img');
+    image.className='collection-photo';
+    image.src=String(sample.image || sample.images[0]);
+    image.alt='';
+    image.loading='lazy';
+    image.decoding='async';
+    image.onerror=()=>image.remove();
+    button.prepend(image);
+  });
 }
 function setCollectionFromHash(){const key=location.hash.toLowerCase().replace(/^#/ ,"");activeCollection=["men","women","sneakers","jackets"].includes(key)?key:"all";document.body.classList.toggle("collection-page",activeCollection!=="all");document.querySelectorAll("[data-collection]").forEach(a=>{a.classList.toggle("active",a.dataset.collection===activeCollection);if(a.tagName==="BUTTON")a.setAttribute("aria-pressed",String(a.dataset.collection===activeCollection));});const heading=document.querySelector("#shop .heading h2"),sub=document.querySelector("#shop .heading .muted");if(activeCollection!=="all"){heading.textContent=collectionMeta[activeCollection].title;sub.textContent="CURATED FOR YOU."}else{heading.textContent="Shop the collection";sub.textContent="FIND YOUR FIT."}if(typeof renderProducts==="function")renderProducts();}
 document.querySelectorAll(".collection-box[data-collection]").forEach(button=>button.addEventListener("click",()=>{const key=button.dataset.collection;location.hash=activeCollection===key?"shop":key;}));
@@ -1470,7 +1487,29 @@ byId('detailAdd').onclick=()=>{if(!selectedProduct)return;const color=byId('deta
 byId('detailBuyNow').onclick=()=>{if(!selectedProduct)return;const color=byId('detailColour').value,size=byId('detailSize').value;if(!color||!size)return toast('Please select a colour and an available size.');add((selectedColorProduct||selectedProduct).id,color,size);closeModal('productModal');showBag(false);updateCheckoutSummary();showCheckout(true)};
 byId('detailWish').onclick=()=>{if(selectedProduct){toggleWish(selectedProduct.id);byId('detailWish').textContent=isWished(selectedProduct.id)?'♥ WISHLISTED':'♡ WISHLIST'}};
 
-byId('menuBtn').onclick=()=>{const opening=!byId('settingsModal').classList.contains('show');openModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded',String(opening))};byId('wishlistMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');wishlistSectionOpened=true;renderWish();byId('wishlistSection').scrollIntoView({behavior:'smooth'})};byId('profileMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');openModal('accountModal');updateAuthUI()};byId('trackMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');openModal('trackModal')};
+byId('menuBtn').onclick=()=>{
+  const opening=!byId('settingsModal').classList.contains('show');
+  if(opening)openModal('settingsModal');else closeModal('settingsModal');
+  byId('menuBtn').setAttribute('aria-expanded',String(opening));
+};
+byId('mobileSearchBtn')?.addEventListener('click',()=>{
+  if(activeCollection==='sneakers'){location.hash='#shop';setCollectionFromHash();}
+  byId('shop')?.scrollIntoView({behavior:'smooth',block:'start'});
+  requestAnimationFrame(()=>byId('search')?.focus({preventScroll:true}));
+});
+document.querySelectorAll('[data-menu-close]').forEach(link=>link.addEventListener('click',()=>{
+  closeModal('settingsModal');
+  byId('menuBtn').setAttribute('aria-expanded','false');
+  if(/^#(men|women|jackets|sneakers)$/.test(link.getAttribute('href')||'')){
+    requestAnimationFrame(()=>byId('shop')?.scrollIntoView({behavior:'smooth',block:'start'}));
+  }
+}));
+byId('settingsModal')?.addEventListener('click',event=>{
+  if(event.target===byId('settingsModal')){
+    closeModal('settingsModal');
+    byId('menuBtn').setAttribute('aria-expanded','false');
+  }
+});byId('wishlistMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');wishlistSectionOpened=true;renderWish();byId('wishlistSection').scrollIntoView({behavior:'smooth'})};byId('profileMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');openModal('accountModal');updateAuthUI()};byId('trackMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');openModal('trackModal')};
 
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{closeModal(b.dataset.close);if(b.dataset.close==='settingsModal')byId('menuBtn').setAttribute('aria-expanded','false')});
 document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{authMode=b.dataset.auth;document.querySelectorAll('[data-auth]').forEach(x=>x.classList.toggle('active',x===b));const signup=authMode==='signup',forgot=authMode==='forgot';byId('accountTitle').textContent=forgot?'Reset your password':signup?'Create your account':'Welcome back';byId('authName').hidden=!signup;byId('authNameLabel').hidden=!signup;byId('authName').required=signup;byId('authPhone').hidden=!signup;byId('authPhoneLabel').hidden=!signup;byId('authPhone').required=signup;byId('authPassword').hidden=forgot;byId('authPasswordLabel').hidden=forgot;byId('authPassword').required=!forgot;byId('authPassword').autocomplete=signup?'new-password':'current-password';byId('authSubmit').textContent=forgot?'SEND RESET LINK':signup?'CREATE ACCOUNT':'LOGIN';byId('authNote').textContent='This form needs matching server-side authentication routes; no password is stored in this browser.'});
@@ -1564,7 +1603,7 @@ async function applySalesBanners(){
 }
 
 // Apply owner-managed storefront header settings without blocking the page.
-const defaultFooterSettings={enabled:true,brandText:'AERLON',tagline:'Defined by style. Built for you.',intro:'Contemporary essentials for confident everyday style.',showBrand:true,showTagline:true,showIntro:true,socials:{},columns:[],newsletterEnabled:true,newsletterKicker:'THE AERLON EDIT',newsletterTitle:'Stay a step ahead.',newsletterDescription:'Get first access to new collections, launches and selected offers.',newsletterButtonText:'JOIN',newsletterConsentText:'I agree to receive occasional AERLON updates by email.',trustEnabled:true,trustItems:['SECURE CHECKOUT','PAYMENT OPTIONS AT CHECKOUT','SHOP WITH CONFIDENCE'],copyrightText:'ALL RIGHTS RESERVED.',backToTopEnabled:true};
+const defaultFooterSettings={enabled:true,brandText:'AERLON',tagline:'Defined by style. Built for you.',intro:'Considered fashion and everyday essentials, curated for a distinctive point of view.',showBrand:true,showTagline:true,showIntro:true,socials:{},columns:[],newsletterEnabled:true,newsletterKicker:'THE AERLON EDIT',newsletterTitle:'A considered edit, delivered.',newsletterDescription:'Discover new arrivals, style stories and occasional AERLON updates.',newsletterButtonText:'SUBSCRIBE',newsletterConsentText:'I agree to receive occasional AERLON updates by email.',trustEnabled:true,trustItems:['SECURE CHECKOUT','PAYMENT OPTIONS AT CHECKOUT','SHOP WITH CONFIDENCE'],copyrightText:'ALL RIGHTS RESERVED.',backToTopEnabled:true};
 function applyFooterColumns(columns){
   const host=byId('mcFooterLinks');if(!host)return;host.replaceChildren();
   (Array.isArray(columns)?columns:[]).forEach((column,index)=>{
@@ -1586,6 +1625,29 @@ function applyFooterColumns(columns){
       nav.appendChild(el);
     });
     host.appendChild(nav);
+  });
+  prepareFooterAccordions();
+}
+function prepareFooterAccordions(){
+  document.querySelectorAll('#mcFooterLinks .mc-footer-links').forEach((nav,index)=>{
+    if(nav.querySelector('.mc-footer-accordion-button'))return;
+    const heading=nav.querySelector('h3');if(!heading)return;
+    const text=heading.textContent.trim();
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='mc-footer-accordion-button';
+    button.setAttribute('aria-expanded','false');
+    const panel=document.createElement('div');
+    panel.className='mc-footer-link-list';
+    panel.id='mcFooterPanel'+index;
+    button.setAttribute('aria-controls',panel.id);
+    const caption=document.createElement('span');caption.textContent=text;
+    const caret=document.createElement('span');caret.className='mc-footer-accordion-caret';caret.textContent='⌄';caret.setAttribute('aria-hidden','true');
+    button.append(caption,caret);
+    heading.replaceChildren(button);
+    for(const item of [...nav.children]){if(item!==heading)panel.appendChild(item);}
+    nav.appendChild(panel);
+    button.addEventListener('click',()=>button.setAttribute('aria-expanded',String(button.getAttribute('aria-expanded')!=='true')));
   });
 }
 async function applyStorefrontFooter(){
@@ -1692,6 +1754,7 @@ if(footerNewsletterForm){
 byId('siteFooter')?.addEventListener('click',event=>{const track=event.target.closest('[data-footer-action="track"]');if(track){openModal('trackModal');return;}const link=event.target.closest('.mc-footer-links a');if(link&&['#men','#women','#jackets','#sneakers'].includes(link.getAttribute('href'))){setTimeout(()=>byId('shop')?.scrollIntoView({behavior:'smooth',block:'start'}),0);}});
 byId('mcFooterBackTop')?.addEventListener('click',event=>{event.preventDefault();window.scrollTo({top:0,behavior:'smooth'});});
 
+prepareFooterAccordions();
 setCollectionFromHash();
 init();
 </script>

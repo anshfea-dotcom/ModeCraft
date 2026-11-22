@@ -802,14 +802,14 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
         : "";
       let resetUrl;
       try {
-        const candidate = cleanBaseUrl || process.env.RENDER_EXTERNAL_URL || "https://modecraft-india.onrender.com";
+        const candidate = cleanBaseUrl || process.env.RENDER_EXTERNAL_URL || process.env.STOREFRONT_URL;
         resetUrl = new URL(candidate);
         if (resetUrl.protocol !== "https:" && resetUrl.protocol !== "http:") {
           throw new TypeError("Password reset URL must use http:// or https://");
         }
       } catch (urlError) {
         console.error("Invalid PASSWORD_RESET_BASE_URL; using the AERLON Render URL. Check the Render environment variable.");
-        resetUrl = new URL(process.env.RENDER_EXTERNAL_URL || "https://modecraft-india.onrender.com");
+        resetUrl = new URL(process.env.RENDER_EXTERNAL_URL || process.env.STOREFRONT_URL);
       }
 
       const rawToken = crypto.randomBytes(32).toString("hex");
@@ -2432,8 +2432,9 @@ async function notifyRestockedVariant(productId, color, size) {
       console.warn("Back-in-stock subscribers are queued; configure SMTP or RESEND_API_KEY to send alerts.");
       return;
     }
+    const shopUrl = process.env.STOREFRONT_URL || process.env.RENDER_EXTERNAL_URL;
     const subject = `Back in stock: ${subscribers.rows[0].product_name || "AERLON product"}`;
-    const textBody = `${subscribers.rows[0].product_name || "Your AERLON product"} is back in stock in ${color}, size ${size}. Visit https://modecraft-india.onrender.com/ to shop.`;
+    const textBody = `${subscribers.rows[0].product_name || "Your AERLON product"} is back in stock in ${color}, size ${size}.${shopUrl ? ` Visit ${shopUrl} to shop.` : ""}`;
     if (smtpUser && smtpPassword) {
       const port = Number(process.env.SMTP_PORT || 465);
       const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST || "smtp.gmail.com", port, secure: process.env.SMTP_SECURE === undefined ? port === 465 : String(process.env.SMTP_SECURE).toLowerCase() === "true", auth: { user: smtpUser, pass: smtpPassword } });

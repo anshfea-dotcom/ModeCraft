@@ -40,5 +40,22 @@ check('Storefront inline JavaScript parses correctly', () => {
   try { new vm.Script(concierge, { filename: 'public/aerlon-concierge.js' }); } catch (error) { throw new Error('Concierge script: ' + error.stack); }
   includesAll(concierge, ['Contact Customer Agent', 'wa.me/919648629929', 'ac-quick', 'ac-typing', 'Step-by-Step Guide', '/api/orders/track']);
 });
-console.log(passed + '/5 AERLON build checks passed.');
+check('AERLON account V2 responsive pages and reset lifecycle', () => {
+  const pages = ['login', 'signup', 'reset-password'].map(name => fs.readFileSync('public/' + name + '.html', 'utf8'));
+  const authCSS = fs.readFileSync('public/account-pages.css', 'utf8');
+  const authJS = fs.readFileSync('public/account-pages.js', 'utf8');
+  new vm.Script(authJS, { filename: 'public/account-pages.js' });
+  pages.forEach((page, index) => {
+    includesAll(page, ['href="/account-pages.css"', 'src="/account-pages.js"', 'id="loginForm"', 'id="signupForm"', 'id="requestResetForm"', 'id="newPasswordForm"', 'name="referrer" content="no-referrer"']);
+    assert.ok(!page.includes('Contact support'), 'Contact support callout should not appear in account designs ' + index);
+    const ids = [...page.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
+    assert.equal(ids.length, new Set(ids).size, 'Duplicate form field IDs');
+  });
+  includesAll(authCSS, ['@media(max-width:720px)', 'grid-template-columns:minmax(340px,44%)', '[hidden]{display:none!important}']);
+  includesAll(authJS, ['/api/auth/login', '/api/auth/signup', '/api/auth/forgot-password', '/api/auth/reset-password', 'location.assign(shopUrl())']);
+  includesAll(server, ['resetUrl.pathname = "/reset-password.html"', 'resetUrl.searchParams.set("token", rawToken)']);
+  assert.ok(!home.includes('<div class="mobile-promo"><span>THE AERLON EDIT'), 'Old mobile promotional banner must be removed');
+  includesAll(home, ['.mobile-promo,.announce,#announcementStrip{display:none!important}', "location.assign('/login.html')"]);
+});
+console.log(passed + '/6 AERLON build checks passed.');
 if (process.exitCode) process.exit(process.exitCode);

@@ -820,6 +820,9 @@ app.post("/api/auth/forgot-password", async (req, res, next) => {
         [tokenHash, found.rows[0].id]
       );
 
+      // Direct the email to the responsive AERLON reset-password page.
+      resetUrl.pathname = "/reset-password.html";
+      resetUrl.search = "";
       resetUrl.searchParams.set("token", rawToken);
       const subject = "Reset your AERLON password";
       const textBody = `We received a request to reset your AERLON password. Open this link within 30 minutes: ${resetUrl.toString()}\n\nIf you did not request this, ignore this email.`;

@@ -26,3 +26,57 @@
 @media(max-width:720px){.auth-header{height:66px;padding:0 19px}.auth-logo{font-size:23px;letter-spacing:2.5px}.auth-nav{display:none}.auth-back{display:none}.auth-logo{margin:auto}.auth-layout{min-height:calc(100dvh - 66px);display:block}.auth-editorial{display:none}.auth-panel{display:block;min-height:calc(100dvh - 66px);padding:43px 22px 30px;background:linear-gradient(160deg,#f8f5f0 0%,#fff 48%)}.auth-content{max-width:440px}.auth-heading{font-size:34px}.auth-intro{margin-bottom:27px}.auth-input-wrap input{font-size:16px;min-height:50px}.auth-button{min-height:52px}.auth-mobile-back{display:inline-block;color:var(--accent-dark);font-size:11px;font-weight:700;margin-bottom:34px}.auth-footer{padding-bottom:20px}}
 @media(max-width:360px){.auth-panel{padding-left:16px;padding-right:16px}.auth-heading{font-size:31px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* AERLON Champagne x Midnight Couture — responsive visual refresh.
+   Form IDs, accessibility labels, auth endpoints and reset flows remain untouched. */
+:root{--ink:#261d17;--paper:#1a1411;--cream:#f2e3d1;--line:#d9c5ae;--accent:#d6a565;--accent-dark:#916137;--muted:#776758;--field:#fffaf3}
+body{background:#19130f;color:var(--ink);font-family:Inter,"Segoe UI",Arial,sans-serif}
+.auth-header{height:82px;background:linear-gradient(110deg,#1c1511,#34241a 65%,#1c1511);border-bottom:1px solid #6b4b32;color:#f8ead9;box-shadow:0 12px 35px #110b0860;position:relative;z-index:3}
+.auth-logo{font-family:Georgia,"Times New Roman",serif;font-size:31px;font-weight:600;letter-spacing:.14em}.auth-logo span{color:#e0ad6a}
+.auth-nav{letter-spacing:.1em;font-size:11px}.auth-nav a:hover,.auth-back:hover{color:#eac18d}
+.auth-layout{min-height:calc(100dvh - 82px);grid-template-columns:minmax(340px,53%) minmax(0,47%);background:radial-gradient(circle at 95% 12%,#755038 0%,#2b1e17 44%,#17110e 100%);padding:clamp(16px,2.2vw,34px);gap:clamp(14px,2vw,30px)}
+.auth-editorial{min-height:min(800px,calc(100dvh - 126px));border-radius:28px;background:#38291e;box-shadow:0 25px 60px #0d08076b;border:1px solid #b78b5b77}
+.auth-editorial:before{background:linear-gradient(180deg,#100b0930 0%,transparent 35%,#130c09d9 100%)}
+.auth-image{filter:saturate(.75) sepia(.14) contrast(1.06);transition:transform .7s ease}
+.auth-editorial:hover .auth-image{transform:scale(1.025)}
+.auth-editorial-content{bottom:clamp(35px,5vw,80px);left:clamp(26px,5vw,75px)}
+.auth-editorial-kicker{color:#f2cb95;letter-spacing:.28em}
+.auth-editorial-title{font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing:-.045em;font-size:clamp(48px,5.6vw,92px);text-shadow:0 5px 25px #0008}
+.auth-editorial-copy{color:#fff2e2;font-size:14px}
+.auth-panel{min-width:0;align-items:center;padding:clamp(18px,3.5vw,58px);background:transparent}
+.auth-content{position:relative;width:min(500px,100%);padding:clamp(25px,3vw,46px);border-radius:28px;background:linear-gradient(148deg,#fffaf1 0%,#f1dfc9 100%);border:1px solid #f9e8d3;box-shadow:0 22px 70px #0e090884,0 0 0 1px #d7b58a55;overflow:hidden}
+.auth-content:before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,#6e4326,#e8c38c,#a06a3e);pointer-events:none}
+.auth-eyebrow{color:#98673d;letter-spacing:.27em;font-size:10px}
+.auth-heading{font-family:Georgia,"Times New Roman",serif;font-size:clamp(35px,3.5vw,48px);font-weight:500;letter-spacing:-.045em;line-height:1.12;margin:14px 0 10px}
+.auth-intro{color:#776557;margin-bottom:25px}
+.auth-form{gap:15px}.auth-field label,.auth-field-row label{color:#47372a;font-weight:650;font-size:12px}
+.auth-input-wrap{border-radius:13px;border:1px solid #d9c4ab;background:#fffaf4;box-shadow:0 2px 8px #50331a0b;overflow:hidden}
+.auth-input-wrap:focus-within{border-color:#bc8751;box-shadow:0 0 0 3px #c18e5030}
+.auth-input-wrap input{min-height:51px}.auth-icon{color:#a47950}
+.auth-link{color:#86552d;text-decoration-color:#b68b5e}
+.auth-button{min-height:54px;border-radius:14px;background:linear-gradient(105deg,#2a1b14,#573825 55%,#2a1b14);border:1px solid #9c7046;color:#fff4e4;font-size:12px;letter-spacing:.12em;box-shadow:0 7px 18px #52331b30;transition:transform .2s,box-shadow .2s,background .2s}
+.auth-button:hover{transform:translateY(-1px);background:linear-gradient(100deg,#7b502e,#b1844e,#7b502e);border-color:#c99d64;box-shadow:0 10px 22px #52331b40}
+.auth-assist{margin-top:16px}.auth-divider{background:#dbc4a9;margin:20px 0 14px}
+.auth-secondary,.auth-fineprint,.auth-subtle{color:#6d5948}.auth-footer{color:#806a55}
+.auth-error,.auth-success{border-radius:12px}
+@media(max-width:1050px){.auth-layout{grid-template-columns:minmax(280px,45%) minmax(0,55%)}.auth-panel{padding:10px}.auth-content{padding:30px}.auth-editorial-title{font-size:55px}}
+@media(max-width:720px){
+.auth-header{height:65px;background:#201711;border-color:#5c402d}.auth-logo{font-size:25px}
+.auth-layout{min-height:calc(100dvh - 65px);display:flex;flex-direction:column;gap:0;padding:0;background:linear-gradient(165deg,#241811,#543722 65%,#1c130e)}
+.auth-editorial{display:block;min-height:0;height:clamp(205px,34vh,300px);flex:0 0 auto;border:0;border-radius:0;box-shadow:none}
+.auth-image{object-position:center 34%}
+.auth-editorial:before{background:linear-gradient(180deg,#130b0920,#1b110b80 75%,#25170f)}
+.auth-editorial-content{bottom:57px;left:25px;right:25px}
+.auth-editorial-kicker{font-size:9px}
+.auth-editorial-title{font-size:clamp(30px,8vw,45px);margin:10px 0 6px}
+.auth-editorial-copy{display:none}
+.auth-panel{min-height:0;display:block;padding:0 15px 30px;margin-top:-38px;position:relative;z-index:2;background:transparent}
+.auth-content{width:min(480px,100%);padding:clamp(23px,6vw,32px);border-radius:26px;box-shadow:0 18px 55px #0b07087a}
+.auth-mobile-back{display:inline-block;margin-bottom:18px;color:#8a5b32}
+.auth-heading{font-size:clamp(31px,8vw,40px)}
+.auth-intro{margin-bottom:22px}
+.auth-input-wrap input{font-size:16px;min-height:51px}
+.auth-footer{padding-bottom:0}
+}
+@media(max-width:360px){.auth-panel{padding-left:10px;padding-right:10px}.auth-content{padding:21px}.auth-editorial{height:190px}}
+@media(prefers-reduced-motion:reduce){.auth-editorial:hover .auth-image{transform:none}.auth-button:hover{transform:none}}

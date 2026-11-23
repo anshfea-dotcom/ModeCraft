@@ -1893,4 +1893,4 @@ init();
 </script><script>
 /* Keep storefront collection search clear button and header search in sync. */
 (function(){const field=document.getElementById('search'),clear=document.getElementById('clearCollectionSearch'),header=document.getElementById('aerlonHeaderSearchInput');if(!field||!clear)return;const sync=()=>{clear.hidden=!field.value;if(header&&header!==document.activeElement)header.value=field.value};field.addEventListener('input',sync);clear.addEventListener('click',()=>{field.value='';field.dispatchEvent(new Event('input',{bubbles:true}));field.focus()});sync()})();
-</script><script src="/product-try-on.js" defer></script></body></html>
+</script></body></html>

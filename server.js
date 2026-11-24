@@ -652,6 +652,14 @@ app.use(
   })
 );
 
+// Serve the canonical sitemap before the storefront fallback.
+app.get("/sitemap.xml", (_req, res) => {
+  res.type("application/xml").set("Cache-Control", "public, max-age=300").send(
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://aerlon.in/</loc></url></urlset>\n'
+  );
+});
+
 app.use(express.static(path.join(ROOT, "public")));
 
 app.get("/health", async (_req, res) => {

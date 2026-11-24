@@ -64,5 +64,40 @@ check('AERLON account V2 responsive pages and reset lifecycle', () => {
   assert.ok(!home.includes('<div class="mobile-promo"><span>THE AERLON EDIT'), 'Old mobile promotional banner must be removed');
   includesAll(home, ['.mobile-promo,.announce,#announcementStrip{display:none!important}', "location.assign('/login.html')"]);
 });
-console.log(passed + '/6 AERLON build checks passed.');
+check('Bag and menu links run once across refresh and history traversal', () => {
+  const source = home.slice(home.indexOf('function takeStorefrontPanel()'), home.indexOf('async function init()'));
+  assert.ok(source.includes('function resetTransientPanels()'));
+  for (const panel of ['bag', 'menu', 'search', 'wishlist-bag']) {
+    for (const type of ['navigate', 'reload', 'back_forward']) {
+      const location = { href: 'https://aerlon.in/?q=linen&panel=' + panel + '&product=shirt#shop' };
+      const state = { previous: 'collection' };
+      let replacements = 0;
+      const history = { state, replaceState(value, title, path) {
+        assert.equal(value, state);
+        location.href = new URL(path, location.href).href;
+        replacements++;
+      }};
+      const calls = [];
+      const context = vm.createContext({ URL, location, history,
+        performance: { getEntriesByType: () => [{type}] },
+        showBag: open => calls.push(open),
+        closeModal: id => calls.push(id),
+        byId: () => ({setAttribute: (name, value) => calls.push([name, value].join('='))})
+      });
+      vm.runInContext(source, context);
+      assert.equal(vm.runInContext('pendingStorefrontPanel?.panel', context), type === 'navigate' ? panel : undefined);
+      const clean = new URL(location.href);
+      assert.equal(clean.searchParams.has('panel'), false);
+      assert.equal(clean.searchParams.get('q'), 'linen');
+      assert.equal(clean.searchParams.get('product'), panel === 'wishlist-bag' ? null : 'shirt');
+      assert.equal(clean.hash, '#shop');
+      assert.equal(vm.runInContext('takeStorefrontPanel()', context), null);
+      assert.equal(replacements, 1);
+      vm.runInContext('resetTransientPanels(); resetTransientPanels()', context);
+      assert.equal(vm.runInContext('pendingStorefrontPanel', context), null);
+      assert.deepEqual(calls, [false,'settingsModal','aria-expanded=false',false,'settingsModal','aria-expanded=false']);
+    }
+  }
+});
+console.log(passed + '/7 AERLON build checks passed.');
 if (process.exitCode) process.exit(process.exitCode);

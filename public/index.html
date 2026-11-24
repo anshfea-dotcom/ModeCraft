@@ -1219,6 +1219,26 @@ function productOfferLabel(p){
 }
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),4000)}
 async function api(url,body,timeoutMs=25000,methodOverride=null){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),timeoutMs);try{const hasBody=body!==undefined&&body!==null;const r=await fetch(url,{method:methodOverride||(hasBody?"POST":"GET"),credentials:"same-origin",cache:"no-store",headers:hasBody?{"Content-Type":"application/json"}:{},body:hasBody?JSON.stringify(body):undefined,signal:controller.signal});const data=await r.json().catch(()=>({error:"Unexpected server response"}));if(!r.ok)throw new Error(data.error||"Request failed");return data}catch(error){if(error&&error.name==="AbortError")throw new Error("The store server is taking too long to respond. Please retry in a moment.");throw error}finally{clearTimeout(timeout)}}
+// Panel links are one-time actions. Consume them before the catalogue request starts.
+function takeStorefrontPanel() {
+  const url = new URL(location.href);
+  const panel = url.searchParams.get('panel');
+  if (!['bag', 'menu', 'search', 'wishlist-bag'].includes(panel)) return null;
+  const product = panel === 'wishlist-bag' ? url.searchParams.get('product') : null;
+  url.searchParams.delete('panel');
+  if (panel === 'wishlist-bag') url.searchParams.delete('product');
+  history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+  const navigation = performance.getEntriesByType?.('navigation')[0]?.type;
+  if (navigation === 'reload' || navigation === 'back_forward') return null;
+  return {panel, product};
+}
+let pendingStorefrontPanel = takeStorefrontPanel();
+function resetTransientPanels() {
+  pendingStorefrontPanel = null;
+  showBag(false);
+  closeModal('settingsModal');
+  byId('menuBtn').setAttribute('aria-expanded', 'false');
+}
 async function init(){
   const root=$("#products");
   root.innerHTML='<p class="muted" role="status">Loading collection… If the store server is waking up, this may take a moment.</p>';
@@ -1257,9 +1277,11 @@ async function init(){
       byId('search').value = query;
       byId('search').dispatchEvent(new Event('input', {bubbles:true}));
     }
-    const deepLinkedProduct = new URLSearchParams(location.search).get('product');
+    const action = pendingStorefrontPanel;
+    pendingStorefrontPanel = null;
+    const panel = action?.panel;
+    const deepLinkedProduct = action?.product || new URLSearchParams(location.search).get('product');
     if (deepLinkedProduct && products.some(item => String(item.id) === String(deepLinkedProduct))) openProduct(deepLinkedProduct);
-    const panel = new URLSearchParams(location.search).get('panel');
     if (panel === 'bag') showBag(true);
     if (panel === 'menu') byId('menuBtn').click();
     if (panel === 'search') { byId('shop').scrollIntoView(); byId('search').focus(); }
@@ -1580,8 +1602,13 @@ function productHeart(product) {
   };
   return button;
 }
+window.addEventListener('pagehide', resetTransientPanels);
+window.addEventListener('popstate', resetTransientPanels);
 window.addEventListener('pageshow', event => {
-  if (event.persisted) { renderProducts(); renderRecent(); renderWish(); byId('detailWish').disabled = false; }
+  if (event.persisted) {
+    resetTransientPanels();
+    renderProducts(); renderRecent(); renderWish(); byId('detailWish').disabled = false;
+  }
 });
 function rememberProduct(id){let a=safeRead(STORE.recent,[]).filter(x=>String(x)!==String(id));a.unshift(id);safeWrite(STORE.recent,a.slice(0,8));renderRecent()}
 function renderMiniGrid(rootId,items){const root=byId(rootId);if(!root)return;root.replaceChildren();if(!items.length){root.innerHTML='<p class="muted">Nothing to show yet.</p>';return}items.forEach(p=>{const card=document.createElement('article');card.className='card';const pic=document.createElement('div');pic.className='pic';const img=document.createElement('img');img.src=(productImages(p)[0]||'');img.alt=p.name;img.loading='lazy';pic.append(img);pic.onclick=()=>openProduct(p.id);const info=document.createElement('div');info.className='pinfo';const h=document.createElement('h3');h.textContent=p.name;const price=makePriceElement(p,"price");const row=document.createElement('div');row.style.display='flex';row.style.gap='8px';const view=document.createElement('button');view.className='add';view.textContent='VIEW';view.onclick=()=>openProduct(p.id);pic.append(productHeart(p));row.append(view);info.append(h,price,row);card.append(pic,info);root.append(card)})}

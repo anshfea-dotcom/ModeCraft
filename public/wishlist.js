@@ -111,8 +111,6 @@ function render() {
   const count = items.length;
   const noun = count === 1 ? 'Item' : 'Items';
   byId('count').textContent = count + ' Saved ' + noun;
-  byId('badge').textContent = count;
-  byId('badge').hidden = !count;
   byId('summaryCount').textContent = count + ' ' + noun + ' in Wishlist';
   document.querySelector('.summary').hidden = !count;
   byId('empty').hidden = !!count;

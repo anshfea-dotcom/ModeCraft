@@ -17,7 +17,14 @@ function includesAll(content, values) {
 }
 
 check('Mobile header, search and account/cart controls', () => {
-  includesAll(home, ['site-wordmark', 'id="menuBtn"', 'id="mobileSearchBtn"', 'id="bagBtn"', 'mobile-promo', '@media(max-width:720px)']);
+  const header = fs.readFileSync('public/store-header.js', 'utf8');
+  new vm.Script(header);
+  includesAll(header, ['site-wordmark','id="menuBtn"','id="mobileSearchBtn"','id="bagBtn"']);
+  includesAll(home, ['data-storefront src="/store-header.js"','mobile-promo','@media(max-width:720px)']);
+  for (const name of fs.readdirSync('public').filter(name => name.endsWith('.html') && name !== 'admin.html')) {
+    const page = fs.readFileSync('public/' + name, 'utf8');
+    assert.equal((page.match(/src="\/store-header\.js"/g) || []).length, 1, name + ' needs one shared storefront header');
+  }
 });
 check('Navigation, editorial category cards and actual catalogue wiring', () => {
   includesAll(home, ['mobile-store-menu', 'mobile-menu-collections', 'data-menu-close', 'data-collection="men"', 'data-collection="women"', 'data-collection="jackets"', 'class="collection-photo"', 'function collectionMatches(p,key)', 'products = catalogueProducts(p.products)']);

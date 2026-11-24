@@ -563,7 +563,7 @@ app.set("trust proxy", 1);
 
 // Public crawler endpoints must not depend on session or database middleware.
 app.get("/robots.txt", (_req, res) => {
-  res.status(200).type("text/plain").set("Cache-Control", "public, max-age=300").send("User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\nDisallow: /account\nDisallow: /checkout\nDisallow: /cart\nDisallow: /login\nDisallow: /signup\nDisallow: /reset-password\n\nSitemap: https://aerlon.in/sitemap.xml\n");
+  res.status(200).type("text/plain").set("Cache-Control", "public, max-age=300").send("User-agent: *\nAllow: /\nAllow: /api/products$\nAllow: /api/storefront/header$\nAllow: /api/storefront/footer$\nAllow: /api/storefront/banners$\nDisallow: /api/\nDisallow: /admin\nDisallow: /account\nDisallow: /checkout\nDisallow: /cart\nDisallow: /login\nDisallow: /signup\nDisallow: /reset-password\n\nSitemap: https://aerlon.in/sitemap.xml\n");
 });
 app.get("/sitemap.xml", (_req, res) => {
   res.status(200).type("application/xml").set("Cache-Control", "public, max-age=300").send("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n  <url><loc>https://aerlon.in/</loc></url>\n</urlset>\n");

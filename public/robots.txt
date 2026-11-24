@@ -1,5 +1,9 @@
 User-agent: *
 Allow: /
+Allow: /api/products$
+Allow: /api/storefront/header$
+Allow: /api/storefront/footer$
+Allow: /api/storefront/banners$
 Disallow: /api/
 Disallow: /admin
 Disallow: /account

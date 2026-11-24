@@ -1,4 +1,9 @@
-const money=n=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(n);
+const rupeeFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0
+});
+const money = value => rupeeFormatter.format(value);
 function effectivePrice(p){const original=Number(p?.price)||0,sale=Number(p?.salePrice);return p?.salePrice!==null&&p?.salePrice!==undefined&&p?.salePrice!==""&&Number.isFinite(sale)&&sale>0&&sale<original?sale:original}
 function makePriceElement(p,className="price"){const el=document.createElement("div");el.className=className;const original=Number(p?.price)||0,current=effectivePrice(p);const currentEl=document.createElement("span");currentEl.textContent=money(current);el.append(currentEl);if(current<original){const old=document.createElement("del");old.className="sale-original-price";old.textContent=money(original);const discount=document.createElement("span");discount.className="sale-discount";discount.textContent=`${Math.round((1-current/original)*100)}% OFF`;el.append(old,discount)}return el}
 function catalogueProducts(records) {

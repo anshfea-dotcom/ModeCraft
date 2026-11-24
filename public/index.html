@@ -1028,7 +1028,9 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
   .collection-box::after {display:none}
 }
 </style>
-</head>
+<style>
+.pic{position:relative}.pic .product-heart{position:absolute;z-index:2;right:8px;top:8px;width:44px;height:44px;padding:0;border:1px solid #d9c399;border-radius:50%;background:#201c19ed;color:#f6dfac;font:28px/1 Georgia,serif;cursor:pointer}
+</style></head>
 <body>
 <div class="mc-intro" id="mcIntro" role="status" aria-label="Opening AERLON" aria-live="off">
   <div class="intro-grain" aria-hidden="true"></div>
@@ -1238,6 +1240,23 @@ async function init(){
     renderWish();
     const deepLinkedProduct = new URLSearchParams(location.search).get('product');
     if (deepLinkedProduct && products.some(item => String(item.id) === String(deepLinkedProduct))) openProduct(deepLinkedProduct);
+    const panel = new URLSearchParams(location.search).get('panel');
+    if (panel === 'bag') showBag(true);
+    if (panel === 'menu') byId('menuBtn').click();
+    if (panel === 'search') { byId('shop').scrollIntoView(); byId('search').focus(); }
+    if (panel === 'wishlist-bag' && selectedProduct?.id === deepLinkedProduct) {
+      const selection = JSON.parse(sessionStorage.getItem('aerlon_wishlist_selection') || 'null');
+      sessionStorage.removeItem('aerlon_wishlist_selection');
+      if (selection?.id === deepLinkedProduct) {
+        const color = Array.from(byId('detailColourSwatches').children).find(button => button.title === selection.color && !button.disabled);
+        color?.click();
+        const size = Array.from(byId('detailSizeOptions').querySelectorAll('.size-option')).find(button => button.textContent === selection.size);
+        if (color && size) {
+          size.click();
+          if (!byId('detailAdd').disabled) byId('detailAdd').click();
+        }
+      }
+    }
   } catch (e) {
     console.error("AERLON products API/render error:", e);
     const message = String(e?.message || "Unknown error");
@@ -1309,7 +1328,7 @@ function renderProducts(){
     });
     const pic=document.createElement("div");pic.className="pic";
     const img=document.createElement("img");img.src=(productImages(p)[0]||p.image||"");img.alt=p.name||"AERLON product";img.loading="lazy";img.onerror=()=>{img.style.display="none";pic.classList.add("image-unavailable");};
-    pic.append(img);
+    pic.append(img,productHeart(p));
     const info=document.createElement("div");info.className="pinfo";
     const h=document.createElement("h3");h.textContent=p.name||"Product";
     const price=makePriceElement(p,"price product-card-price");
@@ -1515,23 +1534,37 @@ function aerlonPreloadImages(urls){urls.filter(Boolean).forEach(src=>{if(aerlonI
 function aerlonSetGalleryImage(img,src){if(!src)return;img.decoding='async';img.style.opacity='.35';img.style.visibility='visible';const cached=aerlonImageCache.get(src);if(cached?.complete&&cached.naturalWidth){img.src=src;img.style.opacity='1';return}const loader=cached||new Image();if(!cached){loader.decoding='async';loader.src=src;aerlonImageCache.set(src,loader)}img.src=src;loader.addEventListener('load',()=>{if(img.getAttribute('src')===src){img.style.opacity='1';img.style.visibility='visible'}},{once:true});loader.addEventListener('error',()=>{if(img.getAttribute('src')===src){img.style.visibility='hidden'}},{once:true})}
 function productImages(p){let arr=Array.isArray(p.images)?[...p.images]:[];if(p.image&&!arr.includes(p.image))arr.unshift(p.image);return [...new Set(arr.filter(Boolean))]}
 function isWished(id){return safeRead(STORE.wish,[]).some(x=>String(x)===String(id))}
-function toggleWish(id){
-  let w=safeRead(STORE.wish,[]);
-  const removing=w.some(x=>String(x)===String(id));
-  w=removing?w.filter(x=>String(x)!==String(id)):[...w,id];
-  safeWrite(STORE.wish,w);renderWish();renderProducts();
-  toast(removing?'Removed from wishlist':'Saved to wishlist');
-  // Keep the local wishlist responsive, then mirror changes to the signed-in account.
-  if(currentCustomer?.id){
-    const url='/api/wishlist/'+encodeURIComponent(id);
-    api(url,removing?null:{},25000,removing?'DELETE':null).catch(error=>{
-      console.warn('Wishlist account sync failed:',error.message);
-      toast('Wishlist saved on this device. Account sync failed; please try again later.');
-    });
+async function saveAndOpenWishlist(id, button) {
+  button.disabled = true;
+  try {
+    const saved = safeRead(STORE.wish, []).map(String);
+    if (currentCustomer?.id) await api('/api/wishlist/' + encodeURIComponent(id), {});
+    if (!saved.includes(String(id)) && !safeWrite(STORE.wish, [...saved, String(id)]) && !currentCustomer?.id) {
+      throw new Error('Device storage is unavailable.');
+    }
+    location.assign('/wishlist.html');
+  } catch {
+    button.disabled = false;
+    toast('Could not save this style. Please try again.', true);
   }
 }
+function productHeart(product) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'product-heart';
+  button.textContent = isWished(product.id) ? '♥' : '♡';
+  button.setAttribute('aria-label', 'Save ' + product.name + ' and open wishlist');
+  button.onclick = event => {
+    event.stopPropagation();
+    saveAndOpenWishlist(product.id, button);
+  };
+  return button;
+}
+window.addEventListener('pageshow', event => {
+  if (event.persisted) { renderProducts(); renderRecent(); renderWish(); byId('detailWish').disabled = false; }
+});
 function rememberProduct(id){let a=safeRead(STORE.recent,[]).filter(x=>String(x)!==String(id));a.unshift(id);safeWrite(STORE.recent,a.slice(0,8));renderRecent()}
-function renderMiniGrid(rootId,items){const root=byId(rootId);if(!root)return;root.replaceChildren();if(!items.length){root.innerHTML='<p class="muted">Nothing to show yet.</p>';return}items.forEach(p=>{const card=document.createElement('article');card.className='card';const pic=document.createElement('div');pic.className='pic';const img=document.createElement('img');img.src=(productImages(p)[0]||'');img.alt=p.name;img.loading='lazy';pic.append(img);pic.onclick=()=>openProduct(p.id);const info=document.createElement('div');info.className='pinfo';const h=document.createElement('h3');h.textContent=p.name;const price=makePriceElement(p,"price");const row=document.createElement('div');row.style.display='flex';row.style.gap='8px';const view=document.createElement('button');view.className='add';view.textContent='VIEW';view.onclick=()=>openProduct(p.id);const wish=document.createElement('button');wish.className='add';wish.textContent=isWished(p.id)?'♥':'♡';wish.style.width='48px';wish.onclick=()=>toggleWish(p.id);row.append(view,wish);info.append(h,price,row);card.append(pic,info);root.append(card)})}
+function renderMiniGrid(rootId,items){const root=byId(rootId);if(!root)return;root.replaceChildren();if(!items.length){root.innerHTML='<p class="muted">Nothing to show yet.</p>';return}items.forEach(p=>{const card=document.createElement('article');card.className='card';const pic=document.createElement('div');pic.className='pic';const img=document.createElement('img');img.src=(productImages(p)[0]||'');img.alt=p.name;img.loading='lazy';pic.append(img);pic.onclick=()=>openProduct(p.id);const info=document.createElement('div');info.className='pinfo';const h=document.createElement('h3');h.textContent=p.name;const price=makePriceElement(p,"price");const row=document.createElement('div');row.style.display='flex';row.style.gap='8px';const view=document.createElement('button');view.className='add';view.textContent='VIEW';view.onclick=()=>openProduct(p.id);pic.append(productHeart(p));row.append(view);info.append(h,price,row);card.append(pic,info);root.append(card)})}
 function renderWish(){
 const w=safeRead(STORE.wish,[]),items=w.map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);
 const menuCount=byId('menuWishCount');if(menuCount)menuCount.textContent=String(items.length);
@@ -1561,8 +1594,8 @@ function renderRelatedProducts(product){
   const related=products.filter(p=>String(p.id)!==String(product.id)&&!isPreviewOnlyProduct(p)&&(!category||String(p.category||'').trim().toLowerCase()===category)).slice(0,10);
   root.replaceChildren();if(!related.length){section.hidden=true;return}
   related.forEach(p=>{
-    const card=document.createElement('article');card.className='card related-product-card';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label','View '+(p.name||'product'));card.addEventListener('click',()=>openProduct(p.id));card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openProduct(p.id)}});
-    const pic=document.createElement('div');pic.className='pic';const img=document.createElement('img');img.src=productImages(p)[0]||'';img.alt=p.name||'Related product';img.loading='lazy';pic.append(img);
+    const card=document.createElement('article');card.className='card related-product-card';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label','View '+(p.name||'product'));card.addEventListener('click',()=>openProduct(p.id));card.addEventListener('keydown',e=>{if(e.target===card&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openProduct(p.id)}});
+    const pic=document.createElement('div');pic.className='pic';const img=document.createElement('img');img.src=productImages(p)[0]||'';img.alt=p.name||'Related product';img.loading='lazy';pic.append(img,productHeart(p));
     const info=document.createElement('div');info.className='pinfo';const name=document.createElement('h3');name.textContent=p.name||'AERLON product';const price=makePriceElement(p,'price');info.append(name,price);card.append(pic,info);root.append(card);
   });section.hidden=false;
   const prev=byId('relatedPrev'),next=byId('relatedNext');if(prev&&!prev.dataset.bound){prev.dataset.bound='1';prev.addEventListener('click',()=>root.scrollBy({left:-root.clientWidth*.8,behavior:'smooth'}))}if(next&&!next.dataset.bound){next.dataset.bound='1';next.addEventListener('click',()=>root.scrollBy({left:root.clientWidth*.8,behavior:'smooth'}))}
@@ -1621,7 +1654,7 @@ byId('deliveryPin')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preven
 byId('checkDeliveryBtn')?.addEventListener('click',()=>{const pin=byId('deliveryPin').value.trim(),out=byId('deliveryEstimate');if(!/^\d{6}$/.test(pin)){out.textContent='Please enter all 6 digits of your Indian PIN code (for example, 273001).';byId('deliveryPin').focus();return}const from=new Date();let days=5;while(days>0){from.setDate(from.getDate()+1);if(from.getDay()!==0)days--}const to=new Date(from);let remaining=3;while(remaining>0){to.setDate(to.getDate()+1);if(to.getDay()!==0)remaining--}const fmt=d=>d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});out.textContent=`Indicative delivery window: ${fmt(from)}–${fmt(to)}. This is an estimate only; PIN serviceability and final ETA are confirmed before dispatch.`});
 byId('detailAdd').onclick=()=>{if(!selectedProduct)return;const color=byId('detailColour').value,size=byId('detailSize').value;if(!color||!size)return toast('Please select a colour and an available size.');add((selectedColorProduct||selectedProduct).id,color,size);closeModal('productModal');showBag(true)};
 byId('detailBuyNow').onclick=()=>{if(!selectedProduct)return;const color=byId('detailColour').value,size=byId('detailSize').value;if(!color||!size)return toast('Please select a colour and an available size.');add((selectedColorProduct||selectedProduct).id,color,size);closeModal('productModal');showBag(false);updateCheckoutSummary();showCheckout(true)};
-byId('detailWish').onclick=()=>{if(selectedProduct){toggleWish(selectedProduct.id);byId('detailWish').textContent=isWished(selectedProduct.id)?'♥ WISHLISTED':'♡ WISHLIST'}};
+byId('detailWish').onclick = event => { if (selectedProduct) saveAndOpenWishlist(selectedProduct.id, event.currentTarget); };
 
 byId('menuBtn').onclick=()=>{
   const opening=!byId('settingsModal').classList.contains('show');

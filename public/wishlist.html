@@ -1,5 +1,37 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>Your wishlist | AERLON</title>
-<style>
-[hidden]{display:none!important}*{box-sizing:border-box}body{--bg:#faf8f4;--ink:#201e1b;--line:#d8d1c7;margin:0;background:var(--bg);color:var(--ink);font:16px Arial,sans-serif}body.dark{--bg:#201e1b;--ink:#faf8f4;--line:#504c46}header,main{max-width:1280px;margin:auto;padding:0 clamp(18px,5vw,72px)}header{height:76px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}a{color:inherit}.brand{font:600 25px Georgia,serif;letter-spacing:.16em;text-decoration:none}.shop{font-size:14px;text-underline-offset:4px}.heading{padding:clamp(32px,6vw,72px) 0 22px;border-bottom:1px solid var(--line);margin-bottom:24px}h1{font:normal clamp(40px,6vw,76px)/1.05 Georgia,serif;letter-spacing:-.045em;margin:0}#status{margin:12px 0 0}#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(235px,100%),1fr));gap:32px 20px;margin-bottom:60px}article{position:relative}article a{text-decoration:none;display:block}article img{display:block;background:#ede8e0;width:100%;aspect-ratio:4/5;object-fit:cover}h2{font:500 20px Georgia,serif;margin:13px 0 8px}.price{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:14px}.price del,.sale-discount{font-size:12px}.heart{position:absolute;right:8px;top:8px;width:44px;height:44px;border:1px solid #ddd5cb;border-radius:50%;background:#fff;color:#302720;font-size:21px;cursor:pointer}#empty{padding:40px 0}#empty p{margin:0 0 24px}.action{display:inline-block;background:var(--ink);color:var(--bg);padding:13px 21px;text-decoration:none;border:0;cursor:pointer}button:disabled{opacity:.5}@media(max-width:600px){header{height:62px}#grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 12px}h2{font-size:17px}}
-</style></head><body><header><a class="brand" href="/">AERLON</a><a class="shop" href="/#shop">Continue shopping</a></header><main><div class="heading"><h1>Your wishlist</h1><p id="status" role="status">Loading saved styles…</p></div><div id="grid"></div><div id="empty" hidden><p>Tap the heart on a product to save it here.</p><a class="action" href="/#shop">Explore the collection</a></div><button class="action" id="retry" hidden>Try again</button></main><script src="/catalogue-product.js"></script><script src="/wishlist.js"></script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,follow">
+  <title>My Wishlist | AERLON</title>
+  <link rel="stylesheet" href="/wishlist.css">
+</head>
+<body>
+<svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="heart" viewBox="0 0 24 24"><path d="M20.8 4.7a5.3 5.3 0 0 0-7.5 0L12 6l-1.3-1.3a5.3 5.3 0 0 0-7.5 7.5L12 21l8.8-8.8a5.3 5.3 0 0 0 0-7.5Z"/></symbol>
+  <symbol id="bag" viewBox="0 0 24 24"><path d="M5 7.5h14l1.2 13H3.8zM8.5 9V6a3.5 3.5 0 0 1 7 0v3"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3.5 6h17M9 6V3.5h6V6M6 6l1 15h10l1-15M10 10v7m4-7v7"/></symbol>
+</svg>
+<header><nav aria-label="Store navigation">
+  <a href="/?panel=menu" aria-label="Open store menu"><svg viewBox="0 0 24 24"><path d="M2 6h20M2 12h20M2 18h20"/></svg></a>
+  <a class="brand" href="/">AERLON<sup>™</sup></a>
+  <div class="tools"><a href="/?panel=search#shop" aria-label="Search products"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="m15.5 15.5 6 6"/></svg></a>
+  <a href="#saved" aria-label="Saved items"><svg><use href="#heart"/></svg><span id="badge" hidden></span></a>
+  <a href="/?panel=bag" aria-label="Open shopping bag"><svg><use href="#bag"/></svg></a></div>
+</nav></header>
+<main>
+  <section class="hero"><div><h1>My Wishlist <svg aria-hidden="true"><use href="#heart"/></svg></h1><p>Your handpicked styles, all in one place.</p></div></section>
+  <section class="sheet" id="saved" aria-label="Saved items">
+    <div class="bar"><strong id="count">Saved items</strong><button id="clear" hidden><svg><use href="#trash"/></svg> Clear All</button></div>
+    <p id="status" role="status">Loading saved styles…</p><div id="grid"></div>
+    <div id="empty" hidden><svg><use href="#heart"/></svg><h2>Your wishlist is empty</h2><p>Tap the heart on a product to save it here.</p><a class="gold" href="/#shop">Explore the collection</a></div>
+    <button class="gold" id="retry" hidden>Try again</button>
+    <a class="summary" href="/?panel=bag" hidden><svg><use href="#heart"/></svg><span><strong id="summaryCount"></strong><small>View your shopping bag</small></span><b aria-hidden="true">›</b></a>
+  </section>
+</main>
+<template id="item"><article><a class="photo"><img alt=""><span aria-hidden="true"><svg><use href="#heart"/></svg></span></a>
+  <div class="details"><h2><a></a></h2><div class="pricing"></div><label class="variant">Size <select></select></label>
+  <div class="actions"><button class="gold buy"><svg><use href="#bag"/></svg> Add to Bag</button><button class="remove"><svg><use href="#trash"/></svg> Remove</button></div></div></article></template>
+<script src="/catalogue-product.js"></script><script src="/wishlist.js"></script>
+</body></html>

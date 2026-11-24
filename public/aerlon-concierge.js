@@ -32,16 +32,18 @@ function guide(){state='guide';bubble('HOW TO TRACK YOUR ORDER\n\n1. Select “T
 function agent(){state='agent';bubble('Our customer care team will be happy to assist you. Select the option below to continue the conversation on WhatsApp.',false,true);buttons(['Main Menu','Track Order','Step-by-Step Guide'])}
 async function lookup(phone){
  waiting=true;buttons([]);const token=++requestSerial;const typing=bubble('We are securely checking your order details…');typing.classList.add('ac-typing');
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),25000);
  try{
-  const response=await fetch('/api/orders/track?orderId='+encodeURIComponent(orderId)+'&phone='+encodeURIComponent(phone),{credentials:'same-origin',cache:'no-store'});
+  const response=await fetch('/api/orders/track?orderId='+encodeURIComponent(orderId)+'&phone='+encodeURIComponent(phone),{credentials:'same-origin',cache:'no-store',signal:controller.signal});
   const result=await response.json();if(!response.ok)throw Error(result.error||'We could not retrieve your order right now.');
   if(token!==requestSerial)return;
   const o=result.order||{},items=Array.isArray(o.items)?o.items:[],lines=['YOUR ORDER SUMMARY','Order reference: '+String(o.id||orderId),'Current status: '+String(o.orderStatus||'Not available').replaceAll('_',' '),'Payment status: '+String(o.paymentStatus||'Not available').replaceAll('_',' '),'Payment method: '+String(o.paymentMethod||'Not available'),'Order placed: '+(o.createdAt?new Date(o.createdAt).toLocaleString('en-IN'):'Not available')];
   if(items.length)lines.push('Products: '+items.map(item=>String(item.name||item.productName||'Product')+' × '+String(item.quantity||1)+([item.color,item.size].filter(Boolean).length?' — '+[item.color,item.size].filter(Boolean).join(' / '):'')).join('; '));
   if(Array.isArray(o.statusHistory)&&o.statusHistory.length)lines.push('Recent updates: '+o.statusHistory.slice(-4).map(h=>String(h.status||h.orderStatus||'Update')+(h.at||h.createdAt?' — '+new Date(h.at||h.createdAt).toLocaleDateString('en-IN'):'')).join('; '));
   typing.remove();bubble(lines.join('\n')+'\n\nIs there anything else we can help you with?');followup();
- }catch(error){if(token!==requestSerial)return;typing.remove();bubble('We could not verify an order with those details. Please check your order reference and the phone number used at checkout. If the issue continues, our customer care team can help.');state='phone';buttons(['Try Again','Track Another Order','Step-by-Step Guide','Contact Customer Agent','Main Menu'])}
- finally{if(token===requestSerial)waiting=false}
+ }catch(error){if(token!==requestSerial)return;typing.remove();bubble(controller.signal.aborted?'Order tracking took too long. Please try again or contact customer care.':'We could not verify an order with those details. Please check your order reference and the phone number used at checkout. If the issue continues, our customer care team can help.');state='phone';buttons(['Try Again','Track Another Order','Step-by-Step Guide','Contact Customer Agent','Main Menu'])}
+ finally{clearTimeout(timeout);if(token===requestSerial)waiting=false}
 }
 function send(value){
  const question=String(value||'').trim();if(!question||waiting)return;input.value='';bubble(question,true);const q=question.toLowerCase();

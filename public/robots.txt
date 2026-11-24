@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /account
+Disallow: /checkout
+Disallow: /cart
+Disallow: /login
+Disallow: /signup
+Disallow: /reset-password
+
+Sitemap: https://aerlon.in/sitemap.xml

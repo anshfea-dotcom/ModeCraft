@@ -1189,11 +1189,35 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 <a href="/return-refund-policy.html">Return &amp; refund policy <span aria-hidden="true">↗</span></a>
 </nav><p class="mobile-menu-account-label">ACCOUNT &amp; SETTINGS</p><div class="menu-actions"><button class="menu-item" id="profileMenuBtn"><span class="menu-icon">♙</span><span><strong>Profile</strong><small>Login, account details and logout</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="recentOrdersBtn"><span class="menu-icon">▤</span><span><strong>My Orders</strong><small>View your recent orders and status</small></span><span class="menu-arrow">›</span></button><a class="menu-item" id="wishlistMenuBtn" href="/wishlist.html"><span class="menu-icon">♡</span><span><strong>Wishlist <span class="menu-count" id="menuWishCount">0</span></strong><small>Your saved styles and favourites</small></span><span class="menu-arrow">›</span></a><button class="menu-item" id="trackMenuBtn"><span class="menu-icon">⌁</span><span><strong>Track Order</strong><small>Check an order using its reference</small></span><span class="menu-arrow">›</span></button></div><div class="menu-divider"></div><section class="menu-settings"><p class="menu-section-title">SETTINGS</p><label for="themeSelect">Appearance</label><div class="theme-control"><span class="theme-symbol" id="themeSymbol">☼</span><span class="theme-copy"><strong id="themeLabel">Light mode</strong><small>Choose your preferred appearance</small></span><select id="themeSelect" aria-label="Light or dark mode"><option value="light">Light</option><option value="dark">Dark</option></select></div></section><p class="menu-footer">Your theme preference is saved on this device.</p></div></div>
 <div class="modal success-modal" id="orderSuccessModal" role="dialog" aria-modal="true" aria-labelledby="orderSuccessTitle"><div class="modalbox success-box"><div class="success-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"></path></svg></div><div class="success-kicker">AERLON / ORDER CONFIRMED</div><h2 id="orderSuccessTitle">You’re all set.</h2><p class="success-copy" id="orderSuccessMessage">Your order has been accepted by the store.</p><div class="order-reference"><span>YOUR ORDER REFERENCE</span><strong id="successOrderId">—</strong></div><p class="success-copy" id="successPaymentNote">Keep this reference handy to check your order status.</p><div class="success-actions"><button class="btn" type="button" id="successTrackBtn">TRACK ORDER ↗</button><button class="btn success-secondary" type="button" id="successContinueBtn">CONTINUE SHOPPING</button></div></div></div><div class="modal success-modal" id="loginSuccessModal" role="dialog" aria-modal="true" aria-labelledby="loginSuccessTitle"><div class="modalbox success-box"><div class="success-mark auth-success-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5 14.4 8.4 19.8 9.2 15.9 13 16.8 18.4 12 15.9 7.2 18.4 8.1 13 4.2 9.2 9.6 8.4Z"></path></svg></div><div class="success-kicker">WELCOME TO AERLON</div><h2 id="loginSuccessTitle">You’re signed in.</h2><p class="success-copy" id="loginSuccessMessage">Your account is ready. You can now continue exploring your saved styles and orders.</p><div class="success-actions" style="grid-template-columns:1fr"><button class="btn" type="button" id="loginSuccessContinue">CONTINUE EXPLORING ↗</button></div></div></div><div class="toast" id="toast" role="status"></div>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="/catalogue-product.js"></script>
 <script>
 const $=s=>document.querySelector(s);
-let products=[],cart=[],config={razorpayEnabled:false,keyId:""};
+let products=[],cart=[];
+let checkoutScriptPromise;
+function loadOnlineCheckout() {
+  if (window.Razorpay) return Promise.resolve(window.Razorpay);
+  if (checkoutScriptPromise) return checkoutScriptPromise;
+  checkoutScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    const timeout = setTimeout(fail, 15000);
+    function fail() {
+      clearTimeout(timeout);
+      script.onload = script.onerror = null;
+      script.remove();
+      checkoutScriptPromise = null;
+      reject(new Error('Online payment could not load. Please try again.'));
+    }
+    script.onload = () => {
+      if (!window.Razorpay) return fail();
+      clearTimeout(timeout);
+      resolve(window.Razorpay);
+    };
+    script.onerror = fail;
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    document.head.append(script);
+  });
+  return checkoutScriptPromise;
+}
 let appliedCoupon=null;
 // Show only an offer explicitly configured on the product by the admin panel.
 function productOfferLabel(p){
@@ -1268,6 +1292,7 @@ async function init(){
     cart = cart.filter(item => validProductIds.has(String(item.id)));
     safeWrite('aerlon_cart_v1', cart);
 
+    dismissIntro();
     renderProducts();
     renderCart();
     renderRecent();
@@ -1324,13 +1349,7 @@ async function init(){
     }
     return;
   }
-  // Payment config is optional for displaying products; COD can still be used if enabled server-side.
-  try {
-    config = await api("/api/config");
-  } catch (e) {
-    console.error("AERLON payment config error:", e);
-    config = { razorpayEnabled: false, keyId: "" };
-  }
+
 }
 function renderProducts(){
   const root=$("#products");
@@ -1501,7 +1520,7 @@ function renderCheckoutItems(){const root=$("#checkoutItems");if(!root)return;ro
 function payload(){return{customer:{name:$("#name").value.trim(),email:$("#email").value.trim(),phone:$("#phone").value.trim(),address:$("#address").value.trim(),city:$("#city").value.trim(),postalCode:$("#pin").value.trim()},items:cart.map(i=>({id:i.id,quantity:i.quantity,color:i.color||'',size:i.size||''})),couponCode:appliedCoupon?.code||""}}
 $("#bagBtn").onclick=()=>showBag(true);$("#closeBag").onclick=()=>showBag(false);$("#shade").onclick=()=>showBag(false);$("#checkoutBtn").onclick=()=>{if(!cart.length)return toast("Your bag is empty");updateCheckoutSummary();showBag(false);showCheckout(true)};$("#closeCheckout").onclick=()=>showCheckout(false);
 $("#search").oninput=renderProducts;$("#category").onchange=renderProducts;$("#sort").onchange=renderProducts;$("#year").textContent=new Date().getFullYear();
-$("#orderForm").addEventListener("submit",async e=>{e.preventDefault();if(!cart.length)return toast("Your bag is empty");const btn=$("#placeOrder");btn.disabled=true;btn.textContent="PLEASE WAIT…";try{const body=payload();if($("#payment").value==="COD"){const result=await api("/api/orders/cod",body);showCheckout(false);cart=[];appliedCoupon=null;$("#couponInput").value="";$("#couponMessage").textContent="Have a coupon? Apply it before placing your order.";$("#couponTotals").style.display="none";renderCart();e.target.reset();syncPaymentButtons();showOrderSuccess(result.orderId,result.message,$("#payment").value);return}if(!config.razorpayEnabled)throw new Error("Online payment is not configured. Add Razorpay keys to .env, restart the server, and refresh.");if(!window.Razorpay)throw new Error("Razorpay Checkout could not load. Check your connection.");const order=await api("/api/payments/razorpay/order",body);const options={key:order.keyId,amount:order.amount,currency:order.currency,name:"AERLON",description:"Fashion order",order_id:order.razorpayOrderId,prefill:order.customer,theme:{color:"#111111"},handler:async response=>{try{const verified=await api("/api/payments/razorpay/verify",response);showCheckout(false);cart=[];appliedCoupon=null;$("#couponInput").value="";$("#couponMessage").textContent="Have a coupon? Apply it before placing your order.";$("#couponTotals").style.display="none";renderCart();e.target.reset();syncPaymentButtons();showOrderSuccess(verified.orderId,verified.message,"ONLINE")}catch(err){alert("Payment was submitted but could not be verified by the store. Contact support and do not pay again immediately. Reference: "+order.razorpayOrderId)}}};const checkout=new Razorpay(options);checkout.on("payment.failed",r=>toast(r.error?.description||"Payment failed. Please try again."));checkout.open()}catch(err){toast(err.message)}finally{btn.disabled=false;btn.textContent="PLACE ORDER"}});
+$("#orderForm").addEventListener("submit",async e=>{e.preventDefault();if(!cart.length)return toast("Your bag is empty");const btn=$("#placeOrder");btn.disabled=true;btn.textContent="PLEASE WAIT…";try{const body=payload();if($("#payment").value==="COD"){const result=await api("/api/orders/cod",body);showCheckout(false);cart=[];appliedCoupon=null;$("#couponInput").value="";$("#couponMessage").textContent="Have a coupon? Apply it before placing your order.";$("#couponTotals").style.display="none";renderCart();e.target.reset();syncPaymentButtons();showOrderSuccess(result.orderId,result.message,$("#payment").value);return}const config=await api("/api/config");if(!config.razorpayEnabled)throw new Error("Online payment is currently unavailable. Please choose cash on delivery or try again later.");const Checkout=await loadOnlineCheckout();const order=await api("/api/payments/razorpay/order",body);const options={key:order.keyId,amount:order.amount,currency:order.currency,name:"AERLON",description:"Fashion order",order_id:order.razorpayOrderId,prefill:order.customer,theme:{color:"#111111"},handler:async response=>{try{const verified=await api("/api/payments/razorpay/verify",response);showCheckout(false);cart=[];appliedCoupon=null;$("#couponInput").value="";$("#couponMessage").textContent="Have a coupon? Apply it before placing your order.";$("#couponTotals").style.display="none";renderCart();e.target.reset();syncPaymentButtons();showOrderSuccess(verified.orderId,verified.message,"ONLINE")}catch(err){alert("Payment was submitted but could not be verified by the store. Contact support and do not pay again immediately. Reference: "+order.razorpayOrderId)}}};const checkout=new Checkout(options);checkout.on("payment.failed",r=>toast(r.error?.description||"Payment failed. Please try again."));checkout.open()}catch(err){toast(err.message)}finally{btn.disabled=false;btn.textContent="PLACE ORDER"}});
 
 // Extra storefront features: wishlist/recently viewed/theme are stored on this device.
 // Upgrade browser data saved before the storefront rename.

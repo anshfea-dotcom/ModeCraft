@@ -20,7 +20,7 @@ check('Mobile header, search and account/cart controls', () => {
   includesAll(home, ['site-wordmark', 'id="menuBtn"', 'id="mobileSearchBtn"', 'id="bagBtn"', 'mobile-promo', '@media(max-width:720px)']);
 });
 check('Navigation, editorial category cards and actual catalogue wiring', () => {
-  includesAll(home, ['mobile-store-menu', 'mobile-menu-collections', 'data-menu-close', 'data-collection="men"', 'data-collection="women"', 'data-collection="jackets"', 'class="collection-photo"', 'function collectionMatches(p,key)', 'products = p.products']);
+  includesAll(home, ['mobile-store-menu', 'mobile-menu-collections', 'data-menu-close', 'data-collection="men"', 'data-collection="women"', 'data-collection="jackets"', 'class="collection-photo"', 'function collectionMatches(p,key)', 'products = catalogueProducts(p.products)']);
 });
 check('Footer is collapsible on mobile and retains owner-managed settings', () => {
   includesAll(home, ['function prepareFooterAccordions()', 'aria-expanded', 'mc-footer-link-list', 'function applyFooterColumns(columns)', "fetch('/api/storefront/footer'", 'data-footer-action="track"', 'footerNewsletterForm']);

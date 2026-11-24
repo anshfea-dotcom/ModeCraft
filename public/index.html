@@ -1080,7 +1080,6 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 <div class="grid" id="products"><p class="muted">Loading collection…</p></div>
 </section>
 <section class="wrap extras" id="recentSection"><div class="heading"><h2>Recently viewed</h2><span class="muted">PICK UP WHERE YOU LEFT OFF.</span></div><div class="grid" id="recentProducts"><p class="muted">Products you view will appear here.</p></div></section>
-<section class="wrap extras" id="wishlistSection" hidden><div class="heading"><h2>Your wishlist</h2><span class="muted">SAVED FOR LATER.</span></div><div class="grid" id="wishlistProducts"></div></section>
 <section class="benefits" id="about"><div><b>01 / CURATED STYLE</b><p>Easy-to-wear wardrobe essentials.</p></div><div><b>02 / DELIVERY CLARITY</b><p>Delivery estimates shown before purchase.</p></div><div><b>03 / CUSTOMER CARE</b><p>Help with orders, returns and sizing.</p></div></section>
 </main>
 <footer class="mc-footer" id="siteFooter">
@@ -1172,16 +1171,14 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 <div><a href="#men" data-menu-close>Men</a><a href="#women" data-menu-close>Women</a><a href="#jackets" data-menu-close>Jackets</a><a href="#sneakers" data-menu-close>Sneakers</a></div></details>
 <a href="/customer-care.html">Customer care <span aria-hidden="true">↗</span></a>
 <a href="/return-refund-policy.html">Return &amp; refund policy <span aria-hidden="true">↗</span></a>
-</nav><p class="mobile-menu-account-label">ACCOUNT &amp; SETTINGS</p><div class="menu-actions"><button class="menu-item" id="profileMenuBtn"><span class="menu-icon">♙</span><span><strong>Profile</strong><small>Login, account details and logout</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="recentOrdersBtn"><span class="menu-icon">▤</span><span><strong>My Orders</strong><small>View your recent orders and status</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="wishlistMenuBtn"><span class="menu-icon">♡</span><span><strong>Wishlist <span class="menu-count" id="menuWishCount">0</span></strong><small>Your saved styles and favourites</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="trackMenuBtn"><span class="menu-icon">⌁</span><span><strong>Track Order</strong><small>Check an order using its reference</small></span><span class="menu-arrow">›</span></button></div><div class="menu-divider"></div><section class="menu-settings"><p class="menu-section-title">SETTINGS</p><label for="themeSelect">Appearance</label><div class="theme-control"><span class="theme-symbol" id="themeSymbol">☼</span><span class="theme-copy"><strong id="themeLabel">Light mode</strong><small>Choose your preferred appearance</small></span><select id="themeSelect" aria-label="Light or dark mode"><option value="light">Light</option><option value="dark">Dark</option></select></div></section><p class="menu-footer">Your theme preference is saved on this device.</p></div></div>
+</nav><p class="mobile-menu-account-label">ACCOUNT &amp; SETTINGS</p><div class="menu-actions"><button class="menu-item" id="profileMenuBtn"><span class="menu-icon">♙</span><span><strong>Profile</strong><small>Login, account details and logout</small></span><span class="menu-arrow">›</span></button><button class="menu-item" id="recentOrdersBtn"><span class="menu-icon">▤</span><span><strong>My Orders</strong><small>View your recent orders and status</small></span><span class="menu-arrow">›</span></button><a class="menu-item" id="wishlistMenuBtn" href="/wishlist.html"><span class="menu-icon">♡</span><span><strong>Wishlist <span class="menu-count" id="menuWishCount">0</span></strong><small>Your saved styles and favourites</small></span><span class="menu-arrow">›</span></a><button class="menu-item" id="trackMenuBtn"><span class="menu-icon">⌁</span><span><strong>Track Order</strong><small>Check an order using its reference</small></span><span class="menu-arrow">›</span></button></div><div class="menu-divider"></div><section class="menu-settings"><p class="menu-section-title">SETTINGS</p><label for="themeSelect">Appearance</label><div class="theme-control"><span class="theme-symbol" id="themeSymbol">☼</span><span class="theme-copy"><strong id="themeLabel">Light mode</strong><small>Choose your preferred appearance</small></span><select id="themeSelect" aria-label="Light or dark mode"><option value="light">Light</option><option value="dark">Dark</option></select></div></section><p class="menu-footer">Your theme preference is saved on this device.</p></div></div>
 <div class="modal success-modal" id="orderSuccessModal" role="dialog" aria-modal="true" aria-labelledby="orderSuccessTitle"><div class="modalbox success-box"><div class="success-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"></path></svg></div><div class="success-kicker">AERLON / ORDER CONFIRMED</div><h2 id="orderSuccessTitle">You’re all set.</h2><p class="success-copy" id="orderSuccessMessage">Your order has been accepted by the store.</p><div class="order-reference"><span>YOUR ORDER REFERENCE</span><strong id="successOrderId">—</strong></div><p class="success-copy" id="successPaymentNote">Keep this reference handy to check your order status.</p><div class="success-actions"><button class="btn" type="button" id="successTrackBtn">TRACK ORDER ↗</button><button class="btn success-secondary" type="button" id="successContinueBtn">CONTINUE SHOPPING</button></div></div></div><div class="modal success-modal" id="loginSuccessModal" role="dialog" aria-modal="true" aria-labelledby="loginSuccessTitle"><div class="modalbox success-box"><div class="success-mark auth-success-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5 14.4 8.4 19.8 9.2 15.9 13 16.8 18.4 12 15.9 7.2 18.4 8.1 13 4.2 9.2 9.6 8.4Z"></path></svg></div><div class="success-kicker">WELCOME TO AERLON</div><h2 id="loginSuccessTitle">You’re signed in.</h2><p class="success-copy" id="loginSuccessMessage">Your account is ready. You can now continue exploring your saved styles and orders.</p><div class="success-actions" style="grid-template-columns:1fr"><button class="btn" type="button" id="loginSuccessContinue">CONTINUE EXPLORING ↗</button></div></div></div><div class="toast" id="toast" role="status"></div>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/catalogue-product.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 let products=[],cart=[],config={razorpayEnabled:false,keyId:""};
 let appliedCoupon=null;
-const money=n=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(n);
-function effectivePrice(p){const original=Number(p?.price)||0,sale=Number(p?.salePrice);return p?.salePrice!==null&&p?.salePrice!==undefined&&p?.salePrice!==""&&Number.isFinite(sale)&&sale>0&&sale<original?sale:original}
-function makePriceElement(p,className="price"){const el=document.createElement("div");el.className=className;const original=Number(p?.price)||0,current=effectivePrice(p);const currentEl=document.createElement("span");currentEl.textContent=money(current);el.append(currentEl);if(current<original){const old=document.createElement("del");old.className="sale-original-price";old.textContent=money(original);const discount=document.createElement("span");discount.className="sale-discount";discount.textContent=`${Math.round((1-current/original)*100)}% OFF`;el.append(old,discount)}return el}
 // Show only an offer explicitly configured on the product by the admin panel.
 function productOfferLabel(p){
   if(!p||p.offerEnabled===false||p.discountEnabled===false)return "";
@@ -1227,27 +1224,7 @@ async function init(){
     }
     // Normalize database/admin product records before rendering. Older records may
     // use title/productName, string prices, or optional image/category fields.
-    products = p.products
-      .filter(item => item && typeof item === "object" && item.active !== false)
-      .map(item => {
-        const name = String(item.name ?? item.title ?? item.productName ?? "").trim();
-        const price = Number(item.price ?? item.amount ?? 0);
-        const salePrice = item.salePrice === null || item.salePrice === undefined || item.salePrice === "" ? null : Number(item.salePrice);
-        const category = String(item.category ?? item.productCategory ?? "New Arrivals").trim();
-        const images = Array.isArray(item.images) ? item.images.filter(Boolean) : [];
-        const image = String(item.image ?? item.imageUrl ?? item.image_url ?? images[0] ?? "").trim();
-        return {
-          ...item,
-          id: String(item.id ?? item.productId ?? item.slug ?? ""),
-          name,
-          price: Number.isFinite(price) && price >= 0 ? price : 0,
-          salePrice: Number.isFinite(salePrice) && salePrice > 0 && salePrice < price ? salePrice : null,
-          category,
-          image,
-          images
-        };
-      })
-      .filter(item => item.id && item.name && !String(item.id).toLowerCase().startsWith("preview-") && item.demo !== true && item.previewOnly !== true && item.isPreview !== true && item.preview_only !== true);
+    products = catalogueProducts(p.products);
     // Only real active products from the store API are rendered. Never fabricate catalog items.
     // Reconcile the persisted bag only after the catalogue has loaded. This prevents
     // the badge showing old items while the bag itself appears empty during page startup.
@@ -1538,7 +1515,6 @@ function aerlonPreloadImages(urls){urls.filter(Boolean).forEach(src=>{if(aerlonI
 function aerlonSetGalleryImage(img,src){if(!src)return;img.decoding='async';img.style.opacity='.35';img.style.visibility='visible';const cached=aerlonImageCache.get(src);if(cached?.complete&&cached.naturalWidth){img.src=src;img.style.opacity='1';return}const loader=cached||new Image();if(!cached){loader.decoding='async';loader.src=src;aerlonImageCache.set(src,loader)}img.src=src;loader.addEventListener('load',()=>{if(img.getAttribute('src')===src){img.style.opacity='1';img.style.visibility='visible'}},{once:true});loader.addEventListener('error',()=>{if(img.getAttribute('src')===src){img.style.visibility='hidden'}},{once:true})}
 function productImages(p){let arr=Array.isArray(p.images)?[...p.images]:[];if(p.image&&!arr.includes(p.image))arr.unshift(p.image);return [...new Set(arr.filter(Boolean))]}
 function isWished(id){return safeRead(STORE.wish,[]).some(x=>String(x)===String(id))}
-let wishlistSectionOpened=false;
 function toggleWish(id){
   let w=safeRead(STORE.wish,[]);
   const removing=w.some(x=>String(x)===String(id));
@@ -1560,8 +1536,6 @@ function renderWish(){
 const w=safeRead(STORE.wish,[]),items=w.map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);
 const menuCount=byId('menuWishCount');if(menuCount)menuCount.textContent=String(items.length);
 const countNode=byId('wishCount');if(countNode)countNode.textContent=String(items.length);
-renderMiniGrid('wishlistProducts',items);
-const section=byId('wishlistSection');if(section)section.hidden=!items.length&&!wishlistSectionOpened;
 }
 function renderRecent(){const ids=safeRead(STORE.recent,[]),items=ids.map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);renderMiniGrid('recentProducts',items)}
 let activeProductReviews=[];let activeProductReviewSummary={};
@@ -1671,7 +1645,7 @@ byId('settingsModal')?.addEventListener('click',event=>{
     closeModal('settingsModal');
     byId('menuBtn').setAttribute('aria-expanded','false');
   }
-});byId('wishlistMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');wishlistSectionOpened=true;renderWish();byId('wishlistSection').scrollIntoView({behavior:'smooth'})};byId('profileMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');if(currentCustomer){openModal('accountModal');updateAuthUI()}else{location.assign('/login.html')}};byId('trackMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');openModal('trackModal')};
+});byId('profileMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');if(currentCustomer){openModal('accountModal');updateAuthUI()}else{location.assign('/login.html')}};byId('trackMenuBtn').onclick=()=>{closeModal('settingsModal');byId('menuBtn').setAttribute('aria-expanded','false');openModal('trackModal')};
 
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{closeModal(b.dataset.close);if(b.dataset.close==='settingsModal')byId('menuBtn').setAttribute('aria-expanded','false')});
 document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{authMode=b.dataset.auth;document.querySelectorAll('[data-auth]').forEach(x=>x.classList.toggle('active',x===b));const signup=authMode==='signup',forgot=authMode==='forgot';byId('accountTitle').textContent=forgot?'Reset your password':signup?'Create your account':'Welcome back';byId('authName').hidden=!signup;byId('authNameLabel').hidden=!signup;byId('authName').required=signup;byId('authPhone').hidden=!signup;byId('authPhoneLabel').hidden=!signup;byId('authPhone').required=signup;byId('authPassword').hidden=forgot;byId('authPasswordLabel').hidden=forgot;byId('authPassword').required=!forgot;byId('authPassword').autocomplete=signup?'new-password':'current-password';byId('authSubmit').textContent=forgot?'SEND RESET LINK':signup?'CREATE ACCOUNT':'LOGIN';byId('authNote').textContent='This form needs matching server-side authentication routes; no password is stored in this browser.'});

@@ -6,6 +6,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { Pool } = require("pg");
 const session = require("express-session");
+const { rateLimit } = require("express-rate-limit");
 const PgSession = require("connect-pg-simple")(session);
 const Razorpay = require("razorpay");
 const nodemailer = require("nodemailer");
@@ -420,6 +421,10 @@ async function initDatabase() {
       sess JSON NOT NULL,
       expire TIMESTAMP(6) NOT NULL
     );
+
+    ALTER TABLE user_sessions
+      ADD COLUMN IF NOT EXISTS admin_challenge_hash TEXT,
+      ADD COLUMN IF NOT EXISTS admin_challenge_expires TIMESTAMPTZ;
 
     CREATE INDEX IF NOT EXISTS user_sessions_expire_idx
       ON user_sessions (expire);
@@ -1469,8 +1474,57 @@ app.delete("/api/admin/banners/:id", requireAdmin, requireOwner, async (req, res
   } catch (error) { next(error); }
 });
 
+const adminChallengeLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  message: { error: "Too many sign-in requests. Please try again later." }
+});
+
+function challengeHash(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+app.post("/api/admin/login-challenge", adminChallengeLimit, async (req, res, next) => {
+  try {
+    if (req.get("X-Admin-Login") !== "1") {
+      return res.status(403).json({ error: "Please sign in from the admin page." });
+    }
+    if (!req.session.adminLoginStarted && !req.session.admin && !req.session.customer) {
+      req.session.adminLoginStarted = true;
+      await new Promise((resolve, reject) => {
+        req.session.save(error => error ? reject(error) : resolve());
+      });
+    }
+    const token = crypto.randomBytes(32).toString("hex");
+    const issued = await pool.query(
+      `UPDATE user_sessions SET admin_challenge_hash = $2,
+         admin_challenge_expires = NOW() + INTERVAL '5 minutes'
+       WHERE sid = $1 AND expire > NOW()`,
+      [req.sessionID, challengeHash(token)]
+    );
+    if (!issued.rowCount) return res.status(403).json({ error: "Session expired. Try signing in again." });
+    res.set("Cache-Control", "no-store").json({ token });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post("/api/admin/login", async (req, res, next) => {
   try {
+    const token = req.get("X-Admin-Login-Token");
+    if (typeof token !== "string" || !/^[a-f0-9]{64}$/.test(token)) {
+      return res.status(403).json({ error: "Sign-in request expired. Please try again." });
+    }
+    const consumed = await pool.query(
+      `UPDATE user_sessions SET admin_challenge_hash = NULL, admin_challenge_expires = NULL
+       WHERE sid = $1 AND admin_challenge_hash = $2
+         AND admin_challenge_expires > NOW() AND expire > NOW()`,
+      [req.sessionID, challengeHash(token)]
+    );
+    if (!consumed.rowCount) {
+      return res.status(403).json({ error: "Sign-in request expired. Please try again." });
+    }
+
     const username = cleanText(req.body?.username, 100);
     const password = typeof req.body?.password === "string"
       ? req.body.password

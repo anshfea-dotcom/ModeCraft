@@ -7,3 +7,29 @@ header{background:#100f0d;color:#fcf7ed;border-bottom:1px solid #302a23}nav,main
 .hero{background:#211d19;position:relative;isolation:isolate;color:#fff9ef;overflow:hidden}.hero:before{content:"";position:absolute;inset:0 0 0 auto;width:54%;z-index:-1;background:linear-gradient(90deg,#211d19,transparent 32%),url('/editorial/wishlist-gift.webp') center right/cover no-repeat}.hero>div{padding:clamp(24px,5vw,55px) 5%}.hero h1{font:normal clamp(32px,5vw,58px)/1.1 Georgia,serif;margin:0}.hero h1 svg{width:.85em;height:.85em}.hero p{color:#f1e7d8;font-size:clamp(12px,2vw,16px);margin:8px 0 16px}.hero p:after{content:"";display:block;width:56px;height:2px;background:#d3b888;margin-top:14px}
 .sheet{position:relative;margin-top:-8px;border-radius:12px 12px 0 0;background:#f4eee4;min-height:60vh;padding:clamp(10px,2.2vw,24px)}.bar,.actions,.price,.summary,.gold,#clear,.remove{display:flex;align-items:center}.bar{justify-content:space-between;padding:0 6px 12px}.bar strong{font-weight:500}.bar button,.remove{min-height:40px;gap:5px}.bar svg,.actions svg{width:1.1em;height:1.1em}#status:empty{display:none}#grid{display:grid;gap:9px}article{display:grid;grid-template-columns:clamp(104px,29vw,215px) minmax(0,1fr);gap:clamp(10px,2.5vw,28px);padding:7px;background:#fbf7ef;border:1px solid #d8cfc1;border-radius:12px}.photo{position:relative;min-height:128px;background:#e6ddce;border-radius:8px;overflow:hidden}.photo img{position:absolute;width:100%;height:100%;object-fit:cover}.photo span{position:absolute;top:0;right:0;padding:5px 7px;border-radius:0 0 0 8px;background:#241e19df;color:#ecd399}.photo svg{fill:currentColor;width:18px}.details{align-self:center;padding:6px 5px 6px 0}h2{font:500 clamp(18px,3vw,28px)/1.12 Georgia,serif;margin:0 0 6px;overflow-wrap:anywhere}.price{gap:6px;flex-wrap:wrap;font-weight:bold}.price del{color:#625d54;font-weight:400;font-size:.81em}.sale-discount{border-radius:4px;background:#ead4ab;padding:2px 5px;font-size:.68em;font-weight:500}.variant{display:inline-flex;align-items:center;gap:5px;border:1px solid #cdbeaa;border-radius:5px;padding:2px 4px 2px 7px;font-size:13px;margin:8px 0}.variant select{max-width:100%;border:0;background:transparent;min-height:26px}.actions{gap:5px;flex-wrap:wrap;font-size:14px}.gold{justify-content:center;gap:5px;background:linear-gradient(135deg,#efdbaf,#d0ae79);border-radius:6px;padding:9px 13px;min-height:38px}.remove{padding:3px 5px}.summary{gap:15px;padding:14px 18px;background:linear-gradient(110deg,#e6d8c3,#d8c19e);border-radius:8px;margin:19px 3px 3px}.summary svg,#empty>svg{font-size:24px}.summary strong,.summary small{display:block}.summary strong{font:20px Georgia,serif}.summary b{margin-left:auto;font:26px Georgia}#empty{text-align:center;padding:45px 10px}#empty h2{margin-top:12px}#empty a{display:inline-flex}
 @media(max-width:600px){nav{height:59px;padding:0 6px}.brand{font-size:24px;left:47%}.tools a:not(.brand){min-width:34px}.sheet{font-size:14px}.actions{font-size:12px}.hero:before{width:47%}.gold{padding:7px 9px}.hero p{max-width:65%}}@media(min-width:700px){.photo{min-height:180px}.actions{gap:15px}.details{padding:15px}.variant{margin:14px 0}}
+
+/* Design 2: midnight champagne */
+:root{background:#101010;color:#f7f1e6}
+main{max-width:1440px}
+.hero{background:#151515}
+.hero:before{background:linear-gradient(90deg,#151515,transparent 32%),url('/editorial/wishlist-gift.webp') center right/cover no-repeat}
+.sheet{background:#101010;color:#f7f1e6}
+article{background:#1b1b1b;border-color:#40382d;grid-template-columns:minmax(90px,38%) minmax(0,1fr);min-width:0}
+.price del{color:#c1b8aa}
+.sale-discount,.gold{color:#211c17}
+.variant{max-width:100%;border-color:#76664e}
+.variant select{min-width:0;color:#f7f1e6}
+.variant option{background:#202020;color:#fff}
+.summary{background:#f4eee4;color:#211c17;margin:0;align-self:start}
+#grid{grid-template-columns:minmax(0,1fr)}
+@media(min-width:1100px){
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:18px;align-content:start}
+.bar,#status,#empty,#retry{grid-column:1/-1}
+#grid{grid-column:1;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.summary{grid-column:2;grid-row:3}
+.details{padding:8px 4px 8px 0}
+article{gap:12px}
+.actions{gap:5px}
+h2{font-size:22px}
+}
+@media(max-width:1099px){.summary{margin-top:19px}}

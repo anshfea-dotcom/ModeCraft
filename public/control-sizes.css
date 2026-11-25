@@ -1,0 +1,50 @@
+/* Supply a baseline for controls that have no component-specific minimum. */
+@layer controlDefaults {
+  button, [role="button"], a:is(.btn, .cta, .gold) {
+    box-sizing: border-box;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Compact components have their own minimums in the page styles. */
+#productModal .productbox :is(.size-option, .colour-swatch),
+#productModal .modalhead button,
+#shop #clearCollectionSearch,
+.drawerhead button, .qty button, .interactive-stars button,
+.bar button, .actions .remove, .gold, .variant select,
+.mc-footer-links :is(a, button), .ac-quick button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+#detailThumbs .slider-dot {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  background: transparent !important;
+}
+#detailThumbs .slider-dot::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: currentColor;
+  opacity: .55;
+}
+#detailThumbs .slider-dot.active::before {
+  width: 21px;
+  background: var(--accent-dark);
+  opacity: 1;
+}
+#detailThumbs { gap: 2px; }
+
+#retryProducts,
+#productModal .productbox .detail-utility-row button,
+#productModal .productbox .interactive-stars button {
+  min-width: 44px;
+  min-height: 44px;
+}
+#productModal .interactive-stars { flex-wrap: wrap; }

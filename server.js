@@ -4,7 +4,9 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
-const { Pool } = require("pg");
+const { createPool } = require("./services/database");
+const { cleanText, normalizeProductFamilyValue, getProducts: listProducts, readCatalogue } = require("./services/catalogue/catalogue");
+const { createCatalogueClient } = require("./services/catalogue/client");
 const session = require("express-session");
 const { rateLimit } = require("express-rate-limit");
 const PgSession = require("connect-pg-simple")(session);
@@ -38,19 +40,8 @@ if (
   process.exit(1);
 }
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL.includes("localhost")
-    ? false
-    : { rejectUnauthorized: false },
-  max: 10,
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 30000
-});
-
-pool.on("error", error => {
-  console.error("PostgreSQL pool error:", error.message);
-});
+const pool = createPool(8);
+const catalogue = createCatalogueClient(() => readCatalogue(pool));
 
 const DEFAULT_PRODUCTS = [
   {
@@ -164,12 +155,6 @@ function validatePermissions(value) {
   if (!Array.isArray(value)) return null;
   if (value.some(permission => typeof permission !== "string" || !GRANTABLE_PERMISSIONS.has(permission))) return null;
   return [...new Set(value)];
-}
-
-function cleanText(value, max = 300) {
-  return typeof value === "string"
-    ? value.trim().slice(0, max)
-    : "";
 }
 
 function safeEqual(a, b) {
@@ -448,12 +433,8 @@ async function initDatabase() {
   console.log("AERLON database initialized.");
 }
 
-async function getProducts() {
-  const result = await pool.query(
-    "SELECT data FROM products ORDER BY updated_at DESC"
-  );
-
-  return result.rows.map(row => row.data).sort((a, b) => Number(a.sortOrder ?? 999999) - Number(b.sortOrder ?? 999999));
+function getProducts() {
+  return listProducts(pool);
 }
 
 async function getProduct(id) {
@@ -1076,78 +1057,7 @@ app.get("/api/products", async (_req, res, next) => {
     res.set("Pragma", "no-cache");
     res.set("Expires", "0");
 
-    const products = await getProducts();
-    const activeProducts = products.filter(product =>
-      product && typeof product === "object" && product.active !== false
-    );
-
-    const inventoryByProduct = new Map();
-    try {
-      const variants = await pool.query(
-        "SELECT product_id, color, size, quantity FROM inventory_variants ORDER BY color, size"
-      );
-      for (const row of variants.rows) {
-        const productId = String(row.product_id);
-        if (!inventoryByProduct.has(productId)) inventoryByProduct.set(productId, []);
-        inventoryByProduct.get(productId).push({
-          color: row.color,
-          size: row.size,
-          quantity: Number(row.quantity) || 0
-        });
-      }
-    } catch (inventoryError) {
-      // Keep products visible even if the optional inventory query has a
-      // temporary/schema problem. Log it so the underlying issue is traceable.
-      console.error("Storefront inventory lookup failed; serving products without inventory data:", inventoryError.message);
-    }
-
-    const byId = new Map(activeProducts.map(product => [String(product.id), product]));
-    // A product already referenced as a colour child cannot also be a parent.
-    // Legacy nested links used to hide both the parent and its child from the
-    // storefront. Only root products may own colour links now.
-    const referencedAsChild = new Set();
-    for (const product of activeProducts) {
-      const links = product.colorVariants && typeof product.colorVariants === "object"
-        ? product.colorVariants : {};
-      for (const linkedId of Object.values(links)) {
-        if (linkedId != null && String(linkedId).trim()) referencedAsChild.add(String(linkedId));
-      }
-    }
-
-    const claimedChildren = new Set();
-    const safeLinksByParent = new Map();
-    for (const parent of activeProducts) {
-      const parentId = String(parent.id);
-      const safeLinks = {};
-      // Do not allow a legacy child record to hide another product beneath it.
-      if (!referencedAsChild.has(parentId)) {
-        const rawLinks = parent.colorVariants && typeof parent.colorVariants === "object"
-          ? parent.colorVariants : {};
-        const parentCategory = normalizeProductFamilyValue(parent.category);
-        const parentType = normalizeProductFamilyValue(parent.productType || parent.category);
-        for (const [color, rawId] of Object.entries(rawLinks)) {
-          const childId = String(rawId);
-          const child = byId.get(childId);
-          if (!child || childId === parentId || claimedChildren.has(childId)) continue;
-          const childCategory = normalizeProductFamilyValue(child.category);
-          const childType = normalizeProductFamilyValue(child.productType || child.category);
-          const childHasChildren = Object.keys(child.colorVariants || {}).length > 0;
-          if (!parentCategory || parentCategory !== childCategory || parentType !== childType || childHasChildren) continue;
-          safeLinks[color] = childId;
-          claimedChildren.add(childId);
-        }
-      }
-      safeLinksByParent.set(parentId, safeLinks);
-    }
-
-    res.json({
-      products: activeProducts.map(product => ({
-        ...product,
-        colorVariants: safeLinksByParent.get(String(product.id)) || {},
-        isColorVariantChild: claimedChildren.has(String(product.id)),
-        inventoryVariants: inventoryByProduct.get(String(product.id)) || []
-      }))
-    });
+    res.json(await catalogue.read());
   } catch (error) {
     next(error);
   }
@@ -1920,10 +1830,6 @@ app.get(
     }
   }
 );
-
-function normalizeProductFamilyValue(value) {
-  return cleanText(value, 100).replace(/\s+/g, " ").toLocaleLowerCase("en-US");
-}
 
 async function validateColorProductLinks(sourceProduct, links, { isNew = false } = {}) {
   const entries = Object.entries(links || {});
@@ -3118,6 +3024,7 @@ app.use((error, _req, res, _next) => {
 
 async function start() {
   await initDatabase();
+  catalogue.start();
 
   app.listen(PORT, () => {
     console.log(`AERLON running on port ${PORT}`);
@@ -3131,6 +3038,7 @@ start().catch(error => {
 
 process.on("SIGTERM", async () => {
   try {
+    catalogue.stop();
     await pool.end();
   } finally {
     process.exit(0);

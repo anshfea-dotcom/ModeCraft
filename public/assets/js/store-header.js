@@ -47,7 +47,12 @@
   }
   function applyBrand(settings) {
     const brand = header.querySelector('.brand');
-    if (settings.brandText?.trim()) brand.textContent = settings.brandText.trim();
+    if (settings.brandText?.trim()) {
+      const name = settings.brandText.trim();
+      brand.textContent = name;
+      brand.setAttribute('aria-label', name + ' home');
+      brand.title = name;
+    }
     if (/^https:\/\//i.test(settings.logoUrl?.trim() || '')) {
       const logo = document.createElement('img');
       logo.src = settings.logoUrl.trim();

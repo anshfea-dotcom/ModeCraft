@@ -535,9 +535,7 @@ byId('menuBtn').onclick=()=>{
   byId('menuBtn').setAttribute('aria-expanded',String(opening));
 };
 byId('mobileSearchBtn')?.addEventListener('click',()=>{
-  if(activeCollection==='sneakers'){location.hash='#shop';setCollectionFromHash();}
-  byId('shop')?.scrollIntoView({behavior:'smooth',block:'start'});
-  requestAnimationFrame(()=>byId('search')?.focus({preventScroll:true}));
+  byId('aerlonHeaderSearchInput')?.focus();
 });
 document.querySelectorAll('[data-menu-close]').forEach(link=>link.addEventListener('click',()=>{
   closeModal('settingsModal');
@@ -766,6 +764,7 @@ async function applyStorefrontHeader(){
         strip.hidden=false;
         const parts=h.announcement.split(/\s*(?:✦|\||·|•)\s*/).map(x=>x.trim()).filter(Boolean).slice(0,8);
         if(parts.length){
+          strip.classList.toggle('single-message', parts.length === 1);
           const track=strip.querySelector('.announce-track');
           track.replaceChildren();
           for(let copy=0;copy<2;copy++){

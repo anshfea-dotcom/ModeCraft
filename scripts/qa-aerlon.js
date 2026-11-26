@@ -69,7 +69,8 @@ check('AERLON account V2 responsive pages and reset lifecycle', () => {
   includesAll(authJS, ['/api/auth/login', '/api/auth/signup', '/api/auth/forgot-password', '/api/auth/reset-password', 'location.assign(shopUrl())']);
   includesAll(server, ['resetUrl.pathname = "/reset-password.html"', 'resetUrl.searchParams.set("token", rawToken)']);
   assert.ok(!home.includes('<div class="mobile-promo"><span>THE AERLON EDIT'), 'Old mobile promotional banner must be removed');
-  includesAll(home, ['.mobile-promo,.announce,#announcementStrip{display:none!important}', "location.assign('/login.html')"]);
+  includesAll(home, ['#announcementStrip[hidden]{display:none}', "location.assign('/login.html')"]);
+  assert.doesNotMatch(home, /(?:\.announce|#announcementStrip)\s*\{\s*display:\s*none/);
 });
 check('Bag and menu links run once across refresh and history traversal', () => {
   const source = home.slice(home.indexOf('function takeStorefrontPanel()'), home.indexOf('async function init()'));

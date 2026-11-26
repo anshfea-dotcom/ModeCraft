@@ -1,3 +1,4 @@
+const { remainingSession } = require("./session-policy");
 const crypto = require("node:crypto");
 const nodemailer = require("nodemailer");
 
@@ -8,13 +9,25 @@ module.exports = function registerCustomers(app, { cleanText, pool, hashPassword
   }
 
   function requireCustomer(req, res, next) {
-    if (!req.session?.customer?.id) {
-      return res.status(401).json({ error: "Please sign in to continue." });
-    }
-    next();
+    res.set("Cache-Control", "no-store");
+    remainingSession(pool, req, "customer", true).then(remaining => {
+      if (!remaining) return res.status(401).json({ error: "Please sign in to continue." });
+      res.set("X-Customer-Remaining-Ms", String(remaining));
+      next();
+    }).catch(next);
   }
 
-  const customerLoginAttempts = new Map();
+  async function reserveLogin(key, limit) {
+    const result = await pool.query(
+      `INSERT INTO customer_login_limits AS l (key, attempts, expires)
+       VALUES ($1, 1, NOW() + interval '15 minutes')
+       ON CONFLICT (key) DO UPDATE SET
+         attempts = CASE WHEN l.expires <= NOW() THEN 1 ELSE l.attempts + 1 END,
+         expires = CASE WHEN l.expires <= NOW() THEN EXCLUDED.expires ELSE l.expires END
+       WHERE l.expires <= NOW() OR l.attempts < $2
+       RETURNING expires::text AS window_end`, [key, limit]);
+    return result.rows[0]?.window_end;
+  }
 
   app.post("/api/auth/signup", async (req, res, next) => {
     try {
@@ -46,7 +59,7 @@ module.exports = function registerCustomers(app, { cleanText, pool, hashPassword
       }
       req.session.regenerate(error => {
         if (error) return next(error);
-        req.session.customer = { id: result.rows[0].id };
+        req.session.customer = { issuedAt: Date.now(), id: result.rows[0].id };
         req.session.save(saveError => {
           if (saveError) return next(saveError);
           res.status(201).json({ ok: true, user: publicCustomer(result.rows[0]) });
@@ -63,25 +76,27 @@ module.exports = function registerCustomers(app, { cleanText, pool, hashPassword
       const email = cleanText(req.body?.email, 180).toLowerCase();
       const password = typeof req.body?.password === "string" ? req.body.password : "";
       const ip = req.ip || req.socket?.remoteAddress || "unknown";
-      const now = Date.now();
-      let attempt = customerLoginAttempts.get(ip);
-      if (attempt && now - attempt.startedAt < 15 * 60 * 1000 && attempt.count >= 10) {
-        return res.status(429).json({ error: "Too many login attempts. Please wait 15 minutes." });
-      }
-      if (!attempt || now - attempt.startedAt >= 15 * 60 * 1000) {
-        attempt = { startedAt: now, count: 0 };
-        customerLoginAttempts.set(ip, attempt);
+      if (!email || !password || password.length > 200) return res.status(400).json({ error: "Enter your email and password." });
+      const ipKey = "ip:" + ip;
+      const accountKey = "account:" + crypto.createHash("sha256").update(email).digest("hex");
+      await pool.query("DELETE FROM customer_login_limits WHERE expires <= NOW()");
+      const ipWindow = await reserveLogin(ipKey, 30);
+      const accountWindow = ipWindow && await reserveLogin(accountKey, 5);
+      if (!accountWindow) {
+        return res.set("Retry-After", "900").status(429).json({ error: "Too many sign-in attempts. Try again in 15 minutes." });
       }
       const result = await pool.query("SELECT id, name, email, phone, password_salt, password_hash, password_enabled, created_at FROM customers WHERE email = $1", [email]);
       const user = result.rows[0];
       if (!user || user.password_enabled === false || !verifyPassword(password, user.password_salt, user.password_hash)) {
-        attempt.count += 1;
         return res.status(401).json({ error: "Incorrect email or password." });
       }
-      customerLoginAttempts.delete(ip);
+      await pool.query(
+        `UPDATE customer_login_limits SET attempts = GREATEST(0, attempts - 1)
+         WHERE (key = $1 AND expires = $2) OR (key = $3 AND expires = $4)`,
+        [ipKey, ipWindow, accountKey, accountWindow]);
       req.session.regenerate(error => {
         if (error) return next(error);
-        req.session.customer = { id: user.id };
+        req.session.customer = { issuedAt: Date.now(), id: user.id };
         req.session.save(saveError => {
           if (saveError) return next(saveError);
           res.json({ ok: true, user: publicCustomer(user) });
@@ -90,9 +105,14 @@ module.exports = function registerCustomers(app, { cleanText, pool, hashPassword
     } catch (error) { next(error); }
   });
 
+  app.post("/api/auth/activity", requireCustomer, (_req, res) => res.sendStatus(204));
+
   app.get("/api/auth/me", async (req, res, next) => {
     try {
-      if (!req.session?.customer?.id) return res.json({ authenticated: false, user: null });
+      res.set("Cache-Control", "no-store");
+      const remaining = await remainingSession(pool, req, "customer", false);
+      if (!remaining) return res.json({ authenticated: false, user: null });
+      res.set("X-Customer-Remaining-Ms", String(remaining));
       const result = await pool.query("SELECT id, name, email, phone, created_at FROM customers WHERE id = $1", [req.session.customer.id]);
       if (!result.rowCount) return res.json({ authenticated: false, user: null });
       res.json({ authenticated: true, user: publicCustomer(result.rows[0]) });
@@ -226,6 +246,7 @@ module.exports = function registerCustomers(app, { cleanText, pool, hashPassword
       if (!updated.rowCount) throw new Error("The customer account for this reset link no longer exists.");
       await client.query("UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = $1", [tokenHash]);
       await client.query("DELETE FROM password_reset_tokens WHERE customer_id = $1 AND token_hash <> $2", [customerId, tokenHash]);
+      await client.query("DELETE FROM user_sessions WHERE sess->'customer'->>'id' = $1", [customerId]);
       await client.query("COMMIT");
       res.json({ ok: true, message: "Password updated. You can now sign in." });
     } catch (error) {

@@ -1,6 +1,61 @@
 const $=s=>document.querySelector(s);const $$=s=>[...document.querySelectorAll(s)];let currentUser=null,allOrders=[],products=[],staff=[],showArchivedOrders=false;let toastTimer;
 const money=n=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(Number(n)||0);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const pretty=s=>String(s||'').replaceAll('_',' ');const date=s=>s?new Date(s).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}):'—';
-async function api(url,opts={}){const r=await fetch(url,{credentials:'same-origin',...opts,headers:{'Content-Type':'application/json',...(opts.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||`Request failed (${r.status})`);return d}
+let sessionTimer;
+let lastActivityRequest = 0;
+let sessionDeadline = 0;
+
+function lockAdmin() {
+  if (!currentUser) return;
+  currentUser = null;
+  clearTimeout(sessionTimer);
+  document.documentElement.style.visibility = 'hidden';
+  location.reload();
+}
+
+async function checkDeadline() {
+  if (!currentUser) return;
+  const overdue = Date.now() >= sessionDeadline;
+  if (overdue) document.documentElement.style.visibility = 'hidden';
+  try {
+    await api('/api/admin/me');
+    if (overdue && currentUser) document.documentElement.style.visibility = '';
+  } catch {
+    lockAdmin();
+  }
+}
+
+async function api(url, opts = {}) {
+  const r = await fetch(url, {
+    credentials: 'same-origin', ...opts,
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) }
+  });
+  if (r.status === 401 && currentUser) lockAdmin();
+  const remaining = Number(r.headers.get('X-Session-Remaining-Ms'));
+  if (remaining > 0) {
+    sessionDeadline = Date.now() + remaining;
+    clearTimeout(sessionTimer);
+    sessionTimer = setTimeout(checkDeadline, remaining + 20);
+  }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw Error(d.error || `Request failed (${r.status})`);
+  return d;
+}
+
+function recordAdminActivity(event) {
+  const now = Date.now();
+  if (!currentUser || !event.isTrusted || document.hidden || now - lastActivityRequest < 15000) return;
+  lastActivityRequest = now;
+  api('/api/admin/session/activity', { method: 'POST' }).catch(() => {
+    if (Date.now() >= sessionDeadline) lockAdmin();
+  });
+}
+for (const event of ['pointerdown', 'keydown', 'wheel', 'touchmove']) {
+  document.addEventListener(event, recordAdminActivity, { passive: true });
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkDeadline();
+});
+window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 function toast(msg,bad=false){const el=$('#toast');el.textContent=msg;el.style.background=bad?'var(--bad)':'var(--text)';el.style.color=bad?'#fff':'var(--bg)';el.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.add('hidden'),3200)}
 function has(p){return currentUser?.permissions?.includes(p)}
 function showApp(user){currentUser=user;queueMicrotask(admin20SyncPermissions);$('#loginScreen').classList.add('hidden');$('#app').classList.remove('hidden');$('#sideName').textContent=user.displayName||user.username;$('#sideRole').textContent=user.role;$('#avatar').textContent=(user.displayName||user.username||'AE').slice(0,2).toUpperCase();$('#staffNav').classList.toggle('hidden',!user.isOwner);$('#offersNav').classList.toggle('hidden',!user.isOwner);$('#imagesNav').classList.toggle('hidden',!user.isOwner);$('#settingsNav').classList.toggle('hidden',!user.isOwner);$('#footerNav').classList.toggle('hidden',!user.isOwner);$('#bannersNav').classList.toggle('hidden',!user.isOwner);$('#customersNav').classList.toggle('hidden',!has('customers.view'));$('#activityNav').classList.toggle('hidden',!has('audit.view'));$('#addProductTop').classList.toggle('hidden',!has('products.manage'));$('#inventoryNav').classList.toggle('hidden',!has('products.view'));$('#addInventory').classList.toggle('hidden',!has('products.manage'));$('#toggleArchivedOrders').classList.toggle('hidden',!user.isOwner);navigate('overview');refreshAll()}
@@ -12,7 +67,14 @@ function admin20SyncPermissions(){document.querySelectorAll('.admin20-quick [dat
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginButton').disabled=true;$('#loginError').textContent='';try{
   const {token}=await api('/api/admin/login-challenge',{method:'POST',headers:{'X-Admin-Login':'1'}});
   await api('/api/admin/login',{method:'POST',headers:{'X-Admin-Login-Token':token},body:JSON.stringify({username:$('#username').value,password:$('#password').value})});$('#password').value='';const me=await api('/api/admin/me');if(!me.authenticated)throw Error('Could not verify your session.');showApp(me)}catch(err){$('#loginError').textContent=err.message}finally{$('#loginButton').disabled=false}});
-$('#logout').addEventListener('click',async()=>{try{await api('/api/admin/logout',{method:'POST',body:'{}'})}catch{}currentUser=null;allOrders=[];$('#app').classList.add('hidden');$('#loginScreen').classList.remove('hidden');$('#password').value='';$('#username').focus()});
+$('#logout').addEventListener('click', async () => {
+  try {
+    await api('/api/admin/logout', { method: 'POST', body: '{}' });
+    lockAdmin();
+  } catch (error) {
+    toast(error.message, true);
+  }
+});
 $('#refresh').addEventListener('click',()=>refreshAll());$('#refreshCustomers').addEventListener('click',()=>loadCustomers());$('#customerSearch').addEventListener('input',renderCustomers);$('#addProductTop').addEventListener('click',()=>productModal());$('#addInventory').addEventListener('click',async()=>{if(!products.length)await loadProducts();inventoryModal()});$('#bulkInventory').addEventListener('click',async()=>{if(!products.length)await loadProducts();bulkInventoryModal()});$('#addBanner').addEventListener('click',()=>bannerModal());$('#inventorySearch').addEventListener('input',renderInventory);$('#inventoryStockFilter').addEventListener('change',renderInventory);$('#addStaff').addEventListener('click',()=>staffModal());$('#addOffer').addEventListener('click',()=>offerModal());$('#orderSearch').addEventListener('input',renderOrders);$('#orderFilter').addEventListener('change',renderOrders);
 const storedTheme=(()=>{try{return localStorage.getItem('mc-admin-theme')}catch{return null}})()||'dark';document.documentElement.dataset.theme=storedTheme;function themeButton(){const dark=document.documentElement.dataset.theme==='dark';$('#themeToggle').textContent=dark?'☀ Light mode':'☾ Dark mode'}themeButton();$('#themeToggle').addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;try{localStorage.setItem('mc-admin-theme',next)}catch{}themeButton();if(allOrders.length)renderOverview()});
 async function refreshAll(){try{if(has('orders.view')){const d=await api('/api/admin/orders');allOrders=d.orders||[];renderOrders();renderOverview()}else toast('Your role cannot view orders.',true);if(has('products.view')){await loadProducts();if(has('orders.view'))renderOverview()}}catch(e){toast(e.message,true)}}

@@ -227,9 +227,14 @@ module.exports = async function initDatabase(pool) {
     );
 
     ALTER TABLE user_sessions
+      ADD COLUMN IF NOT EXISTS last_activity TIMESTAMPTZ,
       ADD COLUMN IF NOT EXISTS admin_challenge_hash TEXT,
       ADD COLUMN IF NOT EXISTS admin_challenge_expires TIMESTAMPTZ;
 
+    CREATE TABLE IF NOT EXISTS customer_login_limits (
+      key TEXT PRIMARY KEY, attempts INTEGER NOT NULL, expires TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS customer_login_limits_expire_idx ON customer_login_limits (expires);
     CREATE INDEX IF NOT EXISTS user_sessions_expire_idx
       ON user_sessions (expire);
   `);

@@ -49,7 +49,7 @@ function productOfferLabel(p){
   return "";
 }
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),4000)}
-async function api(url,body,timeoutMs=25000,methodOverride=null){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),timeoutMs);try{const hasBody=body!==undefined&&body!==null;const r=await fetch(url,{method:methodOverride||(hasBody?"POST":"GET"),credentials:"same-origin",cache:"no-store",headers:hasBody?{"Content-Type":"application/json"}:{},body:hasBody?JSON.stringify(body):undefined,signal:controller.signal});const data=await r.json().catch(()=>({error:"Unexpected server response"}));if(!r.ok)throw new Error(data.error||"Request failed");return data}catch(error){if(error&&error.name==="AbortError")throw new Error("The store server is taking too long to respond. Please retry in a moment.");throw error}finally{clearTimeout(timeout)}}
+async function api(url,body,timeoutMs=25000,methodOverride=null){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),timeoutMs);try{const hasBody=body!==undefined&&body!==null;const r=await fetch(url,{method:methodOverride||(hasBody?"POST":"GET"),credentials:"same-origin",cache:"no-store",headers:hasBody?{"Content-Type":"application/json"}:{},body:hasBody?JSON.stringify(body):undefined,signal:controller.signal});observeCustomerSession(r);const data=await r.json().catch(()=>({error:"Unexpected server response"}));if(!r.ok)throw new Error(data.error||"Request failed");return data}catch(error){if(error&&error.name==="AbortError")throw new Error("The store server is taking too long to respond. Please retry in a moment.");throw error}finally{clearTimeout(timeout)}}
 // Panel links are one-time actions. Consume them before the catalogue request starts.
 function takeStorefrontPanel() {
   const url = new URL(location.href);
@@ -556,6 +556,48 @@ byId('settingsModal')?.addEventListener('click',event=>{
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{closeModal(b.dataset.close);if(b.dataset.close==='settingsModal')byId('menuBtn').setAttribute('aria-expanded','false')});
 document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{authMode=b.dataset.auth;document.querySelectorAll('[data-auth]').forEach(x=>x.classList.toggle('active',x===b));const signup=authMode==='signup',forgot=authMode==='forgot';byId('accountTitle').textContent=forgot?'Reset your password':signup?'Create your account':'Welcome back';byId('authName').hidden=!signup;byId('authNameLabel').hidden=!signup;byId('authName').required=signup;byId('authPhone').hidden=!signup;byId('authPhoneLabel').hidden=!signup;byId('authPhone').required=signup;byId('authPassword').hidden=forgot;byId('authPasswordLabel').hidden=forgot;byId('authPassword').required=!forgot;byId('authPassword').autocomplete=signup?'new-password':'current-password';byId('authSubmit').textContent=forgot?'SEND RESET LINK':signup?'CREATE ACCOUNT':'LOGIN';byId('authNote').textContent='This form needs matching server-side authentication routes; no password is stored in this browser.'});
 let currentCustomer=null;
+let customerExpiryTimer;
+let lastCustomerActivity = 0;
+
+function clearCustomerIdentity() {
+  clearTimeout(customerExpiryTimer);
+  currentCustomer = null;
+  safeRemove('aerlon_session_v1');
+  byId('recentOrdersList').textContent = '';
+  updateAuthUI();
+}
+
+async function checkCustomerExpiry() {
+  if (!currentCustomer) return;
+  try {
+    const session = await api('/api/auth/me');
+    if (!session.authenticated) clearCustomerIdentity();
+  } catch {
+    clearCustomerIdentity();
+  }
+}
+
+function observeCustomerSession(response) {
+  const remaining = Number(response.headers.get('X-Customer-Remaining-Ms'));
+  if (remaining > 0) {
+    clearTimeout(customerExpiryTimer);
+    customerExpiryTimer = setTimeout(checkCustomerExpiry, remaining + 20);
+  } else if (response.status === 401 && currentCustomer) {
+    clearCustomerIdentity();
+  }
+}
+
+function customerActivity(event) {
+  if (!currentCustomer || document.hidden || !event.isTrusted || Date.now() - lastCustomerActivity < 15000) return;
+  lastCustomerActivity = Date.now();
+  api('/api/auth/activity', {}).catch(() => {});
+}
+for (const event of ['pointerdown', 'keydown', 'wheel', 'touchmove']) {
+  document.addEventListener(event, customerActivity, { passive: true });
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkCustomerExpiry();
+});
 async function syncWishlistWithAccount(){
   if(!currentCustomer?.id)return;
   const localIds=[...new Set(safeRead(STORE.wish,[]).map(String))];
@@ -572,7 +614,7 @@ async function syncWishlistWithAccount(){
     renderWish();renderProducts();
   }catch(error){console.warn('Could not load account wishlist:',error.message)}
 }
-function updateAuthUI(){const session=currentCustomer||safeRead('aerlon_session_v1',null);byId('accountState').textContent=session?'Signed in as '+(session.email||session.phone||session.name||'customer')+'.':'Login or create an account to access your profile and order history.';byId('logoutBtn').hidden=!currentCustomer;byId('authForm').hidden=!!currentCustomer}
+function updateAuthUI(){const session=currentCustomer;byId('accountState').textContent=session?'Signed in as '+(session.email||session.phone||session.name||'customer')+'.':'Login or create an account to access your profile and order history.';byId('logoutBtn').hidden=!currentCustomer;byId('authForm').hidden=!!currentCustomer}
 async function refreshCustomerSession(){try{const r=await api('/api/auth/me');currentCustomer=r.authenticated?r.user:null;if(currentCustomer){safeWrite('aerlon_session_v1',currentCustomer);await syncWishlistWithAccount()}else safeRemove('aerlon_session_v1')}catch(e){currentCustomer=null}updateAuthUI()}
 const resetTokenFromUrl=new URLSearchParams(location.search).get('token')||'';
 if(resetTokenFromUrl){
@@ -594,7 +636,7 @@ byId('trackForm').addEventListener('submit',async e=>{e.preventDefault();const b
 byId('reviewForm').addEventListener('submit',async e=>{
   e.preventDefault();if(!selectedProduct)return;
   if(!byId('reviewRating').value){toast('Please select a star rating before submitting.');return}
-  const session=safeRead('aerlon_session_v1',null);
+  const session=currentCustomer;
   if(!session){toast('Please sign in to submit a review.');location.assign('/login.html');return}
   const submit=e.submitter||byId('reviewForm').querySelector('button[type="submit"]');
   if(submit){submit.disabled=true;submit.textContent='SUBMITTING…'}

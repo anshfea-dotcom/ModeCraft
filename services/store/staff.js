@@ -132,7 +132,7 @@ module.exports = function registerStaff(app, { pool, cleanText, safeEqual, getSt
       req.session.regenerate(error => {
         if (error) return next(error);
 
-        req.session.admin = account;
+        req.session.admin = { ...account, issuedAt: Date.now() };
 
         req.session.save(async saveError => {
           if (saveError) return next(saveError);
@@ -153,6 +153,8 @@ module.exports = function registerStaff(app, { pool, cleanText, safeEqual, getSt
       next(error);
     }
   });
+
+  app.post("/api/admin/session/activity", requireAdmin, (_req, res) => res.sendStatus(204));
 
   app.get("/api/admin/me", requireAdmin, (req, res) => {
     const user = req.adminSession;

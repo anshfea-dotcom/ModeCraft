@@ -1,3 +1,4 @@
+const { remainingSession } = require("./session-policy");
 const crypto = require("node:crypto");
 
 module.exports = function createAccessControls({ getStaff, pool }) {
@@ -82,6 +83,14 @@ module.exports = function createAccessControls({ getStaff, pool }) {
     next();
   }
   function requireAdmin(req, res, next) {
+    res.set("Cache-Control", "no-store");
+    remainingSession(pool, req, "admin", req.path !== "/api/admin/me").then(remaining => {
+      if (!remaining) return res.status(401).json({ error: "Your session has ended. Please sign in again." });
+      res.set("X-Session-Remaining-Ms", String(remaining));
+      verifyAdmin(req, res, next);
+    }).catch(next);
+  }
+  function verifyAdmin(req, res, next) {
     if (!req.session || !req.session.admin) {
       return res.status(401).json({ error: "Please sign in again." });
     }

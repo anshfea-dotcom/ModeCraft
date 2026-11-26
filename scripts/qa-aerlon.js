@@ -107,5 +107,30 @@ check('Bag and menu links run once across refresh and history traversal', () => 
     }
   }
 });
-console.log(passed + '/7 AERLON build checks passed.');
-if (process.exitCode) process.exit(process.exitCode);
+async function checkAdminExpiry() {
+  const source = fs.readFileSync('services/store/session-policy.js', 'utf8');
+  const clock = { now: () => now };
+  const module = { exports: {} };
+  vm.runInNewContext(source, { module, Date: clock });
+  const issuedAt = 1_000_000;
+  let now = issuedAt;
+  for (const elapsed of [0, 60_000, 240_000, 299_999, 300_000, 301_000]) {
+    now = issuedAt + elapsed;
+    for (const role of ['owner', 'staff']) {
+      for (const active of [false, true]) {
+        const req = { session: { admin: { role, issuedAt } } };
+        const left = await module.exports.remainingSession(null, req, 'admin', active);
+        assert.equal(left, Math.max(0, 300_000 - elapsed));
+      }
+    }
+  }
+  assert.equal(await module.exports.remainingSession(null, {session: {admin: {}}}, 'admin', true), 0);
+}
+checkAdminExpiry().then(() => {
+  passed++;
+  console.log('PASS ' + passed + ': Admin deadline survives refresh and activity and expires at five minutes');
+  console.log(passed + '/8 AERLON build checks passed.');
+}).catch(error => {
+  console.error('FAIL: fixed admin session deadline', error);
+  process.exitCode = 1;
+});

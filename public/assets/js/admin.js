@@ -1,7 +1,6 @@
 const $=s=>document.querySelector(s);const $$=s=>[...document.querySelectorAll(s)];let currentUser=null,allOrders=[],products=[],staff=[],showArchivedOrders=false;let toastTimer;
 const money=n=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(Number(n)||0);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const pretty=s=>String(s||'').replaceAll('_',' ');const date=s=>s?new Date(s).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}):'—';
 let sessionTimer;
-let lastActivityRequest = 0;
 let sessionDeadline = 0;
 
 function lockAdmin() {
@@ -14,17 +13,16 @@ function lockAdmin() {
 
 async function checkDeadline() {
   if (!currentUser) return;
-  const overdue = Date.now() >= sessionDeadline;
-  if (overdue) document.documentElement.style.visibility = 'hidden';
+  if (Date.now() >= sessionDeadline) return lockAdmin();
   try {
     await api('/api/admin/me');
-    if (overdue && currentUser) document.documentElement.style.visibility = '';
   } catch {
     lockAdmin();
   }
 }
 
 async function api(url, opts = {}) {
+  const started = Date.now();
   const r = await fetch(url, {
     credentials: 'same-origin', ...opts,
     headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) }
@@ -32,33 +30,23 @@ async function api(url, opts = {}) {
   if (r.status === 401 && currentUser) lockAdmin();
   const remaining = Number(r.headers.get('X-Session-Remaining-Ms'));
   if (remaining > 0) {
-    sessionDeadline = Date.now() + remaining;
+    const deadline = started + remaining;
+    sessionDeadline = sessionDeadline ? Math.min(sessionDeadline, deadline) : deadline;
     clearTimeout(sessionTimer);
-    sessionTimer = setTimeout(checkDeadline, remaining + 20);
+    sessionTimer = setTimeout(lockAdmin, Math.max(0, sessionDeadline - Date.now()));
   }
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw Error(d.error || `Request failed (${r.status})`);
   return d;
 }
 
-function recordAdminActivity(event) {
-  const now = Date.now();
-  if (!currentUser || !event.isTrusted || document.hidden || now - lastActivityRequest < 15000) return;
-  lastActivityRequest = now;
-  api('/api/admin/session/activity', { method: 'POST' }).catch(() => {
-    if (Date.now() >= sessionDeadline) lockAdmin();
-  });
-}
-for (const event of ['pointerdown', 'keydown', 'wheel', 'touchmove']) {
-  document.addEventListener(event, recordAdminActivity, { passive: true });
-}
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) checkDeadline();
 });
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 function toast(msg,bad=false){const el=$('#toast');el.textContent=msg;el.style.background=bad?'var(--bad)':'var(--text)';el.style.color=bad?'#fff':'var(--bg)';el.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.add('hidden'),3200)}
 function has(p){return currentUser?.permissions?.includes(p)}
-function showApp(user){currentUser=user;queueMicrotask(admin20SyncPermissions);$('#loginScreen').classList.add('hidden');$('#app').classList.remove('hidden');$('#sideName').textContent=user.displayName||user.username;$('#sideRole').textContent=user.role;$('#avatar').textContent=(user.displayName||user.username||'AE').slice(0,2).toUpperCase();$('#staffNav').classList.toggle('hidden',!user.isOwner);$('#offersNav').classList.toggle('hidden',!user.isOwner);$('#imagesNav').classList.toggle('hidden',!user.isOwner);$('#settingsNav').classList.toggle('hidden',!user.isOwner);$('#footerNav').classList.toggle('hidden',!user.isOwner);$('#bannersNav').classList.toggle('hidden',!user.isOwner);$('#customersNav').classList.toggle('hidden',!has('customers.view'));$('#activityNav').classList.toggle('hidden',!has('audit.view'));$('#addProductTop').classList.toggle('hidden',!has('products.manage'));$('#inventoryNav').classList.toggle('hidden',!has('products.view'));$('#addInventory').classList.toggle('hidden',!has('products.manage'));$('#toggleArchivedOrders').classList.toggle('hidden',!user.isOwner);navigate('overview');refreshAll()}
+function showApp(user){if(Date.now() >= sessionDeadline)return;currentUser=user;queueMicrotask(admin20SyncPermissions);$('#loginScreen').classList.add('hidden');$('#app').classList.remove('hidden');$('#sideName').textContent=user.displayName||user.username;$('#sideRole').textContent=user.role;$('#avatar').textContent=(user.displayName||user.username||'AE').slice(0,2).toUpperCase();$('#staffNav').classList.toggle('hidden',!user.isOwner);$('#offersNav').classList.toggle('hidden',!user.isOwner);$('#imagesNav').classList.toggle('hidden',!user.isOwner);$('#settingsNav').classList.toggle('hidden',!user.isOwner);$('#footerNav').classList.toggle('hidden',!user.isOwner);$('#bannersNav').classList.toggle('hidden',!user.isOwner);$('#customersNav').classList.toggle('hidden',!has('customers.view'));$('#activityNav').classList.toggle('hidden',!has('audit.view'));$('#addProductTop').classList.toggle('hidden',!has('products.manage'));$('#inventoryNav').classList.toggle('hidden',!has('products.view'));$('#addInventory').classList.toggle('hidden',!has('products.manage'));$('#toggleArchivedOrders').classList.toggle('hidden',!user.isOwner);navigate('overview');refreshAll()}
 const pageInfo={images:['STOREFRONT','Homepage images','Manage the three slideshow photos and four collection covers.'],overview:['STORE OVERVIEW','Store overview','Orders, revenue and fulfilment at a glance.'],orders:['ORDER MANAGEMENT','Orders','Manage fulfilment, payments and cancellations.'],customers:['CUSTOMER MANAGEMENT','Customers','Owner-only customer profiles and order history.'],products:['CATALOGUE','Products','Manage product details, stock and availability.'],inventory:['INVENTORY CONTROL','Inventory & Stock','Track quantities by product, colour and size.'],banners:['STOREFRONT MARKETING','Sales Banners','Manage promotional banners shown on your storefront.'],staff:['TEAM ACCESS','Team access','Control who can access your store operations.'],activity:['SECURITY','Activity log','Review recent changes and admin actions.'],offers:['OWNER CONTROLS','Offers & codes','Create and manage checkout discounts.'],settings:['STOREFRONT','Store Header','Customize the live storefront announcement and brand identity.'],footer:['STOREFRONT','Footer Management','Manage footer links, social profiles, newsletter and brand details.']};function navigate(name){if((name==='images'&&!currentUser?.isOwner)||(name==='footer'&&!currentUser?.isOwner)||(name==='settings'&&!currentUser?.isOwner)||(name==='banners'&&!currentUser?.isOwner)||(name==='staff'&&!currentUser?.isOwner)||(name==='offers'&&!currentUser?.isOwner)||(name==='customers'&&!has('customers.view'))||(name==='activity'&&!has('audit.view'))||(name==='inventory'&&!has('products.view')))return;document.querySelector('#workspaceMenu').setAttribute('aria-expanded','false');$$('.section').forEach(e=>e.classList.toggle('active',e.id==='section-'+name));document.querySelectorAll('#nav button').forEach(e=>e.classList.toggle('active',e.dataset.section===name));document.querySelectorAll('#admin20Bottom button').forEach(e=>e.classList.toggle('active',e.dataset.goto===name));$('#pageEyebrow').textContent=pageInfo[name][0];$('#pageTitle').textContent=pageInfo[name][1];$('#pageSubtitle').textContent=pageInfo[name][2];$('#addProductTop').classList.toggle('hidden',name!=='products'||!has('products.manage'));if(name==='products')loadProducts();if(name==='inventory')loadInventory();if(name==='banners')loadBanners();if(name==='customers')loadCustomers();if(name==='staff')loadStaff();if(name==='offers')loadOffers();if(name==='activity')loadAudit();if(name==='settings')loadHeaderSettings();if(name==='footer'){loadFooterSettings();loadFooterSubscribers()}}
 $('#workspaceMenu').onclick=e=>e.currentTarget.setAttribute('aria-expanded',String(e.currentTarget.getAttribute('aria-expanded')!=='true'));
 $('#nav').addEventListener('click',e=>{const b=e.target.closest('button[data-section]');if(b)navigate(b.dataset.section)});document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.goto)));

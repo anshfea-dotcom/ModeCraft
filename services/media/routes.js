@@ -1,12 +1,31 @@
 'use strict';
 
 const express = require('express');
-const defaults = new Map([
-  ['slide-1', 'men'], ['slide-2', 'women'], ['slide-3', 'jackets'],
-  ['men', 'men'], ['women', 'women'], ['jackets', 'jackets'], ['sneakers', 'sneakers']
-]);
+const path = require('node:path');
+const managedService = require('../managed-service');
+const { defaults, readImage } = require('./images');
 
 module.exports = function registerImages(app, pool, requireAdmin, requireOwner, audit) {
+  const media = managedService(path.join(__dirname, 'server.js'), process.env.MEDIA_SERVICE_URL);
+
+  async function loadImage(slot) {
+    if (media.endpoint) {
+      try {
+        const response = await fetch(new URL('/storefront-images/' + slot, media.endpoint), {
+          signal: AbortSignal.timeout(3000), redirect: 'error'
+        });
+        if (response.status === 204) return null;
+        if (response.status === 200 && response.headers.get('content-type') === 'image/webp') {
+          return Buffer.from(await response.arrayBuffer());
+        }
+        await response.body?.cancel();
+      } catch (error) {
+        console.warn('Media service unavailable:', error.message);
+      }
+    }
+    return readImage(pool, slot);
+  }
+
   const adminPath = '/api/admin/storefront/images/:slot';
   function slot(req, res, next) {
     if (!defaults.has(req.params.slot)) return res.sendStatus(404);
@@ -16,10 +35,8 @@ module.exports = function registerImages(app, pool, requireAdmin, requireOwner, 
   app.get('/storefront-images/:slot', slot, async (req, res) => {
     res.set('Cache-Control', 'no-cache');
     try {
-      const saved = await pool.query('SELECT data FROM store_settings WHERE key = $1', [key(req)]);
-      if (saved.rows[0]?.data?.image) {
-        return res.type('image/webp').send(Buffer.from(saved.rows[0].data.image, 'base64'));
-      }
+      const image = await loadImage(req.params.slot);
+      if (image) return res.type('image/webp').send(image);
     } catch (error) {
       console.error('Could not load storefront image:', error.message);
     }
@@ -45,4 +62,5 @@ module.exports = function registerImages(app, pool, requireAdmin, requireOwner, 
       res.json({ok:true});
     } catch (error) { next(error); }
   });
+  return media;
 };

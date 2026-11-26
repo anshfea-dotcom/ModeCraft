@@ -3,10 +3,11 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 
-const home = fs.readFileSync('public/index.html', 'utf8');
+const html = fs.readFileSync('public/index.html', 'utf8');
+const home = [html, ...['css', 'js'].map(ext => fs.readFileSync('public/assets/' + ext + '/storefront.' + ext, 'utf8'))].join('\n');
 const care = fs.readFileSync('public/customer-care.html', 'utf8');
 const returns = fs.readFileSync('public/return-refund-policy.html', 'utf8');
-const server = fs.readFileSync('server.js', 'utf8');
+const server = ['storefront', 'customers'].map(name => fs.readFileSync('services/store/' + name + '.js', 'utf8')).join('\n');
 let passed = 0;
 function check(name, fn) {
   try { fn(); passed++; console.log('PASS ' + passed + ': ' + name); }
@@ -17,7 +18,7 @@ function includesAll(content, values) {
 }
 
 check('Mobile header, search and account/cart controls', () => {
-  const header = fs.readFileSync('public/store-header.js', 'utf8');
+  const header = fs.readFileSync('public/assets/js/store-header.js', 'utf8');
   new vm.Script(header);
   includesAll(header, ['site-wordmark','id="menuBtn"','id="mobileSearchBtn"','id="bagBtn"']);
   includesAll(home, ['data-storefront src="/store-header.js"','mobile-promo','@media(max-width:720px)']);
@@ -38,20 +39,26 @@ check('Customer care, policy window, privacy and official WhatsApp are consisten
   includesAll(returns, ['+91 96486 29929', 'https://wa.me/919648629929', '3 days after delivery', 'subject to confirmation']);
   includesAll(home, ['/customer-care.html', '/return-refund-policy.html', '3-day request']);
 });
-check('Storefront inline JavaScript parses correctly', () => {
-  const inlineScripts = [...home.matchAll(/<script>([\s\S]*?)<\/script>/gi)].map(match => match[1]).filter(source => source.trim());
-  assert.ok(inlineScripts.length, 'Storefront inline JavaScript was not found');
-  inlineScripts.forEach((source, index) => new vm.Script(source, { filename: 'public/index.html (inline script ' + (index + 1) + ')' }));
+check('Page JavaScript and linked storefront assets load from their assigned directories', () => {
+  for (const file of fs.readdirSync('public/assets/js')) {
+    const path = 'public/assets/js/' + file;
+    new vm.Script(fs.readFileSync(path, 'utf8'), { filename: path });
+  }
+  includesAll(html, ['href="/assets/css/storefront.css"', 'src="/assets/js/storefront.js"']);
   assert.ok(home.includes('src="/aerlon-concierge.js"'), 'Concierge script is not loaded');
-  const concierge = fs.readFileSync('public/aerlon-concierge.js', 'utf8');
-  try { new vm.Script(concierge, { filename: 'public/aerlon-concierge.js' }); } catch (error) { throw new Error('Concierge script: ' + error.stack); }
+  const concierge = fs.readFileSync('public/assets/js/aerlon-concierge.js', 'utf8');
+  try { new vm.Script(concierge, { filename: 'public/assets/js/aerlon-concierge.js' }); } catch (error) { throw new Error('Concierge script: ' + error.stack); }
   includesAll(concierge, ['Contact Customer Agent', 'wa.me/919648629929', 'ac-quick', 'ac-typing', 'Step-by-Step Guide', '/api/orders/track']);
 });
 check('AERLON account V2 responsive pages and reset lifecycle', () => {
-  const pages = ['login', 'signup', 'reset-password'].map(name => fs.readFileSync('public/' + name + '.html', 'utf8'));
-  const authCSS = fs.readFileSync('public/account-pages.css', 'utf8');
-  const authJS = fs.readFileSync('public/account-pages.js', 'utf8');
-  new vm.Script(authJS, { filename: 'public/account-pages.js' });
+  const pages = [];
+  require('../services/store/account-pages')({ get(url, handler) {
+    handler({}, { type() { return this; }, send(html) { pages.push(html); } });
+  } });
+  assert.equal(pages.length, 3);
+  const authCSS = fs.readFileSync('public/assets/css/account-pages.css', 'utf8');
+  const authJS = fs.readFileSync('public/assets/js/account-pages.js', 'utf8');
+  new vm.Script(authJS, { filename: 'public/assets/js/account-pages.js' });
   pages.forEach((page, index) => {
     includesAll(page, ['href="/account-pages.css"', 'src="/account-pages.js"', 'id="loginForm"', 'id="signupForm"', 'id="requestResetForm"', 'id="newPasswordForm"', 'name="referrer" content="no-referrer"']);
     assert.ok(!page.includes('Contact support'), 'Contact support callout should not appear in account designs ' + index);

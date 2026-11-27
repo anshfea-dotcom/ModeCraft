@@ -16,3 +16,44 @@
 #deliveryFields .delivery-grid {margin-bottom:12px}
 #checkout .checkout-order-summary {position:static}
 @media(max-width:780px){#checkout[data-step="3"] .checkout-layout{display:block}#checkout .checkout-action .btn{flex:1;min-width:0}#checkout .checkout-action{padding-bottom:env(safe-area-inset-bottom)}}
+
+/* Compact checkout: isolated presentation layer, preserving order logic. */
+#checkout .checkout-box {width:min(1040px,100%);padding:clamp(16px,3vw,32px);background:#f8f6f2;color:#22211e;border-radius:18px;scroll-padding-block:16px 90px}
+#checkout .checkout-head {margin:0;padding-bottom:18px;border-bottom:1px solid #e4ded4}
+#checkout .checkout-head h2 {font-size:clamp(25px,3vw,34px);letter-spacing:-.04em;margin:4px 0}
+#checkout .checkout-kicker {color:#76654d;font-size:10px;letter-spacing:.16em}
+#checkout .checkout-steps {margin:18px 0 24px;gap:12px}
+#checkout .checkout-steps li {border-top:0;border-bottom:2px solid #ded8ce;padding:10px 0 12px;font-size:13px}
+#checkout .checkout-steps li::before {display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#eae5dc;margin-right:7px}
+#checkout .checkout-steps li[aria-current] {border-color:#25231f}
+#checkout .checkout-steps li[aria-current]::before {background:#25231f;color:#fff}
+#checkout .checkout-layout,#checkout[data-step="3"] .checkout-layout {display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:20px;align-items:start}
+#checkout .checkout-main {min-width:0;background:#fff;border:1px solid #e4ded4;border-radius:14px;padding:20px}
+#checkout #deliveryFields {min-width:0;border:0;padding:0;margin:0}
+#checkout #deliveryFields legend,#checkout #paymentStep h3,#checkout #reviewStep h3 {font-size:17px;font-weight:650;letter-spacing:-.02em;margin-bottom:16px}
+#checkout .delivery-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#checkout .delivery-grid label {min-width:0;font-size:12px;font-weight:600;color:#514b42}
+#checkout .delivery-grid input,#checkout .delivery-grid select,#checkout #couponInput {box-sizing:border-box;width:100%;min-width:0;min-height:44px;border:1px solid #ded8ce;border-radius:8px;background:#fff;color:#22211e;padding:10px 12px;font-size:14px}
+#checkout input:focus-visible,#checkout select:focus-visible,#checkout button:focus-visible {outline:2px solid #8c7048;outline-offset:2px}
+#checkout .location-row {padding:10px;background:#f7f4ee;border:1px solid #e7dfd2;border-radius:10px}
+#checkout #locateAddress {min-height:44px;border:1px solid #cfc2ad;border-radius:8px;background:#fff;color:#40382b;padding:8px 12px}
+#checkout .checkout-order-summary {min-width:0;background:#fff;border:1px solid #e4ded4;border-radius:14px;padding:20px;position:static}
+#checkout .checkout-order-summary[hidden] {display:block!important}
+#checkout .checkout-order-summary h3 {font-size:19px;margin:5px 0 12px}
+#checkout .checkout-final-total {border-top:1px solid #ded8ce;padding-top:14px;font-size:18px}
+#checkout .checkout-trust {background:#f7f4ee;border-radius:10px;padding:12px}
+#checkout .checkout-action {background:#f8f6f2;border-color:#e4ded4;justify-content:flex-end}
+#checkout .checkout-action .btn {background:#24221f;color:#fff;border:0;border-radius:9px;min-height:48px}
+#checkout .payment-method,#checkout .compact-panel {border:1px solid #ded8ce;border-radius:10px;padding:14px}
+#checkout .payment-method.active {border-color:#8c7048;background:#faf7f1}
+#checkout [hidden]:not(.checkout-order-summary) {display:none!important}
+@media(max-width:780px){
+#checkout .checkout-box {width:100%;border-radius:14px;padding:16px}
+#checkout .checkout-layout,#checkout[data-step="3"] .checkout-layout {display:block}
+#checkout .checkout-main,#checkout .checkout-order-summary {padding:15px}
+#checkout .checkout-order-summary {margin-top:14px}
+#checkout .checkout-order-summary[hidden] {display:none!important}
+#checkout .checkout-action .btn {flex:1;min-width:0}
+#checkout .checkout-action {padding-bottom:env(safe-area-inset-bottom)}
+}
+@media(max-width:420px){#checkout .delivery-grid {grid-template-columns:minmax(0,1fr)}#checkout .checkout-steps li {font-size:12px}#checkout .checkout-steps li::before {width:20px;height:20px;margin-right:4px}}

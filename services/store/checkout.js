@@ -321,11 +321,9 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
           throw reject(409, "The bag total has changed. Refresh your bag and review the new total.");
         const id = "MC-" + crypto.randomBytes(10).toString("hex").toUpperCase();
         const online = method === "Razorpay";
-        if (!online) {
-          client = await pool.connect();
-          await client.query("BEGIN");
-        }
-        const claim = await (client || pool).query("INSERT INTO checkout_attempts(id,fingerprint,order_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [attemptId,fingerprint,id]);
+        client = await pool.connect();
+        await client.query("BEGIN");
+        const claim = await client.query("INSERT INTO checkout_attempts(id,fingerprint,order_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [attemptId,fingerprint,id]);
         if (!claim.rowCount) { if (client) { await client.query("ROLLBACK"); client.release(); client = null; } await replay(); return; }
         const order = { ...data, id, paymentMethod: method, paymentStatus: online ? "created" : "pending",
           orderStatus: online ? "awaiting_payment" : "received", createdAt: new Date().toISOString(), statusHistory: [] };
@@ -333,7 +331,6 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
           const result = await gateway().orders.create({ amount: Math.round(order.total * 100), currency: order.currency, receipt: id });
           order.razorpayOrderId = result.id;
         }
-        if (!client) { client = await pool.connect(); await client.query("BEGIN"); }
         await ensureCustomerRecord(order.customer, client);
         await client.query("INSERT INTO orders(id,data) VALUES($1,$2::jsonb)", [id, JSON.stringify(order)]);
         if (!online && order.couponCode) await client.query("UPDATE offers SET data=jsonb_set(data,'{usageCount}',to_jsonb(COALESCE((data->>'usageCount')::int,0)+1)) WHERE code=$1", [order.couponCode]);

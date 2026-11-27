@@ -23,73 +23,117 @@ function endCheckoutAttempt() {
   const form = field('orderForm');
   const review = field('addressReview');
   const delivery = field('deliveryFields');
-  const action = document.querySelector('#checkout .checkout-action');
-  const wide = matchMedia('(min-width: 781px)');
-  function positionAction() {
-    const parent = document.querySelector(wide.matches ? '.checkout-order-summary' : '.checkout-box');
-    parent.append(action);
-  }
-  wide.addEventListener('change', positionAction);
-  positionAction();
+  const box = document.querySelector('.checkout-box');
+  const dialog = field('checkout');
+  const steps = Array.from(dialog.querySelectorAll('.checkout-steps li'));
+  const sections = [delivery, field('paymentStep'), field('reviewStep')];
+  let step = 0;
   let revision = 0;
-  let confirmed = false;
+  let lookupId = 0;
   let lastPin = '';
-  function invalidate() {
-    revision++;
-    confirmed = false;
-    review.textContent = '';
-  }
-  delivery.addEventListener('input', invalidate);
-  form.addEventListener('reset', () => { invalidate(); lastPin = ''; message.textContent = ''; button.disabled = false; });
-  field('saveAddress').onclick = () => {
-    for (const input of delivery.querySelectorAll('input,select')) if (!input.reportValidity()) return;
-    review.textContent = ['name', 'house', 'address', 'landmark', 'city', 'state', 'pin', 'phone'].map(id => field(id).value.trim()).filter(Boolean).join(' · ');
-    confirmed = true;
-    review.focus();
-  };
-  form.addEventListener('submit', e => {
-    if (confirmed) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    message.textContent = 'Review your delivery details and select Save & Continue.';
-    field('saveAddress').focus();
-  }, true);
+  let retryGps = false;
 
-  field('pin').addEventListener('blur', async () => {
+  function showStep(next, focus = true) {
+    step = next;
+    revision++;
+    lookupId++;
+    button.disabled = false;
+    sections.forEach((section, i) => { section.hidden = i !== step; });
+    steps.forEach((item, i) => {
+      if (i === step) item.setAttribute('aria-current', 'step');
+      else item.removeAttribute('aria-current');
+      item.classList.toggle('complete', i < step);
+    });
+    dialog.dataset.step = String(step + 1);
+    dialog.querySelector('.checkout-order-summary').hidden = step !== 2;
+    field('checkoutBack').hidden = step === 0;
+    field('checkoutNext').hidden = step === 2;
+    field('placeOrder').hidden = step !== 2;
+    field('checkoutNext').textContent = step === 0 ? 'Continue to payment' : 'Review order';
+    if (step === 2) {
+      review.textContent = ['name','house','address','landmark','city','state','pin','phone','email'].map(id => field(id).value.trim()).filter(Boolean).join(' · ');
+      field('paymentReview').textContent = field('payment').selectedOptions[0].textContent;
+    }
+    box.scrollTop = 0;
+    if (focus) {
+      const heading = sections[step].querySelector('legend,h3');
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+  }
+  function advance() {
+    if (step === 0) {
+      for (const input of delivery.querySelectorAll('input,select')) if (!input.reportValidity()) return;
+    }
+    if (step < 2) showStep(step + 1);
+  }
+  field('checkoutNext').onclick = advance;
+  field('checkoutBack').onclick = () => showStep(Math.max(0, step - 1));
+  field('enterPin').onclick = () => {
+    revision++;
+    message.textContent = 'Enter six digits to fill your city and state.';
+    field('pin').focus();
+  };
+  form.addEventListener('submit', event => {
+    if (step === 2) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    advance();
+  }, true);
+  function resetFlow() {
+    retryGps = false;
+    button.textContent = 'Use my current location';
+    message.textContent = '';
+    lastPin = '';
+    showStep(0, false);
+  }
+  form.addEventListener('reset', resetFlow);
+  new MutationObserver(() => { if (!dialog.classList.contains('show')) resetFlow(); }).observe(dialog, {attributes:true, attributeFilter:['class']});
+  showStep(0, false);
+
+  delivery.addEventListener('input', () => { revision++; });
+  field('pin').addEventListener('input', async () => {
     const pin = field('pin').value;
-    if (!/^[1-9]\d{5}$/.test(pin) || pin === lastPin) return;
-    const current = revision;
+    const id = ++lookupId;
+    if (pin !== lastPin) lastPin = '';
+    if (!/^[1-9]\d{5}$/.test(pin) || lastPin === pin) return;
+    const previous = ['city','state'].map(key => field(key).value);
     try {
       const area = await api('/api/checkout/address/pin', { pin }, 7000);
-      if (current !== revision) return;
+      if (id !== lookupId || field('pin').value !== pin) return;
       lastPin = pin;
-      for (const id of ['city','state']) if (area[id]) field(id).value = area[id];
-      confirmed = false;
+      ['city','state'].forEach((key,i) => {
+        if (area[key] && field(key).value === previous[i]) field(key).value = area[key];
+      });
       message.textContent = 'Review the city and state for this PIN.';
-    } catch (e) { if (current === revision) message.textContent = e.message; }
+    } catch (e) { if (id === lookupId) message.textContent = e.message; }
   });
   button.onclick = async () => {
-    if (!navigator.geolocation) { message.textContent = 'Location is unavailable in this browser. Enter your address manually.'; return; }
+    if (!navigator.geolocation) { message.textContent = 'Choose Enter PIN instead to fill your city and state.'; return; }
     button.disabled = true;
-    message.textContent = 'Finding your delivery area…';
-    let detected = false;
-    const current = revision;
+    const current = ++revision;
+    lookupId++;
+    message.textContent = 'Finding your location… You can enter your PIN at any time.';
     try {
-      const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 8000, maximumAge: 60000 }));
+      const position = await new Promise((resolve,reject) => navigator.geolocation.getCurrentPosition(resolve,reject,{
+        enableHighAccuracy: retryGps, timeout: retryGps ? 35000 : 20000, maximumAge: retryGps ? 0 : 120000
+      }));
       if (current !== revision) return;
-      if (position.coords.accuracy > 1000) throw new Error('Location is too approximate. Enter your address manually.');
-      const result = await api('/api/checkout/address/location', { lat: position.coords.latitude, lon: position.coords.longitude }, 11000);
+      if (position.coords.accuracy > 1000) throw new Error('Location is approximate. Retry or enter your PIN.');
+      const result = await api('/api/checkout/address/location', {lat:position.coords.latitude,lon:position.coords.longitude}, 11000);
       if (current !== revision) return;
-      for (const id of ['pin','city','state','address']) if (result[id]) field(id).value = result[id];
+      for (const key of ['pin','city','state','address']) if (result[key]) field(key).value = result[key];
       lastPin = result.city && result.state ? result.pin : '';
-      invalidate();
-      detected = true;
-      message.textContent = 'Review the detected details and complete any missing fields.';
-      return;
-    } catch (e) {
-      const errors = { 1: 'Location permission was declined.', 2: 'GPS is unavailable.', 3: 'Location request timed out.' };
-      if (current === revision) message.textContent = errors[e.code] ? errors[e.code] + ' Enter your address manually.' : e.message;
-    } finally { button.disabled = detected; }
+      message.textContent = 'Area found. Review the details and enter your building and street.';
+      button.textContent = 'Update location';
+      retryGps = false;
+    } catch (error) {
+      if (current !== revision) return;
+      retryGps = true;
+      button.textContent = 'Retry location';
+      const reason = {1:'Location permission is off.',2:'Your phone could not find its location.',3:'Your phone needs more time to find its location.'};
+      message.textContent = reason[error.code] ? reason[error.code] + ' Retry or enter your PIN.' : error.message;
+    } finally { button.disabled = false; }
   };
   field('removeCoupon').onclick = () => clearAppliedCoupon('Coupon removed.');
 })();

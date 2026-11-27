@@ -10,7 +10,7 @@ module.exports = function registerStorefront(app, { cleanText, pool, requireAdmi
     showBrand: true,
     showTagline: true,
     showIntro: true,
-    socials: { instagram: "", facebook: "", youtube: "" },
+    socials: { instagram: "", facebook: "", youtube: "", pinterest: "", x: "", whatsapp: "https://wa.me/919648629929" },
     columns: [
       { id: "shop", title: "SHOP", links: [
         { label: "All Collections", url: "#shop" }, { label: "Men", url: "#men" }, { label: "Women", url: "#women" }, { label: "Jackets", url: "#jackets" }, { label: "Sneakers", url: "#sneakers" }
@@ -52,7 +52,7 @@ module.exports = function registerStorefront(app, { cleanText, pool, requireAdmi
     const source = input && typeof input === "object" ? input : {};
     const socialsInput = source.socials && typeof source.socials === "object" ? source.socials : {};
     const socials = {};
-    for (const key of ["instagram", "facebook", "youtube"]) {
+    for (const key of ["instagram", "facebook", "youtube", "pinterest", "x", "whatsapp"]) {
       const raw = cleanText(socialsInput[key], 1200);
       socials[key] = raw ? cleanFooterUrl(raw, `${key} social link`) : "";
       if (socials[key] && !/^https:\/\//i.test(socials[key])) throw Object.assign(new Error(`${key} social link must use HTTPS.`), { status: 400 });
@@ -130,6 +130,7 @@ module.exports = function registerStorefront(app, { cleanText, pool, requireAdmi
       tagline: legacyHeader.tagline || DEFAULT_FOOTER_SETTINGS.tagline,
       logoUrl: legacyHeader.logoUrl || "",
       ...savedFooter,
+      socials: { ...DEFAULT_FOOTER_SETTINGS.socials, ...savedFooter.socials },
       columns
     });
   }

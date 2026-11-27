@@ -1,7 +1,17 @@
 const crypto = require("node:crypto");
 const Razorpay = require("razorpay");
 
-module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin, requireOwner, audit, getProducts, ensureCustomerRecord, putOrder, safeEqual }) {
+const { confirmCapturedPayment } = require("./payment");
+const { rateLimit } = require("express-rate-limit");
+const { addressRoutes, postalAreas, pinPattern } = require("./address");
+const reject = (status, message) => Object.assign(new Error(message), { status });
+
+module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin, requireOwner, audit, getProducts, ensureCustomerRecord, safeEqual }) {
+  addressRoutes(app);
+  app.use(["/api/orders/cod", "/api/payments/razorpay", "/api/coupons/validate"], rateLimit({
+    windowMs: 60000, limit: 24, message: { error: "Too many checkout requests. Please wait a minute." }
+  }));
+
   async function getOffers() {
     const result = await pool.query("SELECT data FROM offers ORDER BY created_at DESC");
     return result.rows.map(row => row.data);
@@ -91,31 +101,45 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
     } catch (error) { next(error); }
   });
 
-  async function buildOrder(body = {}) {
-    const customer = body.customer || {};
+  async function validateAddress(customer = {}) {
 
     const name = cleanText(customer.name, 100);
     const email = cleanText(customer.email, 180);
-    const phone = cleanText(customer.phone, 10);
-    const address = cleanText(customer.address, 300);
+    const phone = cleanText(customer.phone, 32);
+    const street = cleanText(customer.address, 180);
+    const house = cleanText(customer.house, 100);
+    const state = cleanText(customer.state, 100);
+    const landmark = cleanText(customer.landmark, 100);
+    const addressType = cleanText(customer.addressType, 12);
+    const address = [house, street, landmark, state].filter(Boolean).join(", ");
     const city = cleanText(customer.city, 100);
-    const postalCode = cleanText(customer.postalCode, 6);
+    const postalCode = cleanText(customer.postalCode, 24);
 
     if (
       !name ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-      !/^\d{10}$/.test(phone) ||
-      !address ||
+      !/^[6-9]\d{9}$/.test(phone) ||
+      !house || !state || !street || !["Home", "Work", "Other"].includes(addressType) ||
       !city ||
-      !/^\d{6}$/.test(postalCode)
+      !pinPattern.test(postalCode)
     ) {
       const error = new Error(
-        "Enter valid name, email, 10-digit phone, address, city and 6-digit PIN code."
+        "Check your contact details, house, street, city, state, address type and PIN."
       );
       error.status = 400;
       throw error;
     }
 
+    const areas = postalAreas(postalCode);
+    const states = areas.map(area => area.state.toLowerCase()).filter(Boolean);
+    if (states.length && !states.includes(state.toLowerCase())) throw reject(400, "Check the state for this PIN.");
+    const cities = areas.map(area => area.city.toLowerCase()).filter(Boolean);
+    // Indian PINs can serve several localities. Flag a different city for fulfilment review.
+    const cityNeedsReview = cities.length > 0 && !cities.includes(city.toLowerCase());
+    return { name, email, phone, house, street, landmark, state, addressType, address, city, postalCode, cityNeedsReview };
+  }
+
+  async function priceBag(body) {
     if (
       !Array.isArray(body.items) ||
       body.items.length < 1 ||
@@ -204,11 +228,16 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
         }
         size = matchedSize;
       }
+      if (!stock.rowCount && Number.isFinite(Number(product.stock)) && Number(product.stock) < quantity)
+        throw reject(409, "This product is currently out of stock.");
+      if (items.some(line => line.id === product.id && (line.color || "") === color && (line.size || "") === size))
+        throw reject(400, "Combine duplicate bag items before checking out.");
       const originalPrice = Number(product.price);
       const configuredSalePrice = Number(product.salePrice);
       const unitPrice = product.salePrice !== null && product.salePrice !== undefined && product.salePrice !== "" && Number.isFinite(configuredSalePrice) && configuredSalePrice > 0 && configuredSalePrice < originalPrice
         ? configuredSalePrice
         : originalPrice;
+      if (!Number.isFinite(unitPrice) || unitPrice < 0) throw reject(409, "Product price is unavailable.");
       items.push({
         id: product.id,
         name: product.name,
@@ -234,115 +263,92 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
       appliedCode = applied.couponCode;
     }
     return {
-      customer: { name, email, phone, address, city, postalCode },
       items,
       subtotal,
       discount,
       couponCode: appliedCode,
       total,
+      shipping: 0,
       currency: "INR"
     };
   }
 
-  app.post("/api/orders/cod", async (req, res) => {
+  app.post("/api/coupons/validate", async (req, res) => {
     try {
-      const orderData = await buildOrder(req.body);
-
-      const order = {
-        id:
-          "MC-" +
-          Date.now().toString(36).toUpperCase() +
-          "-" +
-          crypto.randomBytes(3).toString("hex").toUpperCase(),
-        ...orderData,
-        paymentMethod: "COD",
-        paymentStatus: "pending",
-        orderStatus: "received",
-        createdAt: new Date().toISOString(),
-        statusHistory: []
-      };
-
-      await ensureCustomerRecord(order.customer);
-      await putOrder(order);
-      if (order.couponCode) await pool.query("UPDATE offers SET data = jsonb_set(data, '{usageCount}', to_jsonb(COALESCE((data->>'usageCount')::int, 0) + 1), true), updated_at = NOW() WHERE code = $1", [order.couponCode]);
-
-      res.status(201).json({
-        ok: true,
-        orderId: order.id,
-        message: "Order received. The store owner must confirm supplier availability and delivery."
-      });
+      if (!req.body?.couponCode) throw reject(400, "Enter a coupon code.");
+      const quote = await priceBag(req.body);
+      res.json({ ok: true, code: quote.couponCode, discount: quote.discount, subtotal: quote.subtotal, total: quote.total, message: "Coupon applied." });
     } catch (error) {
-      res.status(error.status || 500).json({
-        error: error.message || "Unable to create order."
-      });
+      res.status(error.status || 503).json({ error: error.status ? error.message : "Coupon lookup unavailable." });
     }
   });
 
-  app.post("/api/payments/razorpay/order", async (req, res) => {
-    try {
-      if (
-        !process.env.RAZORPAY_KEY_ID ||
-        !process.env.RAZORPAY_KEY_SECRET
-      ) {
-        return res.status(503).json({
-          error: "Online payments are not configured. Add Razorpay keys to Render Environment."
-        });
-      }
+  function gateway() {
+    return new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+  }
 
-      const orderData = await buildOrder(req.body);
+  function receipt(order) {
+    if (order.paymentMethod === "COD") return { ok: true, orderId: order.id, message: "Order received. Track it using your order reference." };
+    return {
+      keyId: process.env.RAZORPAY_KEY_ID, razorpayOrderId: order.razorpayOrderId,
+      amount: Math.round(order.total * 100), currency: order.currency,
+      customer: { name: order.customer.name, email: order.customer.email, phone: order.customer.phone }
+    };
+  }
 
-      const razorpay = new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID,
-        key_secret: process.env.RAZORPAY_KEY_SECRET
-      });
-
-      const receipt = "mc_" + crypto.randomBytes(8).toString("hex");
-
-      const razorpayOrder = await razorpay.orders.create({
-        amount: Math.round(orderData.total * 100),
-        currency: "INR",
-        receipt,
-        notes: {
-          store: "AERLON",
-          customer_email: orderData.customer.email
+  function createOrder(method) {
+    return async (req, res) => {
+      let client;
+      try {
+        const { attemptId, ...body } = req.body || {};
+        if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(attemptId || "")) throw reject(400, "Refresh checkout and retry.");
+        if (method === "Razorpay" && (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET)) throw reject(503, "Online payment is unavailable.");
+        const fingerprint = crypto.createHash("sha256").update(JSON.stringify([method, body])).digest("hex");
+        async function replay() {
+          const found = await pool.query("SELECT a.fingerprint, o.data FROM checkout_attempts a LEFT JOIN orders o ON o.id=a.order_id WHERE a.id=$1", [attemptId]);
+          if (!found.rowCount) return false;
+          const row = found.rows[0];
+          if (row.fingerprint !== fingerprint) throw reject(409, "This attempt belongs to a different order.");
+          if (!row.data) throw reject(409, "This order is being confirmed. Keep your bag and retry shortly.");
+          if (row.data.paymentStatus === "paid") throw reject(409, "This order is already paid.");
+          res.json(receipt(row.data));
+          return true;
         }
-      });
-
-      await ensureCustomerRecord(orderData.customer);
-      await putOrder({
-        id: receipt,
-        razorpayOrderId: razorpayOrder.id,
-        ...orderData,
-        paymentMethod: "Razorpay",
-        paymentStatus: "created",
-        orderStatus: "awaiting_payment",
-        createdAt: new Date().toISOString(),
-        statusHistory: []
-      });
-      // A coupon is counted only after Razorpay confirms payment, not when the
-      // customer merely opens checkout or abandons the payment window.
-
-      res.status(201).json({
-        keyId: process.env.RAZORPAY_KEY_ID,
-        razorpayOrderId: razorpayOrder.id,
-        amount: razorpayOrder.amount,
-        currency: razorpayOrder.currency,
-        storeName: "AERLON",
-        customer: {
-          name: orderData.customer.name,
-          email: orderData.customer.email,
-          phone: orderData.customer.phone
+        if (await replay()) return;
+        const customer = await validateAddress(body.customer);
+        const data = { customer, ...await priceBag(body) };
+        if (body.expectedTotal !== undefined && body.expectedTotal !== data.total)
+          throw reject(409, "The bag total has changed. Refresh your bag and review the new total.");
+        const id = "MC-" + crypto.randomBytes(10).toString("hex").toUpperCase();
+        const online = method === "Razorpay";
+        if (!online) {
+          client = await pool.connect();
+          await client.query("BEGIN");
         }
-      });
-    } catch (error) {
-      res.status(error.status || 500).json({
-        error: error.message || "Could not create payment order."
-      });
-    }
-  });
+        const claim = await (client || pool).query("INSERT INTO checkout_attempts(id,fingerprint,order_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [attemptId,fingerprint,id]);
+        if (!claim.rowCount) { if (client) { await client.query("ROLLBACK"); client.release(); client = null; } await replay(); return; }
+        const order = { ...data, id, paymentMethod: method, paymentStatus: online ? "created" : "pending",
+          orderStatus: online ? "awaiting_payment" : "received", createdAt: new Date().toISOString(), statusHistory: [] };
+        if (online) {
+          const result = await gateway().orders.create({ amount: Math.round(order.total * 100), currency: order.currency, receipt: id });
+          order.razorpayOrderId = result.id;
+        }
+        if (!client) { client = await pool.connect(); await client.query("BEGIN"); }
+        await ensureCustomerRecord(order.customer, client);
+        await client.query("INSERT INTO orders(id,data) VALUES($1,$2::jsonb)", [id, JSON.stringify(order)]);
+        if (!online && order.couponCode) await client.query("UPDATE offers SET data=jsonb_set(data,'{usageCount}',to_jsonb(COALESCE((data->>'usageCount')::int,0)+1)) WHERE code=$1", [order.couponCode]);
+        await client.query("COMMIT");
+        res.status(201).json(receipt(order));
+      } catch (error) {
+        if (client) await client.query("ROLLBACK").catch(() => {});
+        res.status(error.status || 503).json({ error: error.status ? error.message : "Unable to confirm the order. Retry with the same bag or contact customer care." });
+      } finally { client?.release(); }
+    };
+  }
+  app.post("/api/orders/cod", createOrder("COD"));
+  app.post("/api/payments/razorpay/order", createOrder("Razorpay"));
 
   app.post("/api/payments/razorpay/verify", async (req, res) => {
-    let client;
     try {
       const {
         razorpay_order_id,
@@ -372,70 +378,12 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
         });
       }
 
-      // Lock the order row so a duplicate callback cannot increment coupon usage
-      // twice or overwrite a different successful payment.
-      client = await pool.connect();
-      await client.query("BEGIN");
-      const found = await client.query(
-        "SELECT id, data FROM orders WHERE data->>'razorpayOrderId' = $1 LIMIT 1 FOR UPDATE",
-        [razorpay_order_id]
-      );
-      if (!found.rowCount) {
-        await client.query("ROLLBACK");
-        return res.status(404).json({ error: "Order not found." });
-      }
-
-      const order = found.rows[0].data;
-      if (order.paymentStatus === "paid") {
-        if (order.paymentId === razorpay_payment_id) {
-          await client.query("COMMIT");
-          return res.json({
-            ok: true,
-            orderId: order.id,
-            message: "Payment was already verified. Your order is confirmed."
-          });
-        }
-        await client.query("ROLLBACK");
-        return res.status(409).json({ error: "This order has already been paid with a different payment reference." });
-      }
-      if (order.paymentStatus !== "created" || order.orderStatus !== "awaiting_payment") {
-        await client.query("ROLLBACK");
-        return res.status(409).json({ error: "This order is not awaiting payment verification." });
-      }
-
-      order.paymentId = razorpay_payment_id;
-      order.paymentStatus = "paid";
-      order.orderStatus = "received";
-      order.paidAt = new Date().toISOString();
-
-      await client.query(
-        "UPDATE orders SET data = $1::jsonb, updated_at = NOW() WHERE id = $2",
-        [JSON.stringify(order), found.rows[0].id]
-      );
-      if (order.couponCode) {
-        await client.query(
-          "UPDATE offers SET data = jsonb_set(data, '{usageCount}', to_jsonb(COALESCE((data->>'usageCount')::int, 0) + 1), true), updated_at = NOW() WHERE code = $1",
-          [order.couponCode]
-        );
-      }
-      await client.query("COMMIT");
-
-      res.json({
-        ok: true,
-        orderId: order.id,
-        message: "Payment verified. The store owner must confirm supplier availability and delivery."
-      });
+      const payment = await gateway().payments.fetch(razorpay_payment_id);
+      if (payment.id !== razorpay_payment_id || payment.order_id !== razorpay_order_id)
+        throw reject(409, "Payment reference does not match.");
+      res.json(await confirmCapturedPayment(pool, payment));
     } catch (error) {
-      if (client) {
-        try { await client.query("ROLLBACK"); } catch {}
-      }
-      console.error("Payment verification failed:", error.message);
-      if (res.headersSent) return;
-      res.status(error.status || 500).json({
-        error: error.message || "Unable to verify payment."
-      });
-    } finally {
-      if (client) client.release();
+      res.status(error.status || 503).json({ error: error.status ? error.message : "Payment lookup unavailable. Check your order before paying again." });
     }
   });
 };

@@ -41,17 +41,17 @@ module.exports = function createRepository({ listProducts, pool, cleanText }) {
     return result.rows[0]?.data || null;
   }
 
-  async function ensureCustomerRecord(customer) {
+  async function ensureCustomerRecord(customer, db = pool) {
     const name = cleanText(customer?.name, 120);
     const email = cleanText(customer?.email, 254).toLowerCase();
     const phone = cleanText(customer?.phone, 30);
     if (!name || !email || !phone) return null;
-    const existing = await pool.query(
+    const existing = await db.query(
       "SELECT id FROM customers WHERE lower(email) = $1 OR phone = $2 LIMIT 1",
       [email, phone]
     );
     if (existing.rowCount) {
-      await pool.query(
+      await db.query(
         "UPDATE customers SET name = $1, updated_at = NOW() WHERE id = $2",
         [name, existing.rows[0].id]
       );
@@ -61,12 +61,12 @@ module.exports = function createRepository({ listProducts, pool, cleanText }) {
     const salt = crypto.randomBytes(16).toString("hex");
     const hash = crypto.randomBytes(48).toString("hex");
     try {
-      await pool.query(
+      await db.query(
         `INSERT INTO customers (id, name, email, phone, password_salt, password_hash, password_enabled)
          VALUES ($1, $2, $3, $4, $5, $6, FALSE) ON CONFLICT DO NOTHING`,
         [id, name, email, phone, salt, hash]
       );
-      const saved = await pool.query("SELECT id FROM customers WHERE lower(email)=$1 OR phone=$2 LIMIT 1", [email, phone]);
+      const saved = await db.query("SELECT id FROM customers WHERE lower(email)=$1 OR phone=$2 LIMIT 1", [email, phone]);
       return saved.rows[0]?.id || null;
     } catch (error) {
       console.error("Customer directory sync failed:", error.message);

@@ -96,6 +96,13 @@ module.exports = async function initDatabase(pool) {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS checkout_attempts (
+      id UUID PRIMARY KEY,
+      fingerprint TEXT NOT NULL,
+      order_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
     CREATE TABLE IF NOT EXISTS staff (
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,

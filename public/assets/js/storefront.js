@@ -283,6 +283,8 @@ function updateCheckoutSummary(){
   if(checkoutDiscount)checkoutDiscount.textContent="−"+money(discount);
   if(checkoutDiscountRow)checkoutDiscountRow.hidden=!discount;
   if(checkoutGrand)checkoutGrand.textContent=money(finalTotal);
+  $("#removeCoupon").hidden = !appliedCoupon;
+  if (!$("#placeOrder").disabled) $("#placeOrder").textContent = "Place order · " + money(finalTotal);
   const totals=$("#couponTotals");
   if(totals){
     totals.style.display=appliedCoupon?"block":"none";
@@ -298,7 +300,7 @@ async function applyCoupon(){
   if(!code){if(msg)msg.textContent="Enter a coupon code first.";return}
   if(btn){btn.disabled=true;btn.textContent="CHECKING…"}
   try{
-    const result=await api("/api/coupons/validate?code="+encodeURIComponent(code)+"&subtotal="+encodeURIComponent(total()));
+    const result=await api("/api/coupons/validate", { couponCode: code, items: payload().items });
     if(!result||result.ok===false||!result.code)throw new Error(result?.error||"This coupon could not be applied.");
     const discount=Number(result.discount);
     if(!Number.isFinite(discount)||discount<0)throw new Error("The server returned an invalid discount.");
@@ -322,13 +324,11 @@ function change(key,d){const i=cart.find(x=>cartKey(x)===key);if(!i)return;if(d>
 function renderCart(){const itemCount=cart.reduce((n,i)=>n+i.quantity,0);$("#count").textContent=itemCount;$("#bagBtn").setAttribute("aria-label",`Open shopping bag, ${itemCount} item${itemCount===1?"":"s"}`);const root=$("#cartItems");root.replaceChildren();if(!cart.length){const p=document.createElement("p");p.className="muted";p.textContent="Your bag is empty. Explore the collection.";root.append(p)}cart.forEach(i=>{const p=products.find(x=>x.id===i.id);if(!p)return;const key=cartKey(i),row=document.createElement("div");row.className="cartrow";const img=document.createElement("img");img.src=p.image;img.alt=p.name;const details=document.createElement("div"),title=document.createElement("strong");title.textContent=p.name;const price=document.createElement("p");price.textContent=money(effectivePrice(p)*i.quantity);const variant=document.createElement("p");variant.className="muted";variant.textContent=[i.color,i.size].filter(Boolean).join(" · ");const qty=document.createElement("div");qty.className="qty";const minus=document.createElement("button");minus.textContent="−";minus.onclick=()=>change(key,-1);const num=document.createElement("span");num.textContent=i.quantity;const plus=document.createElement("button");plus.textContent="+";plus.onclick=()=>change(key,1);const remove=document.createElement("button");remove.className="remove";remove.textContent="Remove";remove.onclick=()=>{clearAppliedCoupon();cart=cart.filter(x=>cartKey(x)!==key);renderCart()};qty.append(minus,num,plus);details.append(title,variant,price,qty,remove);row.append(img,details);root.append(row)});$("#subtotal").textContent=money(total())}
 function total(){return cart.reduce((s,i)=>s+effectivePrice(products.find(p=>p.id===i.id)||{})*i.quantity,0)}
 function showBag(show){$("#drawer").classList.toggle("show",show);$("#shade").classList.toggle("show",show)}
-function showCheckout(show){if(show){renderCheckoutItems();updateCheckoutSummary()}$("#checkout").classList.toggle("show",show)}
+function showCheckout(show){if(show){refreshCheckoutMethods();renderCheckoutItems();updateCheckoutSummary()}$("#checkout").classList.toggle("show",show)}
 function renderCheckoutItems(){const root=$("#checkoutItems");if(!root)return;root.replaceChildren();let count=0;for(const item of cart){const p=products.find(x=>String(x.id)===String(item.id));if(!p)continue;count+=Number(item.quantity)||0;const row=document.createElement('div');row.className='checkout-line-item';const img=document.createElement('img');img.src=productImages(p)[0]||p.image||'';img.alt=p.name||'Product';img.loading='lazy';img.onerror=()=>{img.style.visibility='hidden'};const copy=document.createElement('div');copy.className='checkout-line-copy';const title=document.createElement('strong');title.textContent=p.name||'Product';const variant=document.createElement('small');variant.textContent=[item.color,item.size,'Qty '+(Number(item.quantity)||1)].filter(Boolean).join(' · ');copy.append(title,variant);const price=document.createElement('strong');price.className='checkout-line-price';price.textContent=money(effectivePrice(p)*(Number(item.quantity)||1));row.append(img,copy,price);root.append(row)}if(!count){const empty=document.createElement('p');empty.className='muted';empty.textContent='Your bag is empty. Return to the collection to add products.';root.append(empty)}const countEl=$("#checkoutItemCount");if(countEl)countEl.textContent=count+' item'+(count===1?'':'s');const sub=$("#checkoutSubtotal"),discount=$("#checkoutDiscount"),discountRow=$("#checkoutDiscountRow"),grand=$("#checkoutGrandTotal");if(sub)sub.textContent=money(total());const saving=appliedCoupon?Number(appliedCoupon.discount)||0:0;if(discount)discount.textContent='−'+money(saving);if(discountRow)discountRow.hidden=!saving;if(grand)grand.textContent=money(Math.max(0,total()-saving))}
-function payload(){return{customer:{name:$("#name").value.trim(),email:$("#email").value.trim(),phone:$("#phone").value.trim(),address:$("#address").value.trim(),city:$("#city").value.trim(),postalCode:$("#pin").value.trim()},items:cart.map(i=>({id:i.id,quantity:i.quantity,color:i.color||'',size:i.size||''})),couponCode:appliedCoupon?.code||""}}
+function payload(){return{customer:{name:$("#name").value.trim(),email:$("#email").value.trim(),phone:$("#phone").value.trim(),address:$("#address").value.trim(),house:$("#house").value.trim(),state:$("#state").value.trim(),landmark:$("#landmark").value.trim(),addressType:$("#addressType").value,city:$("#city").value.trim(),postalCode:$("#pin").value.trim()},items:cart.map(i=>({id:i.id,quantity:i.quantity,color:i.color||'',size:i.size||''})),couponCode:appliedCoupon?.code||""}}
 $("#bagBtn").onclick=()=>showBag(true);$("#closeBag").onclick=()=>showBag(false);$("#shade").onclick=()=>showBag(false);$("#checkoutBtn").onclick=()=>{if(!cart.length)return toast("Your bag is empty");updateCheckoutSummary();showBag(false);showCheckout(true)};$("#closeCheckout").onclick=()=>showCheckout(false);
 $("#search").oninput=renderProducts;$("#category").onchange=renderProducts;$("#sort").onchange=renderProducts;$("#year").textContent=new Date().getFullYear();
-$("#orderForm").addEventListener("submit",async e=>{e.preventDefault();if(!cart.length)return toast("Your bag is empty");const btn=$("#placeOrder");btn.disabled=true;btn.textContent="PLEASE WAIT…";try{const body=payload();if($("#payment").value==="COD"){const result=await api("/api/orders/cod",body);showCheckout(false);cart=[];appliedCoupon=null;$("#couponInput").value="";$("#couponMessage").textContent="Have a coupon? Apply it before placing your order.";$("#couponTotals").style.display="none";renderCart();e.target.reset();syncPaymentButtons();showOrderSuccess(result.orderId,result.message,$("#payment").value);return}const config=await api("/api/config");if(!config.razorpayEnabled)throw new Error("Online payment is currently unavailable. Please choose cash on delivery or try again later.");const Checkout=await loadOnlineCheckout();const order=await api("/api/payments/razorpay/order",body);const options={key:order.keyId,amount:order.amount,currency:order.currency,name:"AERLON",description:"Fashion order",order_id:order.razorpayOrderId,prefill:order.customer,theme:{color:"#111111"},handler:async response=>{try{const verified=await api("/api/payments/razorpay/verify",response);showCheckout(false);cart=[];appliedCoupon=null;$("#couponInput").value="";$("#couponMessage").textContent="Have a coupon? Apply it before placing your order.";$("#couponTotals").style.display="none";renderCart();e.target.reset();syncPaymentButtons();showOrderSuccess(verified.orderId,verified.message,"ONLINE")}catch(err){alert("Payment was submitted but could not be verified by the store. Contact support and do not pay again immediately. Reference: "+order.razorpayOrderId)}}};const checkout=new Checkout(options);checkout.on("payment.failed",r=>toast(r.error?.description||"Payment failed. Please try again."));checkout.open()}catch(err){toast(err.message)}finally{btn.disabled=false;btn.textContent="PLACE ORDER"}});
-
 // Extra storefront features: wishlist/recently viewed/theme are stored on this device.
 // Upgrade browser data saved before the storefront rename.
 try {
@@ -443,7 +443,7 @@ const w=safeRead(STORE.wish,[]),items=w.map(id=>products.find(p=>String(p.id)===
 const menuCount=byId('menuWishCount');if(menuCount)menuCount.textContent=String(items.length);
 const countNode=byId('wishCount');if(countNode)countNode.textContent=String(items.length);
 }
-function renderRecent(){const ids=safeRead(STORE.recent,[]),items=ids.map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);renderMiniGrid('recentProducts',items)}
+function renderRecent(){const ids=[...new Set(safeRead(STORE.recent,[]).map(String))],items=ids.map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);renderMiniGrid('recentProducts',items)}
 let activeProductReviews=[];let activeProductReviewSummary={};
 function renderProductReviews(productId){
   const root=byId('reviewList');if(!root)return;root.replaceChildren();
@@ -740,7 +740,13 @@ async function applyStorefrontFooter(){
     const brand=byId('mcFooterBrand');if(brand){brand.hidden=f.showBrand===false;brand.replaceChildren();if(f.logoUrl&&/^https:\/\//i.test(f.logoUrl)){const img=document.createElement('img');img.src=f.logoUrl;img.alt=f.brandText||'AERLON';img.loading='lazy';img.style.cssText='max-height:42px;max-width:190px;object-fit:contain';brand.appendChild(img);}else{brand.appendChild(document.createTextNode(f.brandText||'AERLON'));const dot=document.createElement('span');dot.textContent='.';brand.appendChild(dot);}}
     const tagline=byId('mcFooterTagline');if(tagline){tagline.textContent=f.tagline||'';tagline.hidden=f.showTagline===false||!f.tagline;}
     const intro=byId('mcFooterIntro');if(intro){intro.textContent=f.intro||'';intro.hidden=f.showIntro===false||!f.intro;}
-    document.querySelectorAll('[data-social]').forEach(link=>{const url=String(f.socials?.[link.dataset.social]||'').trim();const valid=/^https:\/\//i.test(url);link.hidden=!valid;if(valid){link.href=url;link.target='_blank';link.rel='noopener noreferrer';}});
+    document.querySelectorAll('[data-social]').forEach(link=>{const url=String(f.socials?.[link.dataset.social]||'').trim();let valid=false;
+      try {
+        const parsed=new URL(url), host=parsed.hostname.replace(/^www\./,'');
+        const hosts={instagram:['instagram.com'],facebook:['facebook.com'],youtube:['youtube.com'],pinterest:['pinterest.com','pinterest.in'],x:['x.com','twitter.com'],whatsapp:['wa.me','api.whatsapp.com']};
+        valid=parsed.protocol==='https:' && !parsed.username && !parsed.password && !parsed.port && hosts[link.dataset.social]?.includes(host) && parsed.pathname.length>1;
+      } catch {}
+      if (!valid) link.removeAttribute('href');link.hidden=!valid;if(valid){link.href=url;link.target='_blank';link.rel='noopener noreferrer';}});
     if(Array.isArray(f.columns))applyFooterColumns(f.columns);
     const newsletter=byId('mcFooterNewsletter');if(newsletter)newsletter.hidden=f.newsletterEnabled===false;
     const setText=(id,value)=>{const el=byId(id);if(el&&typeof value==='string')el.textContent=value;};
@@ -801,8 +807,8 @@ const reduceIntroMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-m
 if(intro){if(introSeen||reduceIntroMotion){dismissIntro()}else{document.body.style.overflow='hidden';intro.querySelector('.intro-skip')?.addEventListener('click',dismissIntro);try{sessionStorage.setItem('aerlon-puzzle-entry-v1','1')}catch(_e){}setTimeout(dismissIntro,2800)}}
 
 // Keep the existing payment value used by the checkout/API logic, while presenting premium selection cards.
-function syncPaymentButtons(){document.querySelectorAll('[data-payment]').forEach(button=>{const active=button.dataset.payment===byId('payment').value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active))})}
-document.querySelectorAll('[data-payment]').forEach(button=>button.addEventListener('click',()=>{byId('payment').value=button.dataset.payment;syncPaymentButtons();}));
+function syncPaymentButtons(){document.querySelectorAll('[data-payment]').forEach(button=>{const active=button.dataset.payment===byId('payment').value;button.classList.toggle('active',active);button.querySelector('input').checked=active})}
+document.querySelectorAll('[data-payment]').forEach(button=>button.addEventListener('change',()=>{byId('payment').value=button.dataset.payment;syncPaymentButtons();}));
 syncPaymentButtons();
 
 // Continue shopping now sits beside checkout in the cart footer.

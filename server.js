@@ -118,9 +118,10 @@ app.post(
       return res.status(400).send("Invalid JSON.");
     }
 
-    console.log("Verified Razorpay webhook:", event.event);
-
-    // This verifies the webhook only. It does not update order status.
+    if (event.event === "payment.captured") {
+      try { await require("./services/store/payment").confirmCapturedPayment(pool, event.payload?.payment?.entity); }
+      catch (error) { return res.status(error.status || 503).send("Payment confirmation pending."); }
+    }
     return res.json({ received: true });
   }
 );

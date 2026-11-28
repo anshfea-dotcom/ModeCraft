@@ -112,7 +112,7 @@ async function enforce(req, res, pool, policy) {
 }
 function createRateLimiter(pool) {
   return async (req, res, next) => {
-    const policy = policyFor(req.method, req.path);
+    const policy = policyFor(req.method, req.originalUrl || req.path);
     if (!policy) return next();
     try { if (await enforce(req, res, pool, policy)) next(); }
     catch (error) {

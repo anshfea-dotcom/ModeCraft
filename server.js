@@ -167,6 +167,13 @@ for (const directory of ["css", "js"]) {
   app.use(express.static(path.join(ROOT, "public/assets", directory)));
 }
 registerSEO(app,context,path.join(ROOT,"public","index.html"));
+// Never serve a stale admin shell: old HTML may reference old scripts after a release.
+app.get("/admin.html", (_req, res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  res.sendFile(path.join(ROOT, "public", "admin.html"));
+});
 app.use(express.static(path.join(ROOT, "public")));
 
 app.get("/health", async (_req, res) => {

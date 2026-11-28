@@ -131,3 +131,69 @@ body,:root[data-theme="dark"] body{background:var(--bg);color:var(--text)}
   .main .topbar .actions { flex-basis: 100%; width: 100%; justify-content: flex-start; }
   .main .topbar .actions > :is(button, a) { white-space: nowrap; }
 }
+
+
+/* Admin Panel 3.0 — clearly identifiable visual identity, without replacing feature IDs. */
+.v3-version-tag{display:inline-block;vertical-align:middle;font:800 10px/1.2 Inter,system-ui,sans-serif;letter-spacing:.04em;color:#15110b;background:#e4bc7b;border-radius:6px;padding:4px 6px;margin-left:6px}
+.sidebar .brand{position:relative;padding:14px 13px 22px!important;margin:0 0 11px;border-bottom:1px solid #393024;color:#f4d8a5;font-size:26px;line-height:1.15}
+.sidebar .brand::before{content:"A";display:grid;place-items:center;width:40px;height:40px;border:1px solid #6d5234;border-radius:12px;background:linear-gradient(135deg,#3c2e20,#191713);font:600 24px Georgia,serif;letter-spacing:0;color:#efce91;margin-bottom:13px}
+.sidebar .brand small{font-size:9px;letter-spacing:.14em;color:#b9a68a;white-space:normal}
+.sidebar .nav-group{padding:3px 0 5px}
+.sidebar .nav-group h2{font-size:9px;font-weight:800;letter-spacing:.17em;color:#bc9d6b;margin:15px 13px 5px}
+.sidebar .nav button{transition:background .18s ease,color .18s ease,transform .18s ease;border-radius:9px;min-height:40px;letter-spacing:.005em}
+.sidebar .nav button:hover{background:#27231d;color:#fff4db}
+.sidebar .nav button.active{background:linear-gradient(105deg,#b88a4c,#7b5b38);box-shadow:inset 3px 0 #f1d19b,0 3px 12px #0003;color:#fff}
+.sidebar .nav button.active .ico{color:#fff}
+.sidebar .sidebottom{background:#181612;border-top:1px solid #433728;border-radius:12px;padding:11px;margin-top:auto}
+.main{min-width:0;background:radial-gradient(ellipse at 92% 0%,rgba(200,164,100,.10),transparent 45%)}
+.main .topbar{position:relative;isolation:isolate;overflow:hidden;padding:27px 28px!important;margin-bottom:24px!important;background:linear-gradient(118deg,#17140f 0%,#282016 55%,#12110e 100%)!important;border:1px solid #6d5333!important;border-radius:20px!important}
+.main .topbar::after{content:"";position:absolute;z-index:-1;inset:auto -45px -115px auto;width:300px;height:300px;border:1px solid #c5a36c35;border-radius:50%;box-shadow:0 0 0 52px #c5a36c10,0 0 0 105px #c5a36c08;pointer-events:none}
+.v3-topbar-heading{min-width:0;flex:1 1 280px;position:relative;z-index:1}
+.v3-edition{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 16px;color:#e0ba7d;font-size:9px;font-weight:800;letter-spacing:.15em}
+.v3-edition b{font:500 18px/1 Georgia,serif;border:1px solid #947146;background:#c19b62;color:#21170c;padding:8px 10px;border-radius:8px;letter-spacing:0}
+.v3-edition small{color:#dac29e;font-size:9px;letter-spacing:.07em;border-left:1px solid #7c6340;padding-left:9px}
+.main .topbar .eyebrow{color:#d1b181}
+.main .topbar h1{font:500 clamp(25px,2.9vw,38px)/1.14 Georgia,serif;color:#fff1d7;letter-spacing:-.025em}
+.main .topbar .actions{position:relative;z-index:1}
+.main .topbar .btn{border-radius:9px;backdrop-filter:blur(6px)}
+.admin20-welcome.v3-greeting{padding:8px 2px 13px}
+.admin20-welcome.v3-greeting h2{font:500 clamp(26px,3vw,36px)/1.15 Georgia,serif;letter-spacing:-.035em}
+.admin20-welcome.v3-greeting p{font-size:13px}
+.main .card,.main .stat{border-radius:16px;box-shadow:0 12px 35px rgba(35,23,10,.055)}
+#section-overview .stats.admin-ref-stats{gap:14px;margin:14px 0 21px}
+.admin-ref-stats .stat{border-top:3px solid #c6a06c!important}
+.admin-ref-stats .stathead{font-weight:650;letter-spacing:.005em}
+.admin-ref-stats .stat strong{letter-spacing:-.055em}
+.v3-action-grid button{min-height:102px;text-align:left;padding:18px 16px;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.v3-action-grid button:hover{transform:translateY(-2px);box-shadow:0 14px 30px #b88a4c25}
+.v3-action-grid button span{margin-bottom:5px}
+.main :is(.field,input,select,textarea):focus-visible,.main button:focus-visible,.sidebar button:focus-visible{outline:2px solid #c49a60;outline-offset:2px}
+.main .tablewrap{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+.main td{overflow-wrap:anywhere}
+.v3-taxonomy-list>div{min-width:0}
+.v3-taxonomy-list>div>span{min-width:0;overflow-wrap:anywhere}
+.v3-taxonomy-list small{overflow-wrap:anywhere}
+@media(min-width:701px){
+ .app>.sidebar{width:268px}
+ .app>.main{margin-left:268px;width:auto;min-width:0;max-width:none;padding:28px clamp(20px,2.6vw,42px) 52px}
+}
+@media(min-width:701px) and (max-width:1240px){
+ .app>.sidebar{width:244px}
+ .app>.main{margin-left:244px;padding:20px 19px 45px}
+ .main .topbar{padding:22px!important}
+ .v3-edition{margin-bottom:11px}
+}
+@media(max-width:700px){
+ .sidebar .brand{border:0;margin:0;padding:0!important;font-size:21px}
+ .sidebar .brand::before{display:none}
+ .sidebar .brand small{font-size:8px}
+ .app>.main{margin-left:0;width:100%;padding:17px 13px calc(105px + env(safe-area-inset-bottom))}
+ .main .topbar{padding:20px!important;border-radius:16px!important}
+ .main .topbar::after{opacity:.35}
+ .v3-edition{font-size:8px;gap:7px}
+ .v3-edition small{font-size:8px}
+ .admin20-welcome.v3-greeting h2{font-size:27px}
+ .v3-action-grid button{text-align:center;padding:10px 5px;min-height:85px}
+ .v3-action-grid button span{margin-bottom:3px}
+}
+@media(prefers-reduced-motion:reduce){.sidebar .nav button,.v3-action-grid button{transition:none}.v3-action-grid button:hover{transform:none}}

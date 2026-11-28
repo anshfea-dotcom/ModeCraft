@@ -30,4 +30,18 @@ check("desktop storefront search and actions have shrink-safe grid rules",()=>{
   assert.ok(files.storeHTML.includes('id="checkout"'));
   assert.ok(files.storeHTML.includes('id="shop"'));
 });
-console.log("3/3 AERLON desktop layout source regression checks passed.");
+check("Admin 3.0 visible release identity and cache-safe script versions",()=>{
+  assert.ok(files.adminHTML.includes("Admin Panel 3.0"));
+  assert.ok(files.adminHTML.includes("v3-edition"));
+  assert.ok(files.adminHTML.includes("v3-version-tag"));
+  assert.ok(files.adminHTML.includes('href="/admin-v3.css?v=20261128-3"'));
+  assert.ok(files.adminHTML.includes('src="/admin-v3.js?v=20261128-3"'));
+  assert.ok(files.admin.includes(".v3-edition"));
+  assert.ok(files.admin.includes(".app>.main{margin-left:268px"));
+});
+const server=fs.readFileSync("server.js","utf8");
+check("Admin document bypasses cached HTML on each navigation",()=>{
+  assert.ok(server.includes('app.get("/admin.html"'));
+  assert.ok(server.includes('res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")'));
+});
+console.log("5/5 AERLON desktop and release source regression checks passed.");

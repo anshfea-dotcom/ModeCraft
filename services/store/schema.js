@@ -333,6 +333,23 @@ module.exports = async function initDatabase(pool) {
       ADD COLUMN IF NOT EXISTS admin_challenge_hash TEXT,
       ADD COLUMN IF NOT EXISTS admin_challenge_expires TIMESTAMPTZ;
 
+    -- Shared cross-instance quotas. The PRIMARY KEY makes increments atomic.
+    CREATE TABLE IF NOT EXISTS api_rate_limits (
+      key TEXT PRIMARY KEY,
+      hits INTEGER NOT NULL DEFAULT 0,
+      expires_at TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS api_rate_limits_expiration_idx ON api_rate_limits(expires_at);
+
+    -- Hashed account identities; no plaintext email, IP or username stored.
+    CREATE TABLE IF NOT EXISTS auth_lockouts (
+      identity TEXT PRIMARY KEY,
+      failures INTEGER NOT NULL DEFAULT 0,
+      locked_until TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS auth_lockouts_cleanup_idx ON auth_lockouts(updated_at);
+
     CREATE TABLE IF NOT EXISTS customer_login_limits (
       key TEXT PRIMARY KEY, attempts INTEGER NOT NULL, expires TIMESTAMPTZ NOT NULL
     );

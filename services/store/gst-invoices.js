@@ -1,8 +1,6 @@
 "use strict";
-const PDFDocument=require("pdfkit");
 const validGSTIN=/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const paisa=value=>Math.round(Number(value)*100);
-const cash=value=>"INR "+(Number(value)/100).toFixed(2);
 const error=(message,status=400)=>Object.assign(new Error(message),{status});
 const read=(value,max)=>String(value??"").trim().slice(0,max);
 function parseGSTRequest(body,order,seller){
@@ -60,59 +58,7 @@ function parseGSTRequest(body,order,seller){
   };
 }
 function renderGST(x,res){
-  const filename="AERLON-"+String(x.invoiceNumber).replace(/[^A-Z0-9-/]/gi,"").replace(/\//g,"-")+".pdf";
-  res.set({"Content-Type":"application/pdf","Content-Disposition":'attachment; filename="'+filename+'"',"Cache-Control":"no-store"});
-  const pdf=new PDFDocument({size:"A4",margin:42,info:{Title:x.invoiceNumber,Author:"AERLON"}});
-  pdf.on("error",err=>res.destroy(err));pdf.pipe(res);
-  const ink="#1c1a17",gold="#98733d";
-  pdf.fillColor(ink).font("Helvetica-Bold").fontSize(23).text("A E R L O N",42,38);
-  pdf.fillColor(gold).fontSize(10).text("GST TAX INVOICE",42,73);
-  pdf.moveTo(42,96).lineTo(552,96).strokeColor(gold).stroke();
-  pdf.fillColor(ink).font("Helvetica-Bold").fontSize(10).text(x.seller.legalName,42,110,{width:290});
-  pdf.font("Helvetica").fontSize(9).text(x.seller.address,42,126,{width:290});
-  pdf.text("GSTIN: "+x.seller.gstin,42,pdf.y+5,{width:300});
-  if(x.seller.email)pdf.text(x.seller.email,42,pdf.y+2,{width:300});
-  if(x.seller.phone)pdf.text(x.seller.phone,42,pdf.y+2,{width:300});
-  pdf.text("Invoice: "+x.invoiceNumber,350,110,{width:202,align:"right"});
-  pdf.text("Issued: "+new Date(x.createdAt).toLocaleDateString("en-IN",{timeZone:"Asia/Kolkata"}),350,125,{width:202,align:"right"});
-  pdf.text("Order: "+x.orderId,350,140,{width:202,align:"right"});
-  const y0=Math.max(206,pdf.y+20);
-  pdf.font("Helvetica-Bold").fontSize(10).text("BILL TO",42,y0);
-  pdf.font("Helvetica").fontSize(9).text(x.buyer.name,42,y0+18,{width:440});
-  pdf.text(x.buyer.address,42,pdf.y+4,{width:480});
-  if(x.buyer.gstin)pdf.text("Buyer GSTIN: "+x.buyer.gstin,42,pdf.y+4);
-  pdf.text("Place of supply: "+x.placeOfSupplyName+" ("+x.placeOfSupplyCode+")",42,pdf.y+5,{width:495});
-  pdf.text("Tax type: "+(x.taxType==="intra"?"CGST + SGST":"IGST")+"   |   Reverse charge: No",42,pdf.y+4);
-  let y=Math.max(335,pdf.y+28);
-  function header(){
-    pdf.rect(42,y,510,25).fill("#f3f0ea");
-    pdf.font("Helvetica-Bold").fillColor(ink).fontSize(8);
-    pdf.text("Item / HSN",48,y+8,{width:165});
-    pdf.text("Rate",218,y+8,{width:35,align:"right"});
-    pdf.text("Taxable",261,y+8,{width:80,align:"right"});
-    pdf.text("GST",353,y+8,{width:65,align:"right"});
-    pdf.text("Gross",430,y+8,{width:115,align:"right"});y+=32;
-  }
-  header();
-  for(const item of x.items){
-    if(y>686){pdf.addPage();y=52;header();}
-    pdf.fillColor(ink).font("Helvetica").fontSize(8);
-    pdf.text(item.name,48,y,{width:162});
-    pdf.text("HSN "+item.hsn+"  Qty "+item.quantity,48,y+15,{width:162});
-    pdf.text(item.gstRate+"%",218,y+6,{width:35,align:"right"});
-    pdf.text((item.taxablePaisa/100).toFixed(2),261,y+6,{width:80,align:"right"});
-    pdf.text((item.taxPaisa/100).toFixed(2),353,y+6,{width:65,align:"right"});
-    pdf.text((item.grossPaisa/100).toFixed(2),430,y+6,{width:115,align:"right"});
-    y+=41;
-    pdf.moveTo(42,y-4).lineTo(552,y-4).strokeColor("#dddddd").stroke();
-  }
-  if(y>660){pdf.addPage();y=65;}
-  const totals=[["Taxable value",x.taxablePaisa],["CGST",x.cgstPaisa],["SGST",x.sgstPaisa],["IGST",x.igstPaisa],["GRAND TOTAL",x.totalPaisa]];
-  totals.forEach(([name,value],i)=>{pdf.fillColor(ink).font(i===4?"Helvetica-Bold":"Helvetica").fontSize(i===4?11:9).text(name+": "+cash(value),305,y+10+i*19,{width:245,align:"right"});});
-  const endY=Math.min(758,y+135);
-  pdf.font("Helvetica").fontSize(8).text("For "+x.seller.legalName+" / Authorized signatory",42,endY,{width:480});
-  pdf.fontSize(7).fillColor("#666").text("Tax calculated from manually entered GST-inclusive line totals. Verify statutory e-invoice / IRN requirements where applicable.",42,790,{width:510});
-  pdf.end();
+  return require("./invoice-pdf").renderGST(x,res);
 }
 module.exports=function registerGSTInvoices(app,{pool,getOrder,requireAdmin,requirePermission,audit}){
   const authorised=requirePermission("invoices.issue");

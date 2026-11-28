@@ -67,7 +67,7 @@
 </div>
 <article class="card v3-recent"><div class="cardtitle"><div><h2>Recent Orders</h2><p>Latest transactions, straight from your orders database</p></div><button class="btn small" data-goto="orders">View All</button></div><div class="tablewrap"><table style="min-width:620px"><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th></tr></thead><tbody id="recentOrders"><tr><td colspan="5" class="empty">Loading recent orders…</td></tr></tbody></table></div></article>
 </section>
-<section class="section" id="section-invoices"><div class="v3-title-row"><div><h2>Invoices & Billing</h2><p class="muted">Issue a permanent invoice against an existing order and download its PDF.</p></div></div>
+<section class="section" id="section-invoices"><div class="v3-title-row"><div><h2>Invoices & Billing</h2><p class="muted">Create Manual or GST invoices with the signature Champagne A4 PDF layout.</p></div></div>
 <article class="card"><div class="cardtitle"><div><h2>Create an invoice</h2><p>Choose a real order. The invoice is issued only once per order and its details are preserved.</p></div></div>
 <form id="v3IssueInvoiceForm" class="formgrid">
 <div class="formfield full"><label for="v3InvoiceOrder">Order</label><select id="v3InvoiceOrder" required class="field"><option value="">Choose an order</option></select></div>
@@ -84,8 +84,8 @@
 <div id="v3GstOrderAmount" class="muted"></div>
 <div id="v3GstLines"></div></div>
 <div class="formfield full"><button type="submit" class="btn gold" id="v3IssueInvoice">Issue invoice manually</button></div></form>
-<p class="muted">No invoice is generated when an order arrives. Only an authorised owner or employee may issue an invoice manually. Each order receives at most one final invoice. Issuing does not alter payment, stock or email customers.</p></article>
-<article class="card"><div class="cardtitle"><div><h2>Issued invoices</h2><p>Download PDF or inspect the original order</p></div><button class="btn small" id="v3ReloadInvoices">↻ Refresh</button></div>
+<p class="muted">Invoices are issued manually only. Eligible non-GST bills can be permanently deleted by the owner after confirmation; GST and GST-registered business invoice records remain protected. Deleting a bill never removes the original order.</p></article>
+<article class="card"><div class="cardtitle"><div><h2>Issued invoices</h2><p>Download the premium PDF or permanently delete eligible manual bills.</p></div><button class="btn small" id="v3ReloadInvoices">↻ Refresh</button></div>
 <div class="tablewrap"><table><thead><tr><th>Invoice</th><th>Type</th><th>Order</th><th>Issued</th><th>Amount</th><th>Action</th></tr></thead><tbody id="v3InvoiceRows"><tr><td colspan="6" class="empty">Loading invoices…</td></tr></tbody></table></div></article>
 <article class="card" id="v3InvoiceBusinessCard"><div class="cardtitle"><div><h2>Business details</h2><p>These details are included in newly issued invoices; past invoices stay unchanged.</p></div></div>
 <form id="v3InvoiceProfile" class="formgrid">
@@ -96,7 +96,7 @@
 <div class="formfield"><label>Business phone</label><input name="phone" maxlength="30" placeholder="Contact number"></div>
 <div class="formfield full"><label>Invoice note</label><textarea name="note" maxlength="300" rows="2" placeholder="Thank you for shopping with us."></textarea></div>
 <div class="formfield full"><button type="submit" class="btn gold">Save invoice details</button></div></form>
-<p class="notice">Normal invoices retain their original format. GST invoices require manual per-item HSN, rate, place of supply and supplier GSTIN. A GST PDF is not an e-invoice/IRN.</p>
+<p class="notice">Both manual and GST invoices now use the selected Champagne A4 layout by default. GST invoices still require actual HSN, tax rate, place of supply and supplier GSTIN. A PDF is not an e-invoice/IRN.</p>
 </article></section>
 <section class="section" id="section-reports"><article class="card"><div class="cardtitle"><div><h2>Reports & Analytics</h2><p>Live operational overview from verified orders and inventory</p></div><button class="btn small" id="v3RefreshReports">↻ Refresh</button></div><div id="v3Reports" class="v3-reportgrid"><p class="muted">Loading analytics…</p></div></article></section>
 

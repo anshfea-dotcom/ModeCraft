@@ -156,6 +156,24 @@ async function openCheckout(page,url){
    assert.equal(initialAction.position,'static',"Mobile actions should remain docked outside the scrollable form");
    assert.ok(initialAction.top>=-1 && initialAction.bottom<=initialAction.viewport+2,"Place Order must fit above mobile browser controls: "+JSON.stringify(initialAction));
    assert.equal(await page.locator("#checkoutContinueShopping").isVisible(),true);
+   // Verify several realistic phone widths and tablet-width, not just one emulator.
+   for(const width of [320,360,430,768]){
+     await page.setViewportSize({width,height:760});
+     await checkSequence(page);
+     await checkCheckoutAboveHeader(page);
+     const buttonBox=await page.locator('#placeOrder').boundingBox();
+     const backBox=await page.locator('#checkoutContinueShopping').boundingBox();
+     assert.ok(buttonBox&&buttonBox.y>=-1&&buttonBox.y+buttonBox.height<=762,
+       'Place Order must be on-screen at '+width+'px');
+     assert.ok(backBox&&backBox.y>=-1&&backBox.y+backBox.height<=762,
+       'Back to Shopping must be on-screen at '+width+'px');
+   }
+   await page.setViewportSize({width:390,height:844});
+   await page.locator("#checkoutContinueShopping").click();
+   assert.equal(await page.locator("#checkout").isVisible(),false,"Back to Shopping must exit checkout");
+   await page.locator("#bagBtn").click();
+   await page.locator("#checkoutBtn").click();
+   assert.equal(await page.locator("#checkout .checkout-box").isVisible(),true,"Return to shopping must preserve cart for reopening checkout");
    await page.locator('[data-checkout-quantity][data-delta="1"]').first().click();
    assert.equal((await page.locator(".checkout-quantity-value").first().innerText()).trim(),"2");
    assert.ok((await page.locator("#checkoutGrandTotal").innerText()).includes("2,000"));

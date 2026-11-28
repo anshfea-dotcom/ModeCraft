@@ -136,18 +136,21 @@ async function checkAuthLock(pool, kind, account) {
   return Number(r.rows[0]?.retry_after || 0);
 }
 async function recordAuthFailure(pool, kind, account) {
-  // 5 failures within 15m => 60s lock; doubles on new failures, max 30m.
+  // Five failures within one 15-minute window => 60s lock. Further failures
+  // in that window increase the delay exponentially, capped at 30 minutes.
   await pool.query(
-    `INSERT INTO auth_lockouts AS locks (identity, failures, locked_until, updated_at)
-     VALUES ($1, 1, NULL, NOW())
+    `INSERT INTO auth_lockouts AS locks (identity, failures, locked_until, window_started, updated_at)
+     VALUES ($1, 1, NULL, NOW(), NOW())
      ON CONFLICT (identity) DO UPDATE SET
-       failures = CASE WHEN locks.updated_at < NOW() - INTERVAL '15 minutes'
+       failures = CASE WHEN locks.window_started <= NOW() - INTERVAL '15 minutes'
          THEN 1 ELSE LEAST(20, locks.failures + 1) END,
        locked_until = CASE
-         WHEN locks.updated_at < NOW() - INTERVAL '15 minutes' THEN NULL
+         WHEN locks.window_started <= NOW() - INTERVAL '15 minutes' THEN NULL
          WHEN locks.failures + 1 >= 5 THEN NOW() +
            LEAST(1800, (60 * POWER(2, LEAST(5, locks.failures - 4)))::integer) * INTERVAL '1 second'
          ELSE NULL END,
+       window_started = CASE WHEN locks.window_started <= NOW() - INTERVAL '15 minutes'
+         THEN NOW() ELSE locks.window_started END,
        updated_at = NOW()`,
     [lockIdentity(kind, account)]
   );

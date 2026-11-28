@@ -1,5 +1,6 @@
 "use strict";
 const PDFDocument = require("pdfkit");
+const {buildGstSnapshot,renderGstInvoice} = require("./gst-invoice");
 
 // Commercial invoices use a snapshot of a real order. No GST tax breakdown is
 // inferred from payments that did not record tax rates, HSN, or place of supply.
@@ -40,7 +41,7 @@ module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, 
       const result = await pool.query("SELECT id,order_id,data,issued_at FROM invoices ORDER BY id DESC LIMIT 500");
       res.set("Cache-Control","no-store").json({invoices:result.rows.map(row=>({
         id:String(row.id),orderId:row.order_id,invoiceNumber:row.data.invoiceNumber,
-        amount:row.data.total,createdAt:row.issued_at,customerName:row.data.customer?.name||"Customer"
+        amount:row.data.total,createdAt:row.issued_at,invoiceType:row.data.type==="gst_tax_invoice"?"gst":"normal",customerName:row.data.customer?.name||"Customer"
       }))});
     } catch(e){next(e);}
   });
@@ -58,6 +59,8 @@ module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, 
       const total = Number(order.total);
       if (!items.length || !Number.isFinite(total) || total < 0)
         return res.status(409).json({error:"This order has incomplete invoice data."});
+      const invoiceType=req.body?.invoiceType||"normal";
+      if(!["normal","gst"].includes(invoiceType))return res.status(400).json({error:"Select Normal or GST Tax Invoice."});
       const snapshot = {
         type:"commercial_invoice",orderId:order.id,orderDate:order.createdAt,
         customer:order.customer||{},items,subtotal:Number(order.subtotal ?? total),
@@ -65,15 +68,21 @@ module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, 
         currency:"INR",paymentMethod:order.paymentMethod||"",paymentStatus:order.paymentStatus||"pending",
         seller,createdAt:new Date().toISOString()
       };
+      if(invoiceType==="gst")Object.assign(snapshot,buildGstSnapshot(order,seller,req.body));
       client=await pool.connect();
       await client.query("BEGIN");
       const result=await client.query("INSERT INTO invoices(order_id,data) VALUES($1,$2::jsonb) ON CONFLICT(order_id) DO NOTHING RETURNING id", [order.id,JSON.stringify(snapshot)]);
       const saved=result.rowCount?result.rows[0]:null;
       if(saved) {
-        snapshot.invoiceNumber="AER-"+new Date().getFullYear()+"-"+String(saved.id).padStart(6,"0");
+        const now=new Date(),fy=now.getMonth()<3?now.getFullYear()-1:now.getFullYear();
+        snapshot.invoiceNumber=invoiceType==="gst" ?
+          "GST-"+String(fy).slice(-2)+String(fy+1).slice(-2)+"-"+String(saved.id).padStart(6,"0") :
+          "AER-"+now.getFullYear()+"-"+String(saved.id).padStart(6,"0");
         await client.query("UPDATE invoices SET data=$2::jsonb WHERE id=$1",[saved.id,JSON.stringify(snapshot)]);
       }
       const invoice=await client.query("SELECT id, data FROM invoices WHERE order_id=$1", [order.id]);
+      const existing=invoice.rows[0].data.type==="gst_tax_invoice"?"gst":"normal";
+      if(existing!==invoiceType)throw Object.assign(new Error("This order already has a "+(existing==="gst"?"GST Tax Invoice":"Normal Invoice")+". Issued invoices cannot be converted or duplicated."),{status:409});
       await client.query("COMMIT");client.release();client=null;
       await audit(req.adminSession,saved?"invoice.issued":"invoice.retrieved",{orderId:order.id});
       res.status(saved?201:200).json({ok:true,id:String(invoice.rows[0].id),invoiceNumber:invoice.rows[0].data.invoiceNumber,alreadyIssued:!saved});
@@ -91,6 +100,7 @@ module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, 
       const doc=new PDFDocument({size:"A4",margin:46,info:{Title:x.invoiceNumber,Author:"AERLON"}});
       doc.on("error",error=>{if(!res.headersSent)next(error);else res.destroy(error);});
       doc.pipe(res);
+      if(x.type==="gst_tax_invoice"){renderGstInvoice(doc,x);doc.end();return;}
       const ink="#1b1b1a",gold="#a27e40";
       doc.font("Helvetica-Bold").fontSize(25).fillColor(ink).text("A E R L O N",46,43);
       doc.font("Helvetica").fontSize(10).fillColor(gold).text("COMMERCIAL INVOICE",46,78);

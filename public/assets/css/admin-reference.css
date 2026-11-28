@@ -235,3 +235,8 @@
 @media(prefers-reduced-motion:reduce){
  .app .sidebar .nav button,.ae-icon-button,.ae-seller{transition:none!important}
 }
+/* The customer-care shortcut opens the actual storefront support page. */
+.app .sidebar .nav .ae-support-link{display:flex;align-items:center;gap:10px;padding:8px 11px;color:#e7e6e6;font-size:12px;text-decoration:none;border-radius:7px;min-height:38px}
+.app .sidebar .nav .ae-support-link:hover{background:#2c261e;color:white}
+.app .sidebar .nav .ae-support-link .ico{display:inline-block;width:18px;text-align:center;color:#dfc69b}
+@media(min-width:701px){.app.ae-sidebar-collapsed>.sidebar .nav .ae-support-link{font-size:0;justify-content:center}.app.ae-sidebar-collapsed>.sidebar .nav .ae-support-link .ico{font-size:21px}}

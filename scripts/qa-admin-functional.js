@@ -18,6 +18,26 @@ function response(){
   send(v){this.body=v;return this}
  };
 }
+
+function testGST(){
+ const {buildGstSnapshot}=require("../services/store/gst-invoice");
+ const seller={gstin:"09AAAAA0000A1Z5"};
+ const order={id:"TEST",items:[{name:"Kurti",quantity:2,unitPrice:590}],subtotal:1180,discount:180,total:1000,shipping:0};
+ const request={buyerAddress:"1 Test Road, Uttar Pradesh",signatory:"Owner",
+   placeOfSupplyStateCode:"09",lines:[{hsn:"6206",gstRate:18}]};
+ const intra=buildGstSnapshot(order,seller,request);
+ assert.equal(intra.type,"gst_tax_invoice");
+ assert.equal(intra.gst.lines[0].amount,1000);
+ assert.equal(intra.gst.cgst+intra.gst.sgst,152.54);
+ assert.equal(intra.gst.igst,0);
+ const inter=buildGstSnapshot(order,seller,{...request,placeOfSupplyStateCode:"27"});
+ assert.equal(inter.gst.igst,152.54);
+ assert.equal(inter.gst.cgst,0);
+ assert.throws(()=>buildGstSnapshot(order,seller,{...request,lines:[{hsn:"6206",gstRate:undefined}]}));
+ assert.throws(()=>buildGstSnapshot({...order,total:1500},seller,request));
+ console.log("PASS: manually selected GST HSN, inclusive CGST/SGST or IGST and reconciliation checks");
+}
+
 async function testPOS(){
   const {app,routes}=appRecorder();
   const queries=[],audit=[];
@@ -93,5 +113,5 @@ async function testInvoicePDF(){
   assert.ok(stream.headers["Content-Disposition"].includes(".pdf"));
   console.log("PASS: authenticated invoice PDF handler generates a complete PDF stream");
 }
-(async()=>{await testPOS();await testInvoicePDF();console.log("2/2 AERLON Admin 3.0 transaction checks passed.")})()
+(async()=>{await testPOS();await testInvoicePDF();testGST();console.log("3/3 AERLON Admin 3.0 transaction checks passed.")})()
 .catch(err=>{console.error("Admin 3.0 transaction test failed:",err.stack||err);process.exitCode=1});

@@ -109,10 +109,15 @@
       const qty=form.elements.namedItem("quantity");
       qty.value=String(next);
       helper.textContent="Saving "+delta+" additional unit(s) for "+wh.name+"…";
-      // Submit through the existing transaction-safe stock API and existing handlers.
-      form.requestSubmit();
+      // Use the existing transaction-safe PUT endpoint. Do not submit the other form
+      // simultaneously, and never change the central inventory quantity here.
+      await api("/api/admin/warehouses/stock",{
+        method:"PUT",body:JSON.stringify({warehouseId,variantId,quantity:next})
+      });
+      helper.textContent="Added "+delta+" unit(s). "+next+" units now assigned here.";
       extra.value="";
-      helper.textContent="Adding units to the selected warehouse. Refreshing its assignment shortly.";
+      by("v3ReloadWarehouses")?.click();
+      toast("Warehouse stock assignment updated.");
     }catch(err){helper.textContent=err.message;toast(err.message,true);}
     finally{addBtn.disabled=false;}
   });

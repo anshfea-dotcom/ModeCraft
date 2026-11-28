@@ -88,7 +88,7 @@ check("size selection is mandatory and gives visible red warning",()=>{
   assert.ok(css.includes("#detailSizeWarning"));
 });
 check("responsive themes, syntax and retry/idempotency safeguards remain valid",()=>{
-  assert.ok(html.includes('checkout-onepage.css?v=20261128-5'));
+  assert.ok(html.includes('checkout-onepage.css?v=20261128-6'));
   assert.ok(html.includes('checkout.js?v=20261128-3'));
   assert.ok(css.includes('flex-direction:column!important'));
   assert.ok(css.includes('position:static!important'));

@@ -55,7 +55,12 @@
        renderGstFields();
       by("v3InvoiceOrder").innerHTML='<option value="">Choose an order</option>'+options.map(order=>'<option value="'+escapeHTML(order.id)+'">'+escapeHTML(order.id)+' · '+escapeHTML(order.customer?.name||"Customer")+' · '+escapeHTML(moneyV3(order.total))+'</option>').join("");
       const invoices=items.invoices||[];
-      by("v3InvoiceRows").innerHTML=invoices.map(invoice=>'<tr><td><strong>'+escapeHTML(invoice.invoiceNumber)+'</strong></td><td>'+escapeHTML(invoice.type==="gst_tax_invoice"?"GST Tax":"Normal")+'</td><td>'+escapeHTML(invoice.orderId)+'</td><td>'+escapeHTML(dateV3(invoice.createdAt))+'</td><td>'+escapeHTML(moneyV3(invoice.amount))+'</td><td><button type="button" class="btn small v3-pdf" data-type="'+escapeHTML(invoice.type||"commercial_invoice")+'" data-id="'+escapeHTML(invoice.id)+'">Download PDF</button></td></tr>').join("")||'<tr><td colspan="6" class="empty">No invoices have been issued yet.</td></tr>';
+      by("v3InvoiceRows").innerHTML=invoices.map(invoice=>{
+        const type=invoice.type==="gst_tax_invoice"?"GST Tax":"Manual";
+        const download='<button type="button" class="btn small v3-pdf" data-type="'+escapeHTML(invoice.type||"commercial_invoice")+'" data-id="'+escapeHTML(invoice.id)+'">Download PDF</button>';
+        const action=currentUser.isOwner?(invoice.deletable?'<button type="button" class="btn small danger v3-delete-invoice" data-id="'+escapeHTML(invoice.id)+'" data-number="'+escapeHTML(invoice.invoiceNumber)+'" aria-label="Permanently delete invoice '+escapeHTML(invoice.invoiceNumber)+'">Delete</button>':'<span class="muted" title="Issued tax records must be retained">GST record protected</span>'):"";
+        return '<tr><td><strong>'+escapeHTML(invoice.invoiceNumber)+'</strong></td><td>'+type+'</td><td>'+escapeHTML(invoice.orderId)+'</td><td>'+escapeHTML(dateV3(invoice.createdAt))+'</td><td>'+escapeHTML(moneyV3(invoice.amount))+'</td><td><div class="table-actions">'+download+action+'</div></td></tr>';
+      }).join("")||'<tr><td colspan="6" class="empty">No invoices have been issued yet.</td></tr>';
       lastInvoiceLoad=Date.now();
     }catch(e){toast(e.message,true);}
     finally{loadingInvoices=false;}
@@ -209,6 +214,22 @@
     finally{btn.disabled=false;}
   });
   by("v3InvoiceRows")?.addEventListener("click",async event=>{
+    const remove=event.target.closest(".v3-delete-invoice");
+    if(remove){
+      if(!currentUser?.isOwner)return toast("Only the owner may permanently delete eligible invoices.",true);
+      const number=remove.dataset.number||"";
+      if(!window.confirm("Permanently DELETE invoice "+number+"? This cannot be undone. The original customer order will remain unchanged."))return;
+      const typed=window.prompt("Type the exact invoice number to confirm permanent deletion:\n"+number);
+      if(typed===null)return;
+      remove.disabled=true;
+      try{
+        await api("/api/admin/invoices/"+encodeURIComponent(remove.dataset.id),{method:"DELETE",body:JSON.stringify({confirmInvoiceNumber:typed.trim()})});
+        toast("Invoice permanently deleted. The order remains intact.");
+        await loadInvoices();
+      }catch(error){toast(error.message,true);}
+      finally{remove.disabled=false;}
+      return;
+    }
     const button=event.target.closest(".v3-pdf");if(!button)return;
     button.disabled=true;
     try{

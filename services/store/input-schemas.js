@@ -33,7 +33,7 @@ const safeLink = z.string().max(1200).refine(v =>
 const imageUrl = z.string().max(1800).refine(v => !v || /^https:\/\/[^\s<>"']+$/i.test(v) || /^\/(?!\/)[^\s<>"']+$/.test(v), "Only HTTPS image URLs or absolute local paths are allowed");
 
 const empty = obj({});
-const paramsId = obj({id});
+const paramsId = obj({id:id()});
 const paramsUuid = obj({id:uuid});
 const paramsProduct = obj({productId:id()});
 const entries = [];

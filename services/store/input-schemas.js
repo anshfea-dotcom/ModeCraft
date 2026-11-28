@@ -267,7 +267,9 @@ define("PATCH","/api/admin/automations/alerts/:id",empty,empty,paramsUuid);
 
 define("POST","/api/admin/gift-cards",obj({
   label:text(100,2),amount:money(50,100000),
-  expiresAt:z.union([z.string().datetime({offset:true}),z.literal("")]).optional()
+  expiresAt:z.union([z.string().datetime({offset:true}),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>!Number.isNaN(Date.parse(v)),"Invalid date"),
+    z.literal("")]).optional()
 }));
 define("PATCH","/api/admin/gift-cards/:id",obj({
   fundingReference:optionalText(100),active:flag

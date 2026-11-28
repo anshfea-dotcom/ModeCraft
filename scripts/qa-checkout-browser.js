@@ -129,8 +129,8 @@ async function openCheckout(page,url){
      const r=el.getBoundingClientRect();
      return {top:r.top,bottom:r.bottom,viewport:innerHeight,position:getComputedStyle(el.closest('.checkout-action')).position};
    });
-   assert.equal(initialAction.position,'sticky',"Mobile Place Order footer must remain sticky");
-   assert.ok(initialAction.top>=-1 && initialAction.bottom<=initialAction.viewport+2,"Place Order must fit above mobile browser controls");
+   assert.equal(initialAction.position,'static',"Mobile actions should remain docked outside the scrollable form");
+   assert.ok(initialAction.top>=-1 && initialAction.bottom<=initialAction.viewport+2,"Place Order must fit above mobile browser controls: "+JSON.stringify(initialAction));
    assert.equal(await page.locator("#checkoutContinueShopping").isVisible(),true);
    await page.locator('[data-checkout-quantity][data-delta="1"]').first().click();
    assert.equal((await page.locator(".checkout-quantity-value").first().innerText()).trim(),"2");

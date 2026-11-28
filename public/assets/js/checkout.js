@@ -45,14 +45,23 @@ function endCheckoutAttempt() {
       item.classList.toggle('complete', i < step);
     });
     dialog.dataset.step = String(step + 1);
-    dialog.querySelector('.checkout-order-summary').hidden = step !== 2;
+    dialog.querySelector('.checkout-order-summary').hidden = false;
     field('checkoutBack').hidden = step === 0;
     field('checkoutNext').hidden = step === 2;
     field('placeOrder').hidden = step !== 2;
-    field('checkoutNext').textContent = step === 0 ? 'Continue to payment' : 'Review order';
+    field('checkoutNext').textContent = step === 0 ? 'Continue to payment →' : 'Review order →';
+    const copy = [
+      ['STEP 01 / 03','Where should it go?','Tell us where to deliver. You can review everything before placing your order.'],
+      ['STEP 02 / 03','Your way to pay.','Choose your preferred method. No payment is taken until the final confirmation.'],
+      ['STEP 03 / 03','One final look.','Confirm your details and total before placing the order.']
+    ][step];
+    field('checkoutStageCount').textContent = copy[0];
+    field('checkoutStageHeading').textContent = copy[1];
+    field('checkoutStageDetail').textContent = copy[2];
     if (step === 2) {
       review.textContent = ['name','house','address','landmark','city','state','pin','phone','email'].map(id => field(id).value.trim()).filter(Boolean).join(' · ');
       field('paymentReview').textContent = field('payment').selectedOptions[0].textContent;
+      field('checkoutGrandLabel').textContent = field('payment').value === 'COD' ? 'Total on delivery' : 'Order total';
     }
     box.scrollTop = 0;
     if (focus) {
@@ -68,6 +77,8 @@ function endCheckoutAttempt() {
     if (step < 2) showStep(step + 1);
   }
   field('checkoutNext').onclick = advance;
+  field('editCheckoutAddress').onclick = () => showStep(0);
+  field('editCheckoutPayment').onclick = () => showStep(1);
   field('checkoutBack').onclick = () => showStep(Math.max(0, step - 1));
   field('enterPin').onclick = () => {
     revision++;
@@ -82,7 +93,7 @@ function endCheckoutAttempt() {
   }, true);
   function resetFlow() {
     retryGps = false;
-    button.textContent = 'Use my current location';
+    button.textContent = '⌖ Use my location';
     message.textContent = '';
     lastPin = '';
     showStep(0, false);
@@ -125,12 +136,12 @@ function endCheckoutAttempt() {
       for (const key of ['pin','city','state','address']) if (result[key]) field(key).value = result[key];
       lastPin = result.city && result.state ? result.pin : '';
       message.textContent = 'Area found. Review the details and enter your building and street.';
-      button.textContent = 'Update location';
+      button.textContent = '⌖ Update location';
       retryGps = false;
     } catch (error) {
       if (current !== revision) return;
       retryGps = true;
-      button.textContent = 'Retry location';
+      button.textContent = '⌖ Retry location';
       const reason = {1:'Location permission is off.',2:'Your phone could not find its location.',3:'Your phone needs more time to find its location.'};
       message.textContent = reason[error.code] ? reason[error.code] + ' Retry or enter your PIN.' : error.message;
     } finally { button.disabled = false; }

@@ -283,6 +283,7 @@ function updateCheckoutSummary(){
   if(checkoutDiscount)checkoutDiscount.textContent="−"+money(discount);
   if(checkoutDiscountRow)checkoutDiscountRow.hidden=!discount;
   if(checkoutGrand)checkoutGrand.textContent=money(finalTotal);
+  const dock=$("#checkoutDockTotal");if(dock)dock.textContent=money(finalTotal);
   $("#removeCoupon").hidden = !appliedCoupon;
   if (!$("#placeOrder").disabled) $("#placeOrder").textContent = "Place order · " + money(finalTotal);
   const totals=$("#couponTotals");

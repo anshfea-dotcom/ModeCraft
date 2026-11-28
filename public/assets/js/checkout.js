@@ -31,7 +31,8 @@ function endCheckoutAttempt(){
   }
   function locationStatus(state,text){
     status.dataset.state=state;
-    status.textContent=(state==='success'?'✓ ':state==='error'?'⚠ ':state==='loading'?'… ':'')+text;
+    status.setAttribute('aria-live',state==='error'?'assertive':'polite');
+    status.textContent=(state==='success'?'✓ ':state==='error'?'⚠ ':state==='loading'?'Checking: ':'')+text;
   }
   function invalidField(){
     const input=delivery.querySelector('input:invalid,select:invalid');
@@ -151,7 +152,7 @@ function endCheckoutAttempt(){
   window.aerlonSaveCheckoutAddress=()=>account?persistAddress(false).catch(()=>false):Promise.resolve(false);
   new MutationObserver(()=>{
     if(dialog.classList.contains('show')){setError('');loadAddresses();}
-    else{lookupId++;gpsRetry=false;locate.disabled=false;locate.textContent='⌖ Use my location';}
+    else{lookupId++;gpsRetry=false;locate.disabled=false;locate.removeAttribute('aria-busy');locate.textContent='⌖ Use my location';}
   }).observe(dialog,{attributes:true,attributeFilter:['class']});
   const syncGift=()=>{
     const gift=by('payment').value==='GIFT';
@@ -201,7 +202,7 @@ function endCheckoutAttempt(){
       locationStatus('error','Location is unavailable in this browser. Please enter your PIN.');
       pin.focus();return;
     }
-    locate.disabled=true;locate.textContent='◌ Finding…';
+    locate.disabled=true;locate.setAttribute('aria-busy','true');locate.textContent='Finding location…';
     const current=++revision;lookupId++;
     locationStatus('loading','Requesting your location. You can also enter your address manually.');
     try{
@@ -210,23 +211,23 @@ function endCheckoutAttempt(){
           enableHighAccuracy:gpsRetry,timeout:gpsRetry?30000:20000,maximumAge:gpsRetry?0:120000
         })
       );
-      if(current!==revision)return;
+      if(current!==revision){locationStatus('','Location lookup stopped because the address was edited.');return;}
       if(position.coords.accuracy>1200)throw new Error('Your location is approximate. Retry or enter a PIN.');
       locationStatus('loading','Location received. Finding your city, state and PIN…');
       const found=await api('/api/checkout/address/location',{
         lat:position.coords.latitude,lon:position.coords.longitude
       },12000);
-      if(current!==revision)return;
+      if(current!==revision){locationStatus('','Location lookup stopped because the address was edited.');return;}
       for(const key of ['pin','city','state','address'])if(found[key])by(key).value=found[key];
       previousPin=found.pin||'';
       locationStatus('success','Area fetched successfully. Check your PIN and add your house and street before placing the order.');
       gpsRetry=false;locate.textContent='⌖ Update location';
     }catch(err){
-      if(current!==revision)return;
+      if(current!==revision){locationStatus('','Location lookup stopped because the address was edited.');return;}
       gpsRetry=true;locate.textContent='⌖ Retry location';
       const explanation={1:'Location permission was denied.',2:'Your device could not determine location.',3:'Location request timed out.'};
       locationStatus('error',(explanation[err.code]||err.message)+' Enter the address manually or retry.');
-    }finally{locate.disabled=false;if(locate.textContent==='◌ Finding…')locate.textContent='⌖ Use my location';}
+    }finally{locate.disabled=false;locate.removeAttribute('aria-busy');if(locate.textContent==='Finding location…')locate.textContent='⌖ Use my location';}
   });
   by('removeCoupon').onclick=()=>clearAppliedCoupon('Coupon removed.');
   by('checkoutItems').addEventListener('click',e=>{

@@ -22,12 +22,24 @@ check("one-page order form has exactly one real Place Order button and no three-
     assert.ok(!checkout.includes('id="'+id+'"'),"Remove legacy step "+id);
   }
   assert.ok(!checkout.includes("checkout-steps")&&!checkout.includes("STEP 01"));
+  const positions=['checkout-order-summary','id="deliveryFields"','id="couponPanel"','id="paymentStep"','id="placeOrder"'].map(marker=>checkout.indexOf(marker));
+  assert.ok(positions.every((value,index)=>value>=0 && (!index || value>positions[index-1])),"Checkout must follow Summary > Address > Coupon > Payment > Place Order in the DOM");
+  assert.ok(checkout.indexOf('class="checkout-layout"')<checkout.indexOf('checkout-order-summary'));
+  assert.ok(checkout.indexOf('checkout-order-summary')<checkout.indexOf('class="checkout-main"'));
+  assert.ok(!checkout.slice(checkout.indexOf('id="paymentStep"'),checkout.indexOf('id="checkoutGiftDetails"')).includes('id="couponPanel"'));
+
 });
 check("only Cash on Delivery and fully-funded Gift Code appear to new customers",()=>{
   assert.ok(checkout.includes('name="paymentChoice" value="COD" checked'));
   assert.ok(checkout.includes('name="paymentChoice" value="GIFT"'));
   assert.ok(!checkout.includes('value="ONLINE"'));
   assert.ok(!checkout.includes('data-payment="ONLINE"'));
+  assert.ok(checkout.includes('class="payment-icon payment-icon-cod"'));
+  assert.ok(checkout.includes('class="payment-icon payment-icon-gift"'));
+  assert.ok(checkout.includes('<svg viewBox="0 0 32 32"'));
+  assert.ok(css.includes('#checkout .payment-icon-cod{background:#E9F9EF'));
+  assert.ok(css.includes('#checkout .payment-icon-gift{background:#FFF3E7'));
+
   assert.ok(client.includes('"/api/orders/gift"')||client.includes("'/api/orders/gift'"));
   assert.ok(client.includes('"/api/orders/cod"')||client.includes("'/api/orders/cod'"));
   assert.ok(client.includes("aerlonCheckoutValidate"));
@@ -72,8 +84,13 @@ check("size selection is mandatory and gives visible red warning",()=>{
   assert.ok(css.includes("#detailSizeWarning"));
 });
 check("responsive themes, syntax and retry/idempotency safeguards remain valid",()=>{
-  assert.ok(html.includes('checkout-onepage.css?v=20261128-1'));
-  assert.ok(html.includes('checkout.js?v=20261128-1'));
+  assert.ok(html.includes('checkout-onepage.css?v=20261128-2'));
+  assert.ok(html.includes('checkout.js?v=20261128-2'));
+  assert.ok(css.includes('flex-direction:column!important'));
+  assert.ok(css.includes('position:static!important'));
+  assert.ok(css.includes('@media(max-width:540px)'));
+  assert.ok(css.includes('#checkout .checkout-location-message[data-state="loading"]::before'));
+
   assert.ok(css.includes("@media(max-width:430px)"));
   assert.ok(css.includes("body.dark #checkout"));
   assert.ok(css.includes("prefers-reduced-motion"));

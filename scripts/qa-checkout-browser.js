@@ -8,6 +8,32 @@ const {chromium}=require("playwright");
 const root=path.resolve(__dirname,"../public");
 const data={signedIn:false,addresses:[],orders:[],gifts:[]};
 const giftCode="AGC-"+("A".repeat(24));
+async function checkSequence(page){
+ const result=await page.evaluate(()=>{
+  const root=document.getElementById("checkout");
+  const ids=[
+    root.querySelector(".checkout-order-summary"),
+    document.getElementById("deliveryFields"),
+    document.getElementById("couponPanel"),
+    document.getElementById("paymentStep"),
+    document.getElementById("placeOrder")
+  ];
+  const flow=ids.every((el,index)=>!!el&&(!index||!!(ids[index-1].compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING)));
+  const layout=getComputedStyle(root.querySelector(".checkout-layout"));
+  const box=root.querySelector(".checkout-box");
+  const orderSummary=ids[0].getBoundingClientRect(),address=ids[1].getBoundingClientRect();
+  return {flow,display:layout.display,direction:layout.flexDirection,
+   verticalSummaryBeforeAddress:orderSummary.top<address.top,
+   boxWidth:box.getBoundingClientRect().width,viewport:innerWidth,
+   horizontalOverflow:box.scrollWidth>box.clientWidth+2};
+ });
+ assert.ok(result.flow,"DOM sequence: order summary, address, coupon, payment, place order");
+ assert.equal(result.display,"flex");
+ assert.equal(result.direction,"column");
+ assert.ok(result.verticalSummaryBeforeAddress,"Order summary must be visually before address");
+ assert.ok(result.boxWidth<=result.viewport+2,"Checkout must not overflow the device");
+ assert.equal(result.horizontalOverflow,false,"Checkout should scroll vertically without sideways overflow");
+}
 const product={
  id:"qa-shirt",name:"AERLON Test Shirt",category:"Shirts",active:true,price:1000,stock:20,
  colors:["Black"],sizesByColor:{Black:["M","L"]},
@@ -98,16 +124,21 @@ async function openCheckout(page,url){
    await page.addInitScript(()=>sessionStorage.setItem("aerlon-puzzle-entry-v1","1"));
    await openCheckout(page,url);
    assert.equal(await page.locator("#checkout .checkout-box").isVisible(),true);
-   const width=await page.evaluate(()=>({box:document.querySelector("#checkout .checkout-box").getBoundingClientRect().width,viewport:innerWidth}));
-   assert.ok(width.box<=width.viewport+2,"Mobile checkout should not overflow viewport");
+   await checkSequence(page);
    await page.locator("#placeOrder").click();
    await page.locator("#checkoutError").waitFor({state:"visible"});
+   assert.match(await page.locator("#checkoutError").innerText(),/address|delivery/i);
    await page.locator("#checkoutSaveAddress").click();
    assert.match(await page.locator("#checkoutAddressSaveMessage").innerText(),/sign in/i);
    await page.locator("#locateAddress").click();
    await page.locator('#addressMessage[data-state="success"]').waitFor({timeout:18000});
    assert.match(await page.locator("#addressMessage").innerText(),/fetched successfully/i);
    await fill(page);
+   await page.locator("#couponPanel > summary").click();
+   await page.locator("#couponInput").fill("SAVE10");
+   await page.locator("#applyCouponBtn").click();
+   await page.waitForFunction(()=>document.querySelector("#checkoutGrandTotal").textContent.includes("900"));
+   assert.equal(await page.locator("#couponPanel").getAttribute("open"),"");
    await page.locator("#placeOrder").click();
    await page.locator("#orderSuccessModal.show").waitFor({timeout:10000});
    assert.equal(data.orders.length,1);
@@ -144,10 +175,12 @@ async function openCheckout(page,url){
    const dp=await desktop.newPage();
    await dp.addInitScript(()=>sessionStorage.setItem("aerlon-puzzle-entry-v1","1"));
    await openCheckout(dp,url);
-   const row=await dp.locator("#checkout .checkout-layout").evaluate(el=>getComputedStyle(el).gridTemplateColumns);
-   assert.ok(row.split(" ").length>=2,"Desktop checkout should display two columns");
+   await checkSequence(dp);
    assert.equal(await dp.locator("#placeOrder").isVisible(),true);
-   console.log("PASS browser/desktop: summary alongside form and visible one-page Place Order");
+   assert.equal(await dp.locator("[data-payment]").count(),2);
+   assert.ok(await dp.locator(".payment-icon-cod svg").isVisible());
+   assert.ok(await dp.locator(".payment-icon-gift svg").isVisible());
+   console.log("PASS browser/desktop: exact five-part order, genuine payment icons, accessible Place Order");
    assert.deepEqual(errors,[],"Unexpected browser runtime errors");
    await desktop.close();await context.close();
    console.log("4/4 AERLON checkout Chromium browser smoke scenarios passed.");

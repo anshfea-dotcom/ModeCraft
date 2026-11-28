@@ -1,0 +1,130 @@
+
+/* AERLON approved compact admin UI. Additive presentation layer; keep existing IDs and API hooks. */
+.v3-edition,.admin20-welcome.v3-greeting,.v3-version-tag{display:none!important}
+.main .topbar,.main .topbar:where(:root[data-theme="dark"] .main .topbar){
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 17px!important;margin-bottom:15px!important;
+  border-radius:14px!important;box-shadow:none!important;overflow:visible;
+  background:linear-gradient(110deg,#211a13,#12110e)!important;
+}
+.main .topbar::after{display:none!important}
+.main .topbar .eyebrow{font-size:9px;letter-spacing:.12em;margin:0 0 3px}
+.main .topbar h1{font-size:clamp(20px,2.2vw,26px)!important;line-height:1.2;margin:0!important}
+.main .topbar .subtitle{font-size:11px;margin:4px 0 0;line-height:1.45}
+.main .topbar .actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.main .topbar .actions .btn{min-height:34px;padding:7px 10px;font-size:11px;white-space:nowrap}
+#section-overview .stats.admin-ref-stats{margin:12px 0 15px}
+.admin-ref-stats .stat{min-height:112px!important;padding:14px!important;border-top-width:2px!important}
+.admin-ref-icon svg{width:23px;height:23px}
+.v3-actions{margin:9px 0 16px}
+.v3-actions .cardtitle{margin-bottom:8px}
+.v3-action-grid button{min-height:76px!important;padding:11px 8px!important;position:relative;text-align:center!important}
+.v3-action-grid button span{margin:0 0 4px;font-size:25px}
+.v3-action-grid button sup{font-size:10px;position:relative;top:-.35em;margin-left:1px;color:var(--accent2)}
+.admin-addon-panel{margin:10px 0 0;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface)}
+.admin-addon-panel[hidden]{display:none!important}
+.admin-addon-panel p{margin:0 0 8px;font-size:11px}
+.admin-addon-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.admin-addon-links button{font:600 12px/1.3 inherit;font-family:inherit;padding:12px;background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:9px;cursor:pointer}
+.admin-addon-links button:hover,.admin-addon-links button:focus-visible{border-color:var(--accent)}
+/* Preset filters and a real keyboard-accessible start/end calendar. */
+.admin-ref-filter{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.admin-ref-filter>span{flex:1 1 180px}
+.admin-ref-filter>label{display:flex;align-items:center;gap:7px}
+.admin-calendar-button{height:40px;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:8px 12px;border-radius:10px;font:600 12px/1.2 inherit;cursor:pointer}
+.admin-calendar-button svg{width:18px;height:18px;color:var(--accent2)}
+.admin-calendar-panel{position:absolute;z-index:49;top:calc(100% + 8px);right:0;max-width:min(490px,calc(100vw - 28px));width:100%;background:var(--surface);border:1px solid var(--accent);border-radius:13px;box-shadow:0 18px 46px #0007;padding:14px;display:flex;align-items:end;flex-wrap:wrap;gap:10px}
+.admin-calendar-panel[hidden]{display:none!important}
+.admin-calendar-panel label{flex:1 1 140px;display:grid;gap:5px;color:var(--muted);font-size:11px}
+.admin-calendar-panel input{width:100%;min-height:40px;padding:8px;background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:9px;color-scheme:dark}
+:root[data-theme="light"] .admin-calendar-panel input{color-scheme:light}
+.admin-calendar-panel .btn{min-height:40px;flex:1 1 100px}
+#admin20Bottom{display:none!important}
+/* Permission-aware, in-app notifications alongside the existing admin search. */
+#adminNotificationToggle{display:none;position:relative;border:0;border-radius:10px;background:transparent;color:#f4e5c7;cursor:pointer}
+#adminNotificationToggle svg{width:22px;height:22px}
+.admin-notification-count{position:absolute;top:1px;right:0;min-width:17px;min-height:17px;border-radius:12px;padding:1px 4px;background:#c59b5d;color:#20170d;font:700 10px/16px system-ui;text-align:center}
+.admin-notification-count[hidden]{display:none!important}
+.admin-notification-panel{position:absolute;z-index:105;background:var(--surface);color:var(--text);border:1px solid var(--accent);border-radius:13px;box-shadow:0 20px 60px #0008;padding:12px;width:min(380px,calc(100vw - 22px));max-height:min(70vh,550px);overflow:auto}
+.admin-notification-panel[hidden]{display:none!important}
+.admin-notification-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 3px 10px;border-bottom:1px solid var(--line)}
+.admin-notification-head strong{font-size:15px}
+.admin-notification-head button,.admin-notification-refresh{border:0;background:transparent;color:var(--accent2);font-size:11px;font-weight:650;cursor:pointer}
+#adminNotificationItems{display:grid;gap:5px;padding:8px 0}
+.admin-notification-item{display:flex;gap:10px;align-items:start;width:100%;padding:10px;text-align:left;color:var(--text);background:transparent;border:1px solid transparent;border-radius:10px;cursor:pointer}
+.admin-notification-item:hover,.admin-notification-item:focus-visible{background:var(--surface2);border-color:var(--line)}
+.admin-notification-item .admin-n-icon{flex:0 0 32px;height:32px;display:grid;place-items:center;border-radius:9px;color:var(--accent2);background:var(--surface2)}
+.admin-notification-item strong{display:block;font-size:12px}
+.admin-notification-item small{display:block;color:var(--muted);font-size:11px;line-height:1.5;margin-top:2px}
+.admin-notification-item.unread{box-shadow:inset 3px 0 var(--accent)}
+.admin-notification-empty{padding:12px;color:var(--muted);font-size:12px;line-height:1.5}
+.admin-notification-refresh{display:block;padding:10px 4px;border-top:1px solid var(--line);width:100%;text-align:center}
+@media(min-width:701px){
+ .app>.sidebar{padding-top:71px!important}
+ .app>.sidebar>#adminSearchToggle,.app>.sidebar>#adminNotificationToggle{display:grid!important;place-items:center;position:absolute;top:13px;width:39px;height:39px;padding:8px;min-width:39px}
+ .app>.sidebar>#adminSearchToggle{left:14px}
+ .app>.sidebar>#adminNotificationToggle{left:62px}
+ .app>.sidebar>#adminQuickSearchPanel{display:block;position:fixed;z-index:110;top:61px;left:268px;width:min(380px,calc(100vw - 282px));background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:12px;box-shadow:0 18px 48px #0009}
+ .app>.sidebar>#adminQuickSearchPanel[hidden]{display:none!important}
+ .app>.sidebar>#adminNotificationPanel{position:fixed;top:61px;left:268px}
+ .app>.sidebar>#adminQuickSearchPanel input{width:100%;min-height:43px;background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px}
+ .app>.sidebar>#adminQuickSearchPanel #adminQuickSearchResults{display:grid;max-height:50vh;overflow:auto}
+ .app>.sidebar>#adminQuickSearchPanel #adminQuickSearchResults button{padding:10px;color:var(--text);background:transparent;border:0;text-align:left;display:flex;gap:9px}
+ .app>.sidebar>#adminQuickSearchPanel #adminQuickSearchResults small{color:var(--muted)}
+}
+@media(min-width:701px) and (max-width:1240px){
+ .app>.sidebar>#adminNotificationPanel,.app>.sidebar>#adminQuickSearchPanel{left:244px}
+}
+@media(max-width:700px){
+ .app>.sidebar{grid-template-columns:44px minmax(0,1fr) 44px 44px!important;position:relative;z-index:45}
+ .app>.sidebar>.brand{grid-column:2;grid-row:1;font-size:19px!important}
+ .app>.sidebar>#workspaceMenu{grid-column:1;grid-row:1;font-size:25px!important}
+ .app>.sidebar>#adminSearchToggle{grid-column:3;grid-row:1}
+ .app>.sidebar>#adminNotificationToggle{display:grid!important;grid-column:4;grid-row:1;place-items:center;width:42px;height:42px;padding:9px}
+ .app>.sidebar>#nav{grid-column:1/-1}
+ .app>.sidebar>#adminQuickSearchPanel{z-index:110}
+ .app>.sidebar>#adminNotificationPanel{top:calc(100% + 2px);left:7px;right:7px;width:auto;max-height:65vh}
+ .app>.sidebar .workspace-menu[aria-expanded="true"]{display:grid!important;place-items:center;position:fixed;z-index:111;top:12px;left:min(calc(88vw - 58px),295px)!important;background:#3a2c1c;color:#f9e6c4}
+ .app>.sidebar .nav{z-index:100;height:100dvh;overscroll-behavior:contain}
+ .app>.sidebar:has(.workspace-menu[aria-expanded="true"]):before{z-index:90}
+ .main .topbar{padding:12px!important;margin-bottom:12px!important;gap:10px}
+ .main .topbar h1{font-size:22px!important}
+ .main .topbar .subtitle{font-size:11px}
+ .main .topbar .actions{width:auto;flex-basis:auto;gap:5px}
+ .main .topbar .actions #themeToggle,.main .topbar .actions #refresh,.main .topbar .actions a[href="/"]{font-size:0!important;width:34px;height:34px;padding:0;display:grid;place-items:center}
+ .main .topbar .actions #themeToggle::after{content:"☀";font-size:17px}
+ :root[data-theme="light"] .main .topbar .actions #themeToggle::after{content:"☾"}
+ .main .topbar .actions #refresh::after{content:"↻";font-size:20px}
+ .main .topbar .actions a[href="/"]::after{content:"↗";font-size:18px}
+ #section-overview .stats.admin-ref-stats{gap:9px!important}
+ .admin-ref-stats .stat{min-height:106px!important}
+ .v3-action-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px}
+ .v3-action-grid button{min-height:76px!important;font-size:10px;padding:8px 3px!important;line-height:1.3}
+ .v3-action-grid button span{font-size:23px}
+ .admin-ref-filter{gap:8px}
+ .admin-ref-filter>span{font-size:11px}
+ .admin-calendar-button{width:40px;min-width:40px;height:40px;justify-content:center;padding:8px}
+ .admin-calendar-button span{display:none}
+ .admin-addon-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+ /* Show the same real customer/order fields in a phone-friendly card without horizontal scrolling. */
+ #section-overview .v3-recent .tablewrap{overflow:visible}
+ #section-overview .v3-recent table{min-width:0!important;width:100%;display:block}
+ #section-overview .v3-recent thead{display:none}
+ #section-overview .v3-recent tbody{display:grid;gap:9px}
+ #section-overview .v3-recent tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 12px;padding:11px;border:1px solid var(--line);border-radius:11px;background:var(--surface2)}
+ #section-overview .v3-recent tbody td{padding:0!important;border:0!important;min-width:0;font-size:11px}
+ #section-overview .v3-recent tbody td:first-child{grid-row:1;grid-column:1}
+ #section-overview .v3-recent tbody td:nth-child(2){grid-column:1/-1;grid-row:2;font-size:12px}
+ #section-overview .v3-recent tbody td:nth-child(3){grid-column:2;grid-row:1;font-weight:700;text-align:right}
+ #section-overview .v3-recent tbody td:nth-child(4){grid-column:1;grid-row:3}
+ #section-overview .v3-recent tbody td:nth-child(5){grid-column:2;grid-row:3;text-align:right;font-size:10px}
+ #section-overview .v3-recent tbody td[colspan]{grid-column:1/-1}
+ #section-overview .v3-recent .cardtitle{gap:6px;flex-wrap:wrap}
+}
+@media(max-width:390px){
+ .app>.sidebar>.brand{font-size:17px!important;letter-spacing:.12em!important}
+ .v3-action-grid button{font-size:9px}
+ .main .topbar{flex-wrap:wrap}
+ .admin-ref-filter>label{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.v3-action-grid button{transition:none}}

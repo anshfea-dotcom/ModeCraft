@@ -23,6 +23,29 @@ function endCheckoutAttempt(){
   const error=by('checkoutError'),save=by('checkoutSaveAddress'),addNew=by('checkoutAddAddress');
   const giftDetails=by('checkoutGiftDetails'),giftInput=by('checkoutGiftCode'),giftMessage=by('checkoutGiftMessage');
   const keys=['name','phone','pin','city','state','house','address','landmark','addressType','email'];
+  const addressFields=by('checkoutAddressFields'),addressType=by('addressType');
+  function setAddressFieldsOpen(open){
+    addressFields.hidden=!open;
+    addNew.setAttribute('aria-expanded',String(open));
+  }
+  function syncAddressType(){
+    document.querySelectorAll('#checkout [data-address-type]').forEach(button=>{
+      const selected=button.dataset.addressType===addressType.value;
+      button.classList.toggle('is-selected',selected);
+      button.setAttribute('aria-pressed',String(selected));
+    });
+  }
+  document.querySelectorAll('#checkout [data-address-type]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      addressType.value=button.dataset.addressType;
+      syncAddressType();revision++;setError('');
+    });
+  });
+  syncAddressType();setAddressFieldsOpen(true);
+  by('checkoutContinueShopping').addEventListener('click',()=>{
+    showCheckout(false);
+    document.querySelector('#products')?.scrollIntoView({behavior:'smooth',block:'start'});
+  });
   let addresses=[],activeId=null,account=null,loadingAddresses=false,lookupId=0,revision=0,previousPin='',gpsRetry=false;
   function setError(text){
     error.hidden=!text;
@@ -55,15 +78,15 @@ function endCheckoutAttempt(){
       house:by('house').value.trim(),address:by('address').value.trim(),
       landmark:by('landmark').value.trim(),addressType:by('addressType').value};
   }
-  function applyAddress(address){
+  function applyAddress(address,edit=false){
     for(const key of keys){
       const actual=key==='pin'?'postalCode':key;
       if(address[actual]!==undefined)by(key).value=address[actual];
     }
     activeId=address.id||null;
     revision++;lookupId++;previousPin=by('pin').value;
-    setError('');drawAddresses();
-    addressNote.textContent='Saved address selected. You can edit any field before ordering.';
+    setError('');syncAddressType();setAddressFieldsOpen(edit);drawAddresses();
+    addressNote.textContent=edit?'Editing this saved address. Tap Save address when ready.':'Saved address selected. Tap Edit to change it.';
   }
   function drawAddresses(){
     addressList.replaceChildren();
@@ -87,7 +110,10 @@ function endCheckoutAttempt(){
           drawAddresses();addressNote.textContent='Address removed from your account.';
         }catch(err){addressNote.textContent='Could not delete address: '+err.message;remove.disabled=false;}
       };
-      row.append(pick,remove);addressList.append(row);
+      const edit=document.createElement('button');edit.type='button';edit.className='checkout-edit-address';edit.textContent='Edit';
+      edit.setAttribute('aria-label','Edit saved address '+(address.addressType||''));
+      edit.onclick=()=>{applyAddress(address,true);by('house').focus();};
+      row.append(pick,edit,remove);addressList.append(row);
     }
   }
   async function loadAddresses(){
@@ -102,6 +128,7 @@ function endCheckoutAttempt(){
       if(!account){
         addresses=[];activeId=null;drawAddresses();
         addressNote.textContent='Sign in to save addresses across devices. Guest checkout is available.';
+        setAddressFieldsOpen(true);syncAddressType();
         return;
       }
       const result=await api('/api/customer/addresses');
@@ -111,6 +138,7 @@ function endCheckoutAttempt(){
       if(!by('email').value)by('email').value=account.email||'';
       if(!by('phone').value)by('phone').value=account.phone||'';
       if(!activeId&&addresses.length&&!by('address').value)applyAddress(addresses[0]);
+       else if(!addresses.length)setAddressFieldsOpen(true);
       addressNote.textContent=addresses.length?'Choose a saved address or add a new one.':'Your address will be saved to this account when you place an order.';
     }catch(err){
       addressNote.textContent='Saved addresses unavailable: '+err.message+'. You can still enter an address manually.';
@@ -121,13 +149,14 @@ function endCheckoutAttempt(){
       if(showMessage)addressNote.textContent='Please sign in to save an address to your customer account.';
       return false;
     }
+    setAddressFieldsOpen(true);
     if(invalidField())return false;
     const data=addressData();
     const result=await api('/api/customer/addresses',{...data,...(activeId?{id:activeId}:{})});
     const updated=result.address;
     activeId=updated.id;
     addresses=[updated,...addresses.filter(x=>x.id!==updated.id)];
-    drawAddresses();
+    drawAddresses();setAddressFieldsOpen(false);
     if(showMessage)addressNote.textContent='✓ Address saved to your AERLON account.';
     return true;
   }
@@ -144,7 +173,7 @@ function endCheckoutAttempt(){
       by('phone').value=account.phone||'';
       by('email').value=account.email||'';
     }
-    drawAddresses();setError('');locationStatus('','');
+    drawAddresses();setError('');locationStatus('','');syncAddressType();setAddressFieldsOpen(true);
     addressNote.textContent='Enter the new address below, then tap Save address.';
     by('house').focus();
   });
@@ -194,10 +223,12 @@ function endCheckoutAttempt(){
     }catch(err){if(id===lookupId)locationStatus('error',err.message+' You may enter the details manually.');}
   });
   by('enterPin').addEventListener('click',()=>{
+    setAddressFieldsOpen(true);
     locationStatus('','Enter your six-digit PIN code to find the area.');
     pin.focus();
   });
   locate.addEventListener('click',async()=>{
+    setAddressFieldsOpen(true);
     if(!navigator.geolocation){
       locationStatus('error','Location is unavailable in this browser. Please enter your PIN.');
       pin.focus();return;
@@ -231,6 +262,15 @@ function endCheckoutAttempt(){
   });
   by('removeCoupon').onclick=()=>clearAppliedCoupon('Coupon removed.');
   by('checkoutItems').addEventListener('click',e=>{
+    const quantityButton=e.target.closest('[data-checkout-quantity]');
+    if(quantityButton){
+      const item=cart.find(row=>cartKey(row)===quantityButton.dataset.checkoutQuantity);
+      if(!item)return;
+      change(cartKey(item),Number(quantityButton.dataset.delta));
+      if(!cart.length){showCheckout(false);showBag(true);return;}
+      renderCheckoutItems();updateCheckoutSummary();
+      return;
+    }
     const button=e.target.closest('[data-fix-variant]');
     if(!button)return;
     const item=cart.find(row=>cartKey(row)===button.dataset.fixVariant);
@@ -263,7 +303,8 @@ function endCheckoutAttempt(){
   };
   form.addEventListener('reset',()=>{
     activeId=null;gpsRetry=false;previousPin='';status.textContent='';
-    setTimeout(()=>{syncGift();setError('');},0);
+    setAddressFieldsOpen(true);
+    setTimeout(()=>{syncGift();syncAddressType();setError('');},0);
   });
 })();
 

@@ -364,3 +364,26 @@ body.dark #checkout .checkout-action{background:#25211df5!important}
  #checkout .checkout-back-shopping{font-size:9px;gap:5px}
  #checkout .checkout-back-icon{width:23px;height:23px;flex-basis:23px}
 }
+
+/* Browser-safe action dock: independent content scrolling, never a below-fold CTA. */
+#checkout .checkout-box{
+  display:flex!important;flex-direction:column!important;
+  height:min(92dvh,850px)!important;max-height:min(92dvh,850px)!important;
+  overflow:hidden!important;
+}
+#checkout .checkout-shell-top{flex:0 0 auto}
+#checkout .checkout-layout,#checkout[data-step="3"] .checkout-layout{
+  flex:1 1 0!important;min-height:0!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  scrollbar-gutter:stable;
+  scroll-padding-top:10px;scroll-padding-bottom:18px;
+}
+#checkout .checkout-action{
+  flex:0 0 auto!important;position:static!important;bottom:auto!important;
+}
+#checkout .checkout-bottom-note{flex:0 0 auto}
+@media(max-width:780px){
+ #checkout .checkout-box{height:100dvh!important;max-height:100dvh!important}
+ #checkout .checkout-layout,#checkout[data-step="3"] .checkout-layout{scrollbar-gutter:auto}
+}

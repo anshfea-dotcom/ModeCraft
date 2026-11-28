@@ -1,0 +1,40 @@
+name: AERLON distributed rate limiting security checks
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  rate-limit-security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test-password
+          POSTGRES_DB: rate_limit_tests
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rate_limit_tests"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install application dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Test route policy, spoofed headers and fail-closed behavior
+        env:
+          RATE_LIMIT_KEY_SECRET: ci-only-not-a-production-key
+        run: node scripts/qa-rate-limits.js
+      - name: Test atomic PostgreSQL counters and account lockout
+        env:
+          RATE_LIMIT_TEST_DATABASE_URL: postgres://postgres:test-password@localhost:5432/rate_limit_tests
+        run: node scripts/qa-rate-limits-db.js

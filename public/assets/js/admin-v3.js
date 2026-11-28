@@ -5,6 +5,7 @@
   const moneyV3 = n => new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2}).format(Number(n)||0);
   const dateV3 = value => value ? new Date(value).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}) : "—";
   let lastInvoiceLoad = 0;
+  let invoiceOrderCache=[];
   let loadingInvoices = false;
 
   async function loadAlerts() {
@@ -49,9 +50,11 @@
       const profile=p.profile||{},form=by("v3InvoiceProfile");
       for(const [name,value] of Object.entries(profile)) if(form.elements.namedItem(name)) form.elements.namedItem(name).value=String(value??"");
       const options=(orders.orders||[]).filter(order=>!["cancelled","awaiting_payment"].includes(order.orderStatus));
+      invoiceOrderCache=options;
       by("v3InvoiceOrder").innerHTML='<option value="">Choose an order</option>'+options.map(order=>'<option value="'+escapeHTML(order.id)+'">'+escapeHTML(order.id)+' · '+escapeHTML(order.customer?.name||"Customer")+' · '+escapeHTML(moneyV3(order.total))+'</option>').join("");
+      showGstFields();
       const invoices=items.invoices||[];
-      by("v3InvoiceRows").innerHTML=invoices.map(invoice=>'<tr><td><strong>'+escapeHTML(invoice.invoiceNumber)+'</strong></td><td>'+escapeHTML(invoice.orderId)+'</td><td>'+escapeHTML(dateV3(invoice.createdAt))+'</td><td>'+escapeHTML(moneyV3(invoice.amount))+'</td><td><button type="button" class="btn small v3-pdf" data-id="'+escapeHTML(invoice.id)+'">Download PDF</button></td></tr>').join("")||'<tr><td colspan="5" class="empty">No invoices have been issued yet.</td></tr>';
+      by("v3InvoiceRows").innerHTML=invoices.map(invoice=>'<tr><td><strong>'+escapeHTML(invoice.invoiceNumber)+'</strong></td><td>'+escapeHTML(invoice.orderId)+'</td><td>'+escapeHTML(dateV3(invoice.createdAt))+'</td><td>'+escapeHTML(moneyV3(invoice.amount))+'</td><td>'+escapeHTML(invoice.invoiceType==="gst"?"GST Tax":"Normal")+'</td><td><button type="button" class="btn small v3-pdf" data-id="'+escapeHTML(invoice.id)+'">Download PDF</button></td></tr>').join("")||'<tr><td colspan="6" class="empty">No invoices have been issued yet.</td></tr>';
       lastInvoiceLoad=Date.now();
     }catch(e){toast(e.message,true);}
     finally{loadingInvoices=false;}
@@ -67,6 +70,23 @@
     if(section==="categories"||section==="brands") loadTaxonomy();
     if(section==="backups") loadBackupAudit();
   };
+  const gstStates=[{"code":"10","name":"Bihar"},{"code":"11","name":"Sikkim"},{"code":"12","name":"Arunachal Pradesh"},{"code":"13","name":"Nagaland"},{"code":"14","name":"Manipur"},{"code":"15","name":"Mizoram"},{"code":"16","name":"Tripura"},{"code":"17","name":"Meghalaya"},{"code":"18","name":"Assam"},{"code":"19","name":"West Bengal"},{"code":"20","name":"Jharkhand"},{"code":"21","name":"Odisha"},{"code":"22","name":"Chhattisgarh"},{"code":"23","name":"Madhya Pradesh"},{"code":"24","name":"Gujarat"},{"code":"25","name":"Daman and Diu"},{"code":"26","name":"Dadra and Nagar Haveli"},{"code":"27","name":"Maharashtra"},{"code":"29","name":"Karnataka"},{"code":"30","name":"Goa"},{"code":"31","name":"Lakshadweep"},{"code":"32","name":"Kerala"},{"code":"33","name":"Tamil Nadu"},{"code":"34","name":"Puducherry"},{"code":"35","name":"Andaman and Nicobar Islands"},{"code":"36","name":"Telangana"},{"code":"37","name":"Andhra Pradesh"},{"code":"38","name":"Ladakh"},{"code":"97","name":"Other Territory"},{"code":"01","name":"Jammu and Kashmir"},{"code":"02","name":"Himachal Pradesh"},{"code":"03","name":"Punjab"},{"code":"04","name":"Chandigarh"},{"code":"05","name":"Uttarakhand"},{"code":"06","name":"Haryana"},{"code":"07","name":"Delhi"},{"code":"08","name":"Rajasthan"},{"code":"09","name":"Uttar Pradesh"}];
+  by("v3GstState").innerHTML='<option value="">Select state</option>'+gstStates.map(s=>'<option value="'+s.code+'">'+s.code+' · '+escapeHTML(s.name)+'</option>').join("");
+  function showGstFields(){
+    const gst=by("v3InvoiceType").value==="gst";
+    by("v3GstFields").hidden=!gst;
+    if(!gst)return;
+    const order=invoiceOrderCache.find(x=>String(x.id)===by("v3InvoiceOrder").value);
+    if(order&&by("v3GstFields").dataset.order!==String(order.id)){
+      by("v3BuyerAddress").value=[order.customer?.address,order.customer?.city,order.customer?.state,order.customer?.postalCode].filter(Boolean).join(", ");
+      by("v3GstFields").dataset.order=String(order.id);
+    }
+    by("v3GstItems").innerHTML=(order?.items||[]).map((line,i)=>'<fieldset class="v3-gst-item"><legend>'+escapeHTML(line.name||line.id)+'</legend>'+
+      '<label>HSN (4–8 digits)<input data-hsn="'+i+'" pattern="[0-9]{4,8}" maxlength="8" required></label>'+
+      '<label>GST rate % (manual)<input type="number" data-rate="'+i+'" min="0" max="40" step="0.01" required></label></fieldset>').join("");
+  }
+  by("v3InvoiceType").addEventListener("change",showGstFields);
+  by("v3InvoiceOrder").addEventListener("change",showGstFields);
   by("v3ReloadInvoices")?.addEventListener("click",loadInvoices);
   by("v3RefreshReports")?.addEventListener("click",loadReports);
   by("v3InvoiceProfile")?.addEventListener("submit",async event=>{
@@ -84,7 +104,19 @@
     if(!orderId) return;
     const btn=by("v3IssueInvoice");btn.disabled=true;
     try{
-      const x=await api("/api/admin/invoices",{method:"POST",body:JSON.stringify({orderId})});
+      const invoiceType=by("v3InvoiceType").value;
+      const payload={orderId,invoiceType};
+      if(invoiceType==="gst"){
+        payload.placeOfSupplyStateCode=by("v3GstState").value;
+        payload.buyerAddress=by("v3BuyerAddress").value;
+        payload.buyerGstin=by("v3BuyerGSTIN").value;
+        payload.signatory=by("v3Signatory").value;
+        payload.lines=[...by("v3GstItems").querySelectorAll("fieldset")].map(field=>({
+          hsn:field.querySelector("[data-hsn]").value,
+          gstRate:field.querySelector("[data-rate]").value
+        }));
+      }
+      const x=await api("/api/admin/invoices",{method:"POST",body:JSON.stringify(payload)});
       toast(x.alreadyIssued?"Existing invoice retrieved.":"Invoice issued successfully.");
       await loadInvoices();
     }catch(e){toast(e.message,true);}

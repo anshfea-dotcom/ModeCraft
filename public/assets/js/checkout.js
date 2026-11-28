@@ -95,7 +95,9 @@ function endCheckoutAttempt(){
     try{
       const me=await api('/api/auth/me');
       if(!dialog.classList.contains('show'))return;
+      const previousAccountId=account?.id;
       account=me.authenticated?me.user:null;
+      if(previousAccountId!==account?.id){addresses=[];activeId=null;}
       if(!account){
         addresses=[];activeId=null;drawAddresses();
         addressNote.textContent='Sign in to save addresses across devices. Guest checkout is available.';

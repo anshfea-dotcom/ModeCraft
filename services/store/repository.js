@@ -14,8 +14,8 @@ module.exports = function createRepository({ listProducts, pool, cleanText }) {
     return result.rows[0]?.data || null;
   }
 
-  async function putProduct(product) {
-    await pool.query(
+  async function putProduct(product, db = pool) {
+    await db.query(
       `INSERT INTO products (id, data, updated_at)
        VALUES ($1, $2::jsonb, NOW())
        ON CONFLICT (id)

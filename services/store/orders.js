@@ -98,6 +98,7 @@ module.exports = function registerOrderManagement(app, { requireAdmin, requirePe
     requireAdmin,
     requirePermission("orders.update"),
     async (req, res, next) => {
+      let client;
       try {
         const status = cleanText(req.body?.orderStatus, 40);
         const reason = cleanText(req.body?.cancellationReason, 300);
@@ -121,7 +122,10 @@ module.exports = function registerOrderManagement(app, { requireAdmin, requirePe
           });
         }
 
-        const order = await getOrder(req.params.id);
+        client = await pool.connect();
+        await client.query('BEGIN');
+        const locked = await client.query('SELECT data FROM orders WHERE id=$1 FOR UPDATE', [req.params.id]);
+        const order = locked.rows[0]?.data || null;
 
         if (!order) {
           return res.status(404).json({ error: "Order not found." });
@@ -151,7 +155,32 @@ module.exports = function registerOrderManagement(app, { requireAdmin, requirePe
         if (status === "cancelled") order.cancellationReason = reason;
         order.updatedAt = new Date().toISOString();
 
-        await putOrder(order);
+
+        // Only orders created with reservations can be restored. Legacy orders were not debited.
+        if (status === "cancelled" && Array.isArray(order.stockReservations) && !order.stockReleased) {
+          for (const line of order.stockReservations) {
+            const quantity = Number(line.quantity);
+            if (!Number.isSafeInteger(quantity) || quantity <= 0) throw new Error("Invalid recorded stock reservation.");
+            const result = line.kind === "variant"
+              ? await client.query(
+                  "UPDATE inventory_variants SET quantity=quantity+$2,updated_at=NOW() WHERE id=$1 RETURNING id",
+                  [line.id, quantity]
+                )
+              : line.kind === "product"
+                ? await client.query(
+                    "UPDATE products SET data=jsonb_set(data,'{stock}',to_jsonb(COALESCE((data->>'stock')::int,0)+$2)),updated_at=NOW() WHERE id=$1 RETURNING id",
+                    [line.id, quantity]
+                  )
+                : { rowCount: 0 };
+            if (!result.rowCount) {
+              const error = new Error("Unable to restore reserved stock. Check the product's inventory."); error.status = 409; throw error;
+            }
+          }
+          order.stockReleased = true;
+        }
+        await client.query("UPDATE orders SET data=$2::jsonb,updated_at=NOW() WHERE id=$1", [order.id, JSON.stringify(order)]);
+        await client.query("COMMIT");
+        client.release(); client = null;
 
         await audit(req.adminSession, "order.status.updated", {
           orderId: order.id,
@@ -164,8 +193,9 @@ module.exports = function registerOrderManagement(app, { requireAdmin, requirePe
         };
         res.json({ ok: true, order: responseOrder });
       } catch (error) {
+        if (client) await client.query('ROLLBACK').catch(() => {});
         next(error);
-      }
+      } finally { client?.release(); }
     }
   );
 

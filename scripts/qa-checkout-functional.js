@@ -22,7 +22,7 @@ function recorder(){
 }
 async function checkoutTest(){
   const {app,routes}=recorder(),attempts=new Map(),orders=new Map(),ledger=[];
-  let balance=100000,updates=0,commits=0,rollbacks=0;
+  let balance=100000,updates=0,commits=0,rollbacks=0,available=5,stockDebits=0;
   const pool={
     async query(sql,args=[]){
       if(sql.startsWith("SELECT a.fingerprint, o.data FROM checkout_attempts")){
@@ -34,7 +34,7 @@ async function checkoutTest(){
       throw Error("Unexpected global checkout query: "+sql.slice(0,150));
     },
     async connect(){
-      const changes={claim:null,order:null,debit:0,ledger:null};
+      const changes={claim:null,order:null,debit:0,ledger:null,stockDebit:0};
       return {
         async query(sql,args=[]){
           if(sql==="BEGIN")return{rows:[],rowCount:0};
@@ -43,6 +43,7 @@ async function checkoutTest(){
             commits++;
             if(changes.claim)attempts.set(changes.claim.attemptId,{fingerprint:changes.claim.fp,id:changes.claim.id});
             if(changes.debit)balance-=changes.debit;
+            if(changes.stockDebit){available-=changes.stockDebit;stockDebits++;}
             if(changes.ledger)ledger.push(changes.ledger);
             if(changes.order)orders.set(changes.order.id,changes.order);
             return{rows:[],rowCount:0};
@@ -60,6 +61,12 @@ async function checkoutTest(){
           if(sql.startsWith("INSERT INTO gift_card_redemptions")){
             changes.ledger={id:args[0],orderId:args[1],paise:args[2],actor:args[3]};
             return{rowCount:1};
+          }
+          if(sql.startsWith("SELECT id FROM inventory_variants WHERE product_id"))return{rowCount:1,rows:[{id:"inv-test"}]};
+          if(sql.startsWith("UPDATE inventory_variants SET quantity=quantity-$4")){
+            const qty=Number(args[3]);
+            if(available-changes.stockDebit<qty)return{rowCount:0,rows:[]};
+            changes.stockDebit+=qty;return{rowCount:1,rows:[{id:"inv-test"}]};
           }
           if(sql.startsWith("INSERT INTO orders(id,data)")){
             changes.order=JSON.parse(args[1]);return{rowCount:1};
@@ -120,6 +127,8 @@ async function checkoutTest(){
   assert.equal(balance,0);
   assert.equal(ledger.length,1);
   assert.ok(commits>=2);
+  assert.equal(available,3,'One GIFT and one COD order must reserve one unit each');
+  assert.equal(stockDebits,2,'Checkout idempotency must not double-debit stock');
   console.log("PASS checkout: funded gift-only orders debit once and rollback insufficient/invalid codes; COD still works");
 }
 async function addressesTest(){

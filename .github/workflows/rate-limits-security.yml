@@ -38,3 +38,7 @@ jobs:
         env:
           RATE_LIMIT_TEST_DATABASE_URL: postgres://postgres:test-password@localhost:5432/rate_limit_tests
         run: node scripts/qa-rate-limits-db.js
+      - name: Boot complete Express application and test signed webhook and anti-spoof limits
+        env:
+          RATE_LIMIT_TEST_DATABASE_URL: postgres://postgres:test-password@localhost:5432/rate_limit_tests
+        run: node scripts/qa-server-boot-and-webhook.js

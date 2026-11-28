@@ -1,0 +1,21 @@
+name: AERLON Admin 3.0 focused release checks
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+      - name: Run complete release regression tests
+        env:
+          SESSION_SECRET: test-only-ci-key-not-production
+        run: npm run check

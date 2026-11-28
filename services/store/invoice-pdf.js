@@ -108,6 +108,7 @@ function render(x,res,kind) {
     print(pdf,str(x.placeOfSupplyName)+" ("+str(x.placeOfSupplyCode)+")",left+101,y+28,153,{size:8});
     print(pdf,"Tax category",left,y+47,100,{size:8,color:C.muted});
     print(pdf,x.taxType==="intra"?"CGST + SGST":"IGST",left+101,y+47,150,{size:8});
+    print(pdf,"Reverse charge: No",left,y+66,234,{size:7.8,color:C.muted});
   }else{
     print(pdf,"Payment",left,y+29,90,{size:8,color:C.muted});
     print(pdf,[x.paymentMethod,x.paymentStatus].filter(Boolean).join(" / "),left+91,y+29,160,{size:8});

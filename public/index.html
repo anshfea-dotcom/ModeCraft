@@ -10,7 +10,7 @@
 <meta name="description" content="Discover elevated everyday fashion at AERLON. Explore thoughtfully designed hoodies, clothing and accessories with a premium shopping experience."><meta property="og:site_name" content="AERLON"><meta property="og:type" content="website"><meta property="og:title" content="AERLON — Elevated Everyday Fashion"><meta property="og:description" content="Explore thoughtfully designed everyday essentials at AERLON."><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AERLON","url":"/","description":"An online fashion store offering thoughtfully designed everyday clothing and accessories."}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"AERLON","url":"/","potentialAction":{"@type":"SearchAction","target":"/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
 
 <link rel="stylesheet" href="/control-sizes.css">
-<link rel="stylesheet" href="/assets/css/checkout.css"><link rel="stylesheet" href="/assets/css/checkout-onepage.css?v=20261128-1">
+<link rel="stylesheet" href="/assets/css/checkout.css"><link rel="stylesheet" href="/assets/css/checkout-onepage.css?v=20261128-2">
 </head>
 <body>
 <div class="mc-intro" id="mcIntro" role="status" aria-label="Opening AERLON" aria-live="off">
@@ -109,17 +109,23 @@
     <div class="checkout-identity"><strong class="checkout-wordmark">AERLON</strong><span class="checkout-brand-divider" aria-hidden="true"></span><span class="checkout-kicker">SECURE CHECKOUT</span></div>
     <button type="button" class="checkout-close" id="closeCheckout" aria-label="Close checkout">×</button>
    </div>
-   <div class="checkout-lead"><div><span class="checkout-eyebrow">THE FINAL DETAIL</span><h2 id="checkoutTitle">Complete your order.</h2><p>One simple page. Your address, payment and order total—everything in view.</p></div></div>
+   <div class="checkout-lead"><div><span class="checkout-eyebrow">THE FINAL DETAIL</span><h2 id="checkoutTitle">Complete your order.</h2><p>Review your pieces, choose delivery and payment, then place your order—all on one page.</p></div></div>
   </div>
   <div class="checkout-layout">
+   <aside class="checkout-order-summary" aria-label="Order summary">
+    <div class="checkout-summary-head"><div><span class="checkout-kicker">YOUR SELECTION</span><h3>Order summary</h3></div><span class="checkout-item-count" id="checkoutItemCount">0 items</span></div>
+    <div id="checkoutItems" class="checkout-items"><p class="muted">Your selected products will appear here.</p></div>
+    <div class="checkout-totals"><div><span>Subtotal</span><strong id="checkoutSubtotal">₹0</strong></div><div id="checkoutDiscountRow" class="checkout-discount-row" hidden><span>Discount</span><strong id="checkoutDiscount">−₹0</strong></div><div><span>Shipping</span><strong>₹0</strong></div><div class="checkout-final-total"><span id="checkoutGrandLabel">Total</span><strong id="checkoutGrandTotal">₹0</strong></div></div>
+    <div class="checkout-trust"><span aria-hidden="true">✓</span><div><strong>Secure checkout</strong><small>We'll confirm your order and provide its reference.</small><a href="/customer-care.html">Need help?</a></div></div>
+   </aside>
    <div class="checkout-main">
     <p class="checkout-form-error" id="checkoutError" role="alert" aria-live="assertive" hidden></p>
     <form id="orderForm">
      <fieldset id="deliveryFields">
-      <legend>Delivery address</legend><div class="checkout-section-heading"><p>Where should we deliver your order?</p></div>
+      <legend>Address section</legend><div class="checkout-section-heading"><p>Where should we deliver your order?</p></div>
       <div class="checkout-address-tools">
        <button type="button" id="checkoutAddAddress" class="checkout-small-action">＋ Add new address</button>
-       <button type="button" id="checkoutSaveAddress" class="checkout-small-action">♡ Save address</button>
+       <button type="button" id="checkoutSaveAddress" class="checkout-small-action">✓ Save address</button>
       </div>
       <div id="checkoutSavedAddresses" class="checkout-saved-addresses" aria-label="Saved addresses" hidden></div>
       <p id="checkoutAddressSaveMessage" class="checkout-helper-note" role="status" aria-live="polite">Sign in to save delivery addresses to your AERLON account.</p>
@@ -141,11 +147,18 @@
        <label>Email for order updates<input id="email" type="email" autocomplete="email" maxlength="180" required></label>
       </div>
      </fieldset>
+      <details id="couponPanel" class="checkout-compact-coupon">
+       <summary><span aria-hidden="true">✦</span> Apply coupon <span class="checkout-coupon-chevron" aria-hidden="true">⌄</span></summary>
+       <div class="coupon-entry"><label for="couponInput" class="sr-only">Coupon code</label><input id="couponInput" maxlength="32" autocomplete="off" placeholder="Enter coupon code"><button type="button" id="applyCouponBtn">Apply</button></div>
+       <p id="couponMessage" role="status" aria-live="polite"></p>
+       <div id="couponTotals" hidden><span id="couponSubtotal"></span><span id="couponDiscount"></span><span id="couponTotal"></span></div>
+       <button type="button" id="removeCoupon" hidden>Remove coupon</button>
+      </details>
      <section id="paymentStep" class="checkout-payment-section" aria-labelledby="checkoutPaymentHeading">
-      <div class="checkout-section-heading"><h3 id="checkoutPaymentHeading">Payment</h3><p>Select how you want to pay.</p></div>
+      <div class="checkout-section-heading"><h3 id="checkoutPaymentHeading">Payment options</h3><p>Select how you want to pay.</p></div>
       <div class="payment-methods" role="group" aria-label="Choose payment method">
-       <label class="payment-method active" data-payment="COD"><input type="radio" name="paymentChoice" value="COD" checked><span class="payment-icon" aria-hidden="true">₹</span><span class="payment-copy"><strong>Cash on Delivery</strong><small>Pay when your order arrives</small></span><span class="payment-check" aria-hidden="true">✓</span></label>
-       <label class="payment-method" data-payment="GIFT"><input type="radio" name="paymentChoice" value="GIFT"><span class="payment-icon" aria-hidden="true">✧</span><span class="payment-copy"><strong>Gift Code</strong><small>Pay with a funded AERLON gift card</small></span><span class="payment-check" aria-hidden="true">✓</span></label>
+       <label class="payment-method active" data-payment="COD"><input type="radio" name="paymentChoice" value="COD" checked><span class="payment-icon payment-icon-cod" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="6" width="26" height="20" rx="4" fill="#D9F7E5" stroke="#16854D" stroke-width="1.8"/><path d="M6 12c3.2 0 5-1.6 5-3M26 20c-3.2 0-5 1.6-5 3" stroke="#16854D" stroke-width="1.7" stroke-linecap="round"/><circle cx="16" cy="16" r="6" fill="#26A35E"/><path d="M13.6 13.4h4.8m-4.8 2.1h4.8m-4.8 0c.3 2.3 1.8 3.6 4.2 3.7" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="payment-copy"><strong>Cash on Delivery</strong><small>Pay when your order arrives</small></span><span class="payment-check" aria-hidden="true">✓</span></label>
+       <label class="payment-method" data-payment="GIFT"><input type="radio" name="paymentChoice" value="GIFT"><span class="payment-icon payment-icon-gift" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="12" width="25" height="15" rx="3" fill="#FFF5E9" stroke="#91653F" stroke-width="1.6"/><path d="M16 12v15M3.5 17h25" stroke="#B18556" stroke-width="1.6"/><path d="M16 12c-5.7.3-10.1-.5-8.7-4.2C8.8 4 13.8 7.2 16 12Zm0 0c5.7.3 10.1-.5 8.7-4.2C23.2 4 18.2 7.2 16 12Z" fill="#E9D0B3" stroke="#91653F" stroke-width="1.5" stroke-linejoin="round"/></svg></span><span class="payment-copy"><strong>Gift Code</strong><small>Pay with a funded AERLON gift card</small></span><span class="payment-check" aria-hidden="true">✓</span></label>
       </div>
       <select id="payment" aria-label="Selected payment method" hidden><option value="COD">Cash on Delivery</option><option value="GIFT">Gift Code</option></select>
       <div id="checkoutGiftDetails" class="checkout-gift-details" hidden>
@@ -153,22 +166,11 @@
        <div class="checkout-gift-entry"><input id="checkoutGiftCode" autocomplete="off" maxlength="32" placeholder="AGC-..."><button type="button" id="checkoutCheckGift">Check balance</button></div>
        <p id="checkoutGiftMessage" class="checkout-helper-note" aria-live="polite">The gift card must cover your full order total. Partial gift payments are not available.</p>
       </div>
-      <details id="couponPanel" class="checkout-compact-coupon">
-       <summary>＋ Apply coupon</summary>
-       <div class="coupon-entry"><label for="couponInput" class="sr-only">Coupon code</label><input id="couponInput" maxlength="32" autocomplete="off" placeholder="Enter coupon code"><button type="button" id="applyCouponBtn">Apply</button></div>
-       <p id="couponMessage" role="status" aria-live="polite"></p>
-       <div id="couponTotals" hidden><span id="couponSubtotal"></span><span id="couponDiscount"></span><span id="couponTotal"></span></div>
-       <button type="button" id="removeCoupon" hidden>Remove coupon</button>
-      </details>
+
      </section>
     </form>
    </div>
-   <aside class="checkout-order-summary" aria-label="Order summary">
-    <div class="checkout-summary-head"><div><span class="checkout-kicker">YOUR SELECTION</span><h3>Order summary</h3></div><span class="checkout-item-count" id="checkoutItemCount">0 items</span></div>
-    <div id="checkoutItems" class="checkout-items"><p class="muted">Your selected products will appear here.</p></div>
-    <div class="checkout-totals"><div><span>Subtotal</span><strong id="checkoutSubtotal">₹0</strong></div><div id="checkoutDiscountRow" class="checkout-discount-row" hidden><span>Discount</span><strong id="checkoutDiscount">−₹0</strong></div><div><span>Shipping</span><strong>₹0</strong></div><div class="checkout-final-total"><span id="checkoutGrandLabel">Total</span><strong id="checkoutGrandTotal">₹0</strong></div></div>
-    <div class="checkout-trust"><span aria-hidden="true">✓</span><div><strong>Secure checkout</strong><small>We'll confirm your order and provide its reference.</small><a href="/customer-care.html">Need help?</a></div></div>
-   </aside>
+
   </div>
   <div class="checkout-action"><div class="checkout-action-total"><small>ORDER TOTAL</small><strong id="checkoutDockTotal">₹0</strong></div>
    <div class="checkout-action-buttons"><button type="submit" class="btn" form="orderForm" id="placeOrder">Place order</button></div>
@@ -192,6 +194,6 @@
 <div class="modal success-modal" id="orderSuccessModal" role="dialog" aria-modal="true" aria-labelledby="orderSuccessTitle"><div class="modalbox success-box"><div class="success-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"></path></svg></div><div class="success-kicker">AERLON / ORDER CONFIRMED</div><h2 id="orderSuccessTitle">You’re all set.</h2><p class="success-copy" id="orderSuccessMessage">Your order has been accepted by the store.</p><div class="order-reference"><span>YOUR ORDER REFERENCE</span><strong id="successOrderId">—</strong></div><p class="success-copy" id="successPaymentNote">Keep this reference handy to check your order status.</p><div class="success-actions"><button class="btn" type="button" id="successTrackBtn">TRACK ORDER ↗</button><button class="btn success-secondary" type="button" id="successContinueBtn">CONTINUE SHOPPING</button></div></div></div><div class="modal success-modal" id="loginSuccessModal" role="dialog" aria-modal="true" aria-labelledby="loginSuccessTitle"><div class="modalbox success-box"><div class="success-mark auth-success-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5 14.4 8.4 19.8 9.2 15.9 13 16.8 18.4 12 15.9 7.2 18.4 8.1 13 4.2 9.2 9.6 8.4Z"></path></svg></div><div class="success-kicker">WELCOME TO AERLON</div><h2 id="loginSuccessTitle">You’re signed in.</h2><p class="success-copy" id="loginSuccessMessage">Your account is ready. You can now continue exploring your saved styles and orders.</p><div class="success-actions" style="grid-template-columns:1fr"><button class="btn" type="button" id="loginSuccessContinue">CONTINUE EXPLORING ↗</button></div></div></div><div class="toast" id="toast" role="status"></div>
 <script src="/catalogue-product.js"></script>
 <script src="/assets/js/storefront.js"></script>
-<script src="/assets/js/checkout.js?v=20261128-1"></script>
+<script src="/assets/js/checkout.js?v=20261128-2"></script>
 <script src="/aerlon-concierge.js" defer></script>
 </body></html>

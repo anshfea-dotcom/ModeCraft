@@ -107,3 +107,11 @@ body,:root[data-theme="dark"] body{background:var(--bg);color:var(--text)}
 .v3-taxonomy-list{display:grid;gap:9px;margin-bottom:16px}
 .v3-taxonomy-list>div{display:flex;justify-content:space-between;gap:16px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
 .v3-taxonomy-list small{color:var(--muted)}
+
+#v3GstFields[hidden]{display:none!important}#v3GstFields{gap:9px}
+#v3GstFields label{display:block;margin-top:9px;font-weight:600}
+#v3GstFields textarea,#v3GstFields input,#v3GstFields select{display:block;width:100%;margin-top:5px}
+.v3-gst-items{display:grid;gap:12px;padding-top:13px}
+.v3-gst-item{border:1px solid var(--line);border-radius:12px;padding:14px}
+.v3-gst-item legend{font-weight:750}.v3-gst-item label{display:inline-block!important;width:48%;margin-right:1%}
+@media(max-width:650px){.v3-gst-item label{width:100%}}

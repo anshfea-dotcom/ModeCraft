@@ -1,0 +1,99 @@
+/* AERLON one-page checkout: minimal, accessible, mobile-first. */
+#checkout.checkout-modal{--cx-ink:#2a251e;--cx-muted:#756c61;--cx-border:#e4d9cb;--cx-soft:#eee7df;--cx-paper:#f7f5f1;--cx-card:#fff;--cx-accent:#a88355}
+#checkout .checkout-box{width:min(1030px,100%);padding:0!important}
+#checkout .checkout-shell-top{padding:21px clamp(18px,3vw,36px)!important}
+#checkout .checkout-head{margin:0 0 13px!important}
+#checkout .checkout-lead h2{font-size:clamp(27px,3.6vw,38px);line-height:1.18;margin:4px 0}
+#checkout .checkout-lead p{margin:4px 0 0;line-height:1.6}
+#checkout .checkout-layout{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(280px,.88fr);gap:17px;padding:17px clamp(14px,2.6vw,28px);align-items:start}
+#checkout .checkout-main{padding:clamp(16px,2.4vw,24px)}
+#checkout .checkout-order-summary{position:sticky;top:0;padding:20px;margin:0}
+#checkout #deliveryFields{border:0;margin:0;padding:0}
+#checkout .checkout-section-heading{margin:0 0 12px}
+#checkout #deliveryFields legend,#checkout .checkout-section-heading h3{font-size:18px;font-weight:750;color:var(--cx-ink);margin:0}
+#checkout .checkout-section-heading p{margin:5px 0 0;font-size:11px;color:var(--cx-muted)}
+#checkout .checkout-address-tools{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:10px 0}
+#checkout .checkout-small-action{font:700 11px/1.25 system-ui;border-radius:8px;border:1px solid #cfbfaa;background:#fffaf2;color:#6c5131;min-height:35px;padding:7px 11px;cursor:pointer}
+#checkout .checkout-helper-note{font-size:11px;color:var(--cx-muted);line-height:1.5;margin:5px 0 12px;min-height:15px}
+#checkout .checkout-saved-addresses{display:grid;gap:7px;margin:10px 0}
+#checkout .checkout-saved-address{display:flex;align-items:start;gap:10px;justify-content:space-between;border:1px solid var(--cx-border);border-radius:10px;padding:10px;background:var(--cx-paper)}
+#checkout .checkout-saved-address .checkout-use-address{flex:1;min-width:0;text-align:left;cursor:pointer;color:var(--cx-ink);border:0;background:transparent;padding:0;font:inherit}
+#checkout .checkout-saved-address strong{display:block;font-size:11px}
+#checkout .checkout-saved-address small{display:block;color:var(--cx-muted);font-size:10px;line-height:1.6;margin-top:3px;word-break:break-word}
+#checkout .checkout-saved-address .checkout-remove-address{color:#9b443a;background:none;border:0;padding:4px;font-size:10px;cursor:pointer}
+#checkout .checkout-saved-address.selected{border-color:#a98454;box-shadow:inset 3px 0 #a98454}
+#checkout .location-row{padding:11px 12px;margin:10px 0 5px;gap:10px}
+#checkout .location-row-label strong{font-size:11px}
+#checkout .location-row-label small{font-size:10px;line-height:1.4}
+#checkout .location-row-actions{gap:6px}
+#checkout #locateAddress,#checkout #enterPin{font-size:10px;min-height:35px;padding:6px 9px}
+#checkout #locateAddress[disabled]{opacity:.6;cursor:wait}
+#checkout #addressMessage{margin:5px 0 10px;min-height:0;padding:0;color:var(--cx-muted);font-size:11px}
+#checkout #addressMessage[data-state="loading"]{color:#886321}
+#checkout #addressMessage[data-state="success"]{color:#267447}
+#checkout #addressMessage[data-state="error"]{color:#a42e34}
+#checkout .delivery-grid{gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+#checkout .delivery-grid label{font-size:11px}
+#checkout .delivery-grid input,#checkout .delivery-grid select{min-height:43px!important}
+#checkout .checkout-payment-section{margin:20px 0 0;padding-top:19px;border-top:1px solid var(--cx-border)}
+#checkout .payment-methods{grid-template-columns:repeat(2,minmax(0,1fr));display:grid;gap:8px;margin:12px 0}
+#checkout .payment-method{min-height:70px;padding:10px;gap:8px;border-radius:10px}
+#checkout .payment-icon{width:33px;height:33px;flex:0 0 33px;border-radius:8px;font-size:18px}
+#checkout .payment-copy strong{font-size:12px}
+#checkout .payment-copy small{font-size:10px}
+#checkout .payment-check{width:19px;height:19px;flex:0 0 19px}
+#checkout .checkout-gift-details{padding:10px 12px;border-radius:9px;background:#faf6f0;border:1px solid var(--cx-border);margin:9px 0}
+#checkout .checkout-gift-details label{font-size:11px;font-weight:700;color:var(--cx-ink)}
+#checkout .checkout-gift-entry{display:flex;gap:7px;margin-top:6px}
+#checkout .checkout-gift-entry input{box-sizing:border-box;min-width:0;flex:1;width:100%;padding:9px 10px;border:1px solid #d8cbbc;border-radius:8px;background:#fff;color:#2a251e;font-size:12px}
+#checkout .checkout-gift-entry button{min-height:39px;border:1px solid #bda485;color:#5b422e;border-radius:8px;background:#fff;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer}
+#checkout .checkout-compact-coupon{margin-top:12px;padding:0;border:0;background:none}
+#checkout .checkout-compact-coupon summary{display:inline-flex;align-items:center;list-style:none;font-size:11px;color:#8b6437;font-weight:750;padding:5px 0;cursor:pointer}
+#checkout .checkout-compact-coupon summary::-webkit-details-marker{display:none}
+#checkout .checkout-compact-coupon .coupon-entry{display:flex;gap:7px;margin:8px 0;align-items:center}
+#checkout #couponInput{min-width:0;flex:1;min-height:39px!important;border:1px solid #d8cbbc;border-radius:7px;padding:8px 10px;font-size:11px}
+#checkout #applyCouponBtn{min-height:39px;padding:8px 12px;font-size:11px}
+#checkout #removeCoupon{font-size:11px;color:#a34e3c;border:0;background:transparent;text-decoration:underline;cursor:pointer}
+#checkout #couponMessage{font-size:11px;color:var(--cx-muted)}
+#checkout .checkout-form-error{margin:0 0 14px;padding:11px 13px;background:#fff1f0;color:#a02b30;border:1px solid #d99595;border-radius:9px;font-weight:700;font-size:12px;line-height:1.5}
+#checkout .checkout-action{margin:0;padding:12px clamp(14px,2.6vw,28px);align-items:center}
+#checkout .checkout-action .btn{min-height:48px;min-width:min(225px,100%);font-size:12px}
+#checkout .checkout-bottom-note{padding:10px 18px 14px}
+#checkout .checkout-saved-addresses[hidden],#checkout .checkout-form-error[hidden]{display:none!important}
+#checkout :is(input,select):user-invalid{border-color:#b04b50}
+#checkout .checkout-item-warning{margin:8px 0 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:#ae3334;font-size:11px;font-weight:700}
+#checkout .checkout-item-warning button{border:1px solid #ca7770;background:#fff1ed;color:#9b312d;border-radius:8px;padding:5px 8px;font:700 10px system-ui;cursor:pointer}
+#detailSizeWarning{font-size:12px;font-weight:800;color:#ad3033;background:#fff1f0;border:1px solid #e4aaaa;border-radius:8px;padding:9px 11px;margin:9px 0}
+#detailSizeOptions.needs-size-selection{outline:2px solid #bf4d50;outline-offset:5px;border-radius:6px}
+#detailSizeWarning[hidden]{display:none!important}
+body.dark #checkout .checkout-saved-address,body.dark #checkout .checkout-gift-details{background:#2c2924;border-color:#645745}
+body.dark #checkout .checkout-small-action,body.dark #checkout .checkout-gift-entry button{background:#383126;color:#ead3ac;border-color:#756248}
+body.dark #checkout .checkout-gift-entry input{background:#24211e;border-color:#605343;color:#eee5d9}
+body.dark #checkout #couponMessage,body.dark #checkout .checkout-helper-note{color:#b8a99a}
+body.dark #checkout .checkout-compact-coupon summary{color:#e6bf81}
+body.dark #checkout .checkout-form-error{color:#ffb2b0;background:#482827;border-color:#a75350}
+@media(max-width:780px){
+ #checkout .checkout-layout{grid-template-columns:minmax(0,1fr);padding:12px 14px}
+ #checkout .checkout-order-summary{position:static}
+ #checkout .checkout-shell-top{padding:18px 15px!important}
+ #checkout .checkout-lead h2{font-size:28px}
+ #checkout .checkout-action{padding:12px 14px calc(12px + env(safe-area-inset-bottom))}
+ #checkout .checkout-action-buttons{flex:1}
+ #checkout .checkout-action .btn{width:100%;min-width:0}
+}
+@media(max-width:430px){
+ #checkout .checkout-main,#checkout .checkout-order-summary{padding:15px}
+ #checkout .delivery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ #checkout .delivery-grid label{font-size:10px}
+ #checkout .delivery-grid input,#checkout .delivery-grid select{font-size:12px;padding:10px}
+ #checkout .payment-methods{grid-template-columns:1fr}
+ #checkout .checkout-address-tools{gap:6px}
+ #checkout .location-row-actions{width:100%}
+ #checkout #locateAddress,#checkout #enterPin{flex:1}
+ #checkout .checkout-action-total strong{font-size:17px}
+ #checkout .checkout-action .btn{font-size:12px}
+ #checkout .checkout-gift-entry{flex-wrap:wrap}
+ #checkout .checkout-gift-entry button{width:100%}
+}
+@media(max-width:350px){#checkout .delivery-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){#checkout :is(button,input,select){transition:none!important}}

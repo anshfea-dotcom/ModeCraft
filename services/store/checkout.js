@@ -289,7 +289,7 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
   }
 
   function receipt(order) {
-    if (order.paymentMethod === "COD") return { ok: true, orderId: order.id, message: "Order received. Track it using your order reference." };
+    if (["COD","GIFT"].includes(order.paymentMethod)) return { ok: true, orderId: order.id, message: order.paymentMethod === "GIFT" ? "Gift card payment confirmed. Your order has been placed." : "Order received. Track it using your order reference." };
     return {
       keyId: process.env.RAZORPAY_KEY_ID, razorpayOrderId: order.razorpayOrderId,
       amount: Math.round(order.total * 100), currency: order.currency,
@@ -311,7 +311,7 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
           const row = found.rows[0];
           if (row.fingerprint !== fingerprint) throw reject(409, "This attempt belongs to a different order.");
           if (!row.data) throw reject(409, "This order is being confirmed. Keep your bag and retry shortly.");
-          if (row.data.paymentStatus === "paid") throw reject(409, "This order is already paid.");
+          if (row.data.paymentStatus === "paid" && method !== "GIFT") throw reject(409, "This order is already paid.");
           res.json(receipt(row.data));
           return true;
         }
@@ -323,12 +323,33 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
           throw reject(409, "The bag total has changed. Refresh your bag and review the new total.");
         const id = "MC-" + crypto.randomBytes(10).toString("hex").toUpperCase();
         const online = method === "Razorpay";
+        const gift = method === "GIFT";
+        if(gift&&(!/^AGC-[A-F0-9]{24}$/.test(String(body.giftCode||"").trim().toUpperCase())||data.total<=0))
+          throw reject(400,"Enter a valid gift code for an order with a payable total.");
         client = await pool.connect();
         await client.query("BEGIN");
         const claim = await client.query("INSERT INTO checkout_attempts(id,fingerprint,order_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [attemptId,fingerprint,id]);
         if (!claim.rowCount) { if (client) { await client.query("ROLLBACK"); client.release(); client = null; } await replay(); return; }
-        const order = { ...data, ...(attribution?{affiliateCode:attribution.code,affiliateRate:attribution.rate}:{}), id, paymentMethod: method, paymentStatus: online ? "created" : "pending",
+        const order = { ...data, ...(attribution?{affiliateCode:attribution.code,affiliateRate:attribution.rate}:{}), id, paymentMethod: method,
+          paymentStatus: online ? "created" : (gift ? "paid" : "pending"),
           orderStatus: online ? "awaiting_payment" : "received", createdAt: new Date().toISOString(), statusHistory: [] };
+        if(gift){
+          const code=String(body.giftCode||"").trim().toUpperCase();
+          const record=await client.query(
+            "SELECT id,balance_paise,active,expires_at FROM gift_cards WHERE code=$1 FOR UPDATE",[code]);
+          const card=record.rows[0];
+          if(!card||!card.active||card.expires_at&&new Date(card.expires_at)<=new Date())
+            throw reject(409,"This gift card is invalid, inactive or expired.");
+          const paise=Math.round(data.total*100);
+          if(!Number.isSafeInteger(paise)||paise<1||Number(card.balance_paise)<paise)
+            throw reject(409,"Gift card balance is insufficient for the full order total. Choose Cash on Delivery or use a card with enough balance.");
+          await client.query(
+            "UPDATE gift_cards SET balance_paise=balance_paise-$2,updated_at=NOW() WHERE id=$1",[card.id,paise]);
+          await client.query(
+            "INSERT INTO gift_card_redemptions(card_id,reference,amount_paise,actor) VALUES($1,$2,$3,$4)",
+            [card.id,id,paise,"customer_checkout"]);
+          order.giftCardLast4=code.slice(-4);
+        }
         if (online) {
           const result = await gateway().orders.create({ amount: Math.round(order.total * 100), currency: order.currency, receipt: id });
           order.razorpayOrderId = result.id;
@@ -345,6 +366,7 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
     };
   }
   app.post("/api/orders/cod", createOrder("COD"));
+  app.post("/api/orders/gift",rateLimit({windowMs:60000,limit:10,message:{error:"Too many gift payment attempts. Try again in one minute."}}),createOrder("GIFT"));
   app.post("/api/payments/razorpay/order", createOrder("Razorpay"));
 
   app.post("/api/payments/razorpay/verify", async (req, res) => {

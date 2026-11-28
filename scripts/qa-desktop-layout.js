@@ -30,8 +30,8 @@ check("desktop storefront search and actions have shrink-safe grid rules",()=>{
   assert.ok(files.storeHTML.includes('id="checkout"'));
   assert.ok(files.storeHTML.includes('id="shop"'));
 });
-check("Admin 3.0 visible release identity and cache-safe script versions",()=>{
-  assert.ok(files.adminHTML.includes("Admin Panel 3.0"));
+check("Admin modules remain cache-safe while visible release labels stay minimal",()=>{
+  assert.ok(files.adminHTML.includes("<title>AERLON™ | Store Control Center</title>"));
   assert.ok(files.adminHTML.includes("v3-edition"));
   assert.ok(files.adminHTML.includes("v3-version-tag"));
   assert.ok(files.adminHTML.includes('href="/admin-v3.css?v=20261128-3"'));

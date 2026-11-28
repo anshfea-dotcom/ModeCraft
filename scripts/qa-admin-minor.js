@@ -47,7 +47,7 @@ check("Warehouse quick-add preserves absolute assignment API and performs additi
  assert.ok(js.includes('"/api/admin/warehouses/stock"'));
  assert.ok(js.includes('await Promise.all(['));
  assert.ok(warehouse.includes('assigned.rows[0].n'));
- assert.ok(warehouse.includes("cannot exceed central stock"));
+ assert.ok(warehouse.includes("cannot exceed this size\'s available central stock"));
  assert.ok(css.includes("#section-warehouses.active>article.card:nth-of-type(3){order:0}"));
 });
 check("No new endpoint, auto invoice or central stock mutation introduced",()=>{

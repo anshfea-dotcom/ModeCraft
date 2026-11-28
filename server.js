@@ -151,6 +151,12 @@ app.post(
 );
 
 app.use(express.json({ limit: "100kb" }));
+// Malformed JSON is a client-input error, never a generic HTTP 500.
+app.use((error, _req, res, next) => {
+  if (error && (error.type === "entity.parse.failed" || error instanceof SyntaxError && error.status === 400))
+    return res.status(400).json({ error: "Malformed JSON request." });
+  next(error);
+});
 // Fail closed on unknown API schemas; reject invalid bodies, query strings,
 // path parameters and application cookies before any session/database access.
 app.use(validateInput);

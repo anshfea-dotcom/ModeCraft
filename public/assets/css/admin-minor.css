@@ -1,0 +1,120 @@
+/* AERLON Admin 3.0: targeted product, warehouse and mobile navigation improvements. */
+/* Compact, full-width product rows. Preserve original action hooks and reorder controls. */
+#section-products #productsGrid.productgrid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:9px}
+#section-products .productcard{
+  display:grid;grid-template-columns:88px minmax(0,1fr);align-items:stretch;
+  min-height:100px;overflow:hidden;border-radius:12px;transform:none!important;
+  background:var(--surface);border:1px solid var(--line);box-shadow:none;
+}
+#section-products .productcard:hover{border-color:var(--accent);box-shadow:0 4px 15px #0000000b}
+#section-products .productimg{height:100%;min-height:100px;width:88px;overflow:hidden;align-self:stretch;background:var(--surface2)}
+#section-products .productimg img{width:100%;height:100%;object-fit:cover;transform:none!important}
+#section-products .productbody{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;
+  align-content:center;align-items:center;gap:3px 16px;padding:10px 13px;min-width:0;
+}
+#section-products .productbody h3{grid-column:1;grid-row:1;margin:0;min-width:0;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+#section-products .productbody>p{grid-column:1;grid-row:2;margin:0;color:var(--muted);font-size:11px;line-height:1.45;overflow-wrap:anywhere}
+#section-products .productmeta{grid-column:1;grid-row:3;margin:0;display:flex;align-items:center;justify-content:flex-start;gap:11px;flex-wrap:wrap;font-size:12px}
+#section-products .productmeta strong{line-height:1.45}
+#section-products .productbody>.drag-handle{grid-column:2;grid-row:1;justify-self:end;align-self:center;font-size:10px;padding:4px 8px}
+#section-products .productbuttons{
+  grid-column:2;grid-row:2/span 2;align-self:center;justify-content:flex-end;display:flex;
+  gap:5px;flex-wrap:wrap;max-width:352px;min-width:0;
+}
+#section-products .productbuttons .btn{font-size:11px;padding:6px 9px;border-radius:8px;white-space:nowrap}
+#section-products .productcard.dragging{opacity:.55}
+#section-products .productcard.drop-target{outline:2px dashed var(--accent);outline-offset:2px}
+/* Warehouse: clear add-versus-set controls and friendly units summary. */
+#section-warehouses .warehouse-howto{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 18px}
+#section-warehouses .warehouse-howto span{flex:1 1 140px;min-width:0;background:var(--surface2);border:1px solid var(--line);padding:11px;border-radius:10px;font-size:11px;color:var(--text)}
+#section-warehouses .warehouse-howto b{color:var(--accent2);margin-right:6px}
+#section-warehouses #v3WarehouseStockForm{align-items:end}
+#section-warehouses #v3WarehouseStockForm select,#section-warehouses #v3WarehouseStockForm input{width:100%;min-height:43px}
+#section-warehouses #v3WarehouseAllocationSummary{font-size:12px;line-height:1.65;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--surface2)}
+#section-warehouses .warehouse-quick-add{grid-column:1/-1;border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:14px;display:grid;gap:10px}
+#section-warehouses .warehouse-quick-add strong{font-size:13px}
+#section-warehouses .warehouse-quick-add p,#section-warehouses .warehouse-set-hint{font-size:11px;line-height:1.5;color:var(--muted);margin:0}
+#section-warehouses .warehouse-add-controls{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+#section-warehouses .warehouse-add-controls input{flex:0 1 120px;min-width:85px;max-width:160px}
+#section-warehouses .warehouse-add-controls button{min-height:43px}
+#section-warehouses .warehouse-central-note{border:1px solid var(--line);padding:12px 14px;border-radius:12px;font-size:12px;background:var(--surface)}
+#section-warehouses .warehouse-central-note a{color:var(--accent2);font-weight:700}
+#section-warehouses .warehouse-central-note .btn{display:inline-flex;margin-top:8px}
+#section-warehouses .warehouse-central-note p{margin:0}
+/* Exactly one simple mobile header with 3-dot menu, centred brand and search. */
+#adminSearchToggle,#adminQuickSearchPanel,#adminMobileLogout{display:none}
+@media(max-width:850px){
+ #section-products .productbody{gap:3px 10px}
+ #section-products .productbuttons{max-width:260px}
+ #section-products .productbuttons .btn{font-size:10px;padding:6px 7px}
+}
+@media(max-width:700px){
+ .app>.sidebar{
+   position:relative;z-index:25;width:100%;display:grid!important;
+   grid-template-columns:44px minmax(0,1fr) 44px;grid-template-rows:auto;
+   align-items:center;gap:0;padding:8px 13px!important;min-height:58px;
+ }
+ .app>.sidebar>.brand{
+   grid-column:2;grid-row:1;justify-self:center;text-align:center;
+   padding:4px 0!important;margin:0!important;max-width:100%;
+   font-family:Georgia,serif;font-size:21px!important;line-height:1.25;letter-spacing:.18em!important;
+   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:0!important;
+ }
+ .app>.sidebar>.brand:before{display:none!important}
+ .app>.sidebar>.brand small{display:none!important}
+ .app>.sidebar>#workspaceMenu{
+   position:relative;grid-column:1;grid-row:1;justify-self:start;
+   width:42px;height:42px;min-width:42px;min-height:42px;padding:0;
+   display:grid;place-items:center;border:0;border-radius:10px;
+   font-size:31px;line-height:1;letter-spacing:0;color:#f4e5c7;background:transparent;
+ }
+ .app>.sidebar>#workspaceMenu:hover{background:#30271d}
+ .app>.sidebar>#adminSearchToggle{
+   display:grid;grid-column:3;grid-row:1;justify-self:end;place-items:center;
+   width:42px;height:42px;min-width:42px;border:0;background:transparent;border-radius:10px;
+   color:#f4e5c7;padding:9px;
+ }
+ .app>.sidebar>#adminSearchToggle svg{width:22px;height:22px}
+ .app>.sidebar>#adminSearchToggle:hover{background:#30271d}
+ .app>.sidebar>.sidebottom{display:none!important}
+ .app>.sidebar>#nav{grid-column:1/-1}
+ #adminMobileLogout{display:flex!important;margin-top:10px;border-top:1px solid #4b4132!important;border-radius:0!important}
+ .app>.sidebar>#adminQuickSearchPanel{
+   position:absolute;display:block;z-index:100;top:100%;left:0;right:0;padding:13px;
+   background:#171512;border-top:1px solid #544530;border-bottom:1px solid #544530;box-shadow:0 15px 30px #0007;
+ }
+ .app>.sidebar>#adminQuickSearchPanel[hidden]{display:none!important}
+ #adminQuickSearchInput{
+   width:100%;height:44px;padding:10px 14px;border:1px solid #786343;border-radius:10px;
+   color:#fff6e6;background:#211d17;font-size:13px;outline:none;
+ }
+ #adminQuickSearchInput::placeholder{color:#c9bba7}
+ #adminQuickSearchResults{display:grid;max-height:52vh;overflow-y:auto;margin-top:8px;gap:3px}
+ #adminQuickSearchResults button{
+   border:0;border-radius:8px;padding:10px 12px;text-align:left;color:#eee0ca;background:transparent;
+   display:flex;align-items:center;gap:12px;min-height:43px;
+ }
+ #adminQuickSearchResults button:hover,#adminQuickSearchResults button:focus-visible{background:#3b3022}
+ #adminQuickSearchResults button strong{font-size:12px;font-weight:650}
+ #adminQuickSearchResults button small{display:block;font-size:10px;color:#c2ac89}
+ #adminQuickSearchResults .search-kind{width:48px;flex:0 0 48px;font-size:10px;color:#deb980}
+ #adminQuickSearchResults p{color:#d3c5b0;font-size:12px;margin:9px}
+ #section-products .productcard{grid-template-columns:75px minmax(0,1fr);min-height:105px}
+ #section-products .productimg{width:75px;min-height:105px}
+ #section-products .productbody{padding:9px;grid-template-columns:minmax(0,1fr);gap:4px}
+ #section-products .productbody h3{grid-column:1;grid-row:1;padding-right:70px;font-size:12px}
+ #section-products .productbody>p{grid-column:1;grid-row:2;font-size:10px}
+ #section-products .productmeta{grid-column:1;grid-row:3;font-size:11px}
+ #section-products .productbody>.drag-handle{grid-column:1;grid-row:1;font-size:9px;padding:4px 5px}
+ #section-products .productbuttons{grid-column:1;grid-row:4;max-width:none;justify-content:flex-start;gap:4px}
+ #section-products .productbuttons .btn{font-size:10px;padding:5px 7px}
+ #section-warehouses .warehouse-quick-add{padding:11px}
+}
+@media(max-width:375px){
+ #section-products .productbuttons .btn{font-size:9px;padding:5px 6px}
+ .app>.sidebar>.brand{font-size:19px!important;letter-spacing:.14em!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #section-products .productcard,#section-products .productimg img{transition:none!important}
+}

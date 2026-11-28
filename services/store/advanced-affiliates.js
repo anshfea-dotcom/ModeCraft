@@ -3,7 +3,7 @@ const crypto=require("node:crypto");
 const {rateLimit}=require("express-rate-limit");
 const fail=(message,status=400)=>Object.assign(new Error(message),{status});
 const clean=(value,max=100)=>String(value||"").trim().slice(0,max);
-const key=()=>process.env.SESSION_SECRET||process.env.ADMIN_PASSWORD;
+const key=()=>process.env.AFFILIATE_SIGNING_SECRET||process.env.SESSION_SECRET;
 function signature(code){return crypto.createHmac("sha256",key()).update("aerlon_aff_v1:"+code).digest("hex");}
 function readCode(req){
   const cookies=String(req.headers?.cookie||"").split(";").map(v=>v.trim());

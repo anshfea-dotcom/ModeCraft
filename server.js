@@ -27,11 +27,11 @@ if (
   process.exit(1);
 }
 
+const { createRateLimiter, cleanupCounters } = require("./services/store/rate-limits");
 const pool = createPool(8);
 const limitRequests = createRateLimiter(pool);
 const catalogue = createCatalogueClient(() => readCatalogue(pool));
 const createAccessControls = require("./services/store/security");
-const { createRateLimiter, cleanupCounters } = require("./services/store/rate-limits");
 const { validateInput, validateWebhookData } = require("./services/store/validate-input");
 const initDatabase = require("./services/store/schema");
 const createRepository = require("./services/store/repository");

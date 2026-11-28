@@ -33,6 +33,7 @@ const createAccessControls = require("./services/store/security");
 const initDatabase = require("./services/store/schema");
 const createRepository = require("./services/store/repository");
 const registerCustomers = require("./services/store/customers");
+const registerCustomerAddresses = require("./services/store/customer-addresses");
 const registerStorefront = require("./services/store/storefront");
 const registerStaff = require("./services/store/staff");
 const registerOrderManagement = require("./services/store/orders");
@@ -219,6 +220,7 @@ app.get("/api/config", (_req, res) => {
 
 const media = require('./services/media/routes')(app, pool, requireAdmin, requireOwner, audit);
 registerCustomers(app, context);
+registerCustomerAddresses(app, context);
 registerStorefront(app, context);
 registerStaff(app, context);
 registerOrderManagement(app, context);

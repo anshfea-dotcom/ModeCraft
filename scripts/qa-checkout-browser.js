@@ -156,19 +156,23 @@ async function openCheckout(page,url){
    assert.equal(initialAction.position,'static',"Mobile actions should remain docked outside the scrollable form");
    assert.ok(initialAction.top>=-1 && initialAction.bottom<=initialAction.viewport+2,"Place Order must fit above mobile browser controls: "+JSON.stringify(initialAction));
    assert.equal(await page.locator("#checkoutContinueShopping").isVisible(),true);
-   // Verify several realistic phone widths and tablet-width, not just one emulator.
+   // Each device receives a fresh viewport: resizing one mobile emulation
+   // retains its original device screen width and yields misleading 100vw geometry.
    for(const width of [320,360,430,768]){
-     await page.setViewportSize({width,height:760});
-     await checkSequence(page);
-     await checkCheckoutAboveHeader(page);
-     const buttonBox=await page.locator('#placeOrder').boundingBox();
-     const backBox=await page.locator('#checkoutContinueShopping').boundingBox();
+     const device=await browser.newContext({viewport:{width,height:760},isMobile:true,hasTouch:true,reducedMotion:"reduce"});
+     const mobile=await device.newPage();
+     await mobile.addInitScript(()=>sessionStorage.setItem("aerlon-puzzle-entry-v1","1"));
+     await openCheckout(mobile,url);
+     await checkSequence(mobile);
+     await checkCheckoutAboveHeader(mobile);
+     const buttonBox=await mobile.locator('#placeOrder').boundingBox();
+     const backBox=await mobile.locator('#checkoutContinueShopping').boundingBox();
      assert.ok(buttonBox&&buttonBox.y>=-1&&buttonBox.y+buttonBox.height<=762,
        'Place Order must be on-screen at '+width+'px');
      assert.ok(backBox&&backBox.y>=-1&&backBox.y+backBox.height<=762,
        'Back to Shopping must be on-screen at '+width+'px');
+     await device.close();
    }
-   await page.setViewportSize({width:390,height:844});
    await page.locator("#checkoutContinueShopping").click();
    assert.equal(await page.locator("#checkout").isVisible(),false,"Back to Shopping must exit checkout");
    await page.locator("#bagBtn").click();

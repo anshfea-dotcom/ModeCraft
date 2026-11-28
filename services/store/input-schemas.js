@@ -105,7 +105,7 @@ define("POST","/api/checkout/address/:kind",z.union([
 define("POST","/api/gift-cards/check",obj({code:z.string().regex(/^AGC-[a-fA-F0-9]{24}$/)}));
 
 define("GET","/api/products/:id/reviews",empty,empty,paramsId);
-define("POST","/api/products/:id/reviews",obj({rating:count(1,5),title:text(120,1),comment:text(1500,1)}),empty,paramsId);
+define("POST","/api/products/:id/reviews",obj({rating:count(1,5),title:optionalText(120),comment:text(1500,3)}),empty,paramsId);
 define("POST","/api/products/:id/stock-notifications",obj({color:text(50,1),size:text(30,1)}),empty,paramsId);
 define("POST","/api/wishlist/:productId",empty,empty,paramsProduct);
 define("DELETE","/api/wishlist/:productId",empty,empty,paramsProduct);

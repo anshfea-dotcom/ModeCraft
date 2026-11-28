@@ -31,7 +31,7 @@ async function checkSequence(page){
  assert.equal(result.display,"flex");
  assert.equal(result.direction,"column");
  assert.ok(result.verticalSummaryBeforeAddress,"Order summary must be visually before address");
- assert.ok(result.boxWidth<=result.viewport+2,"Checkout must not overflow the device");
+ assert.ok(result.boxWidth<=result.viewport+2,"Checkout must not overflow the device: "+JSON.stringify(result));
  assert.equal(result.horizontalOverflow,false,"Checkout should scroll vertically without sideways overflow");
 }
 async function checkCheckoutAboveHeader(page){

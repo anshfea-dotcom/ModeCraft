@@ -64,6 +64,8 @@
     if(section==="pos") { loadPOSVariants(); loadPOSHistory(); }
     if(section==="payments") loadPayments();
     if(section==="shipping") loadShipping();
+    if(section==="categories"||section==="brands") loadTaxonomy();
+    if(section==="backups") loadBackupAudit();
   };
   by("v3ReloadInvoices")?.addEventListener("click",loadInvoices);
   by("v3RefreshReports")?.addEventListener("click",loadReports);
@@ -165,6 +167,53 @@
       });
       toast("Shipping tracking saved.");await loadShipping();
     }catch(e){toast(e.message,true);}finally{button.disabled=false;}
+  });
+  async function loadTaxonomy(){
+    if(!currentUser?.permissions?.includes("products.view"))return;
+    try{
+      const result=await api("/api/admin/catalogue/taxonomy");
+      by("v3CategoryList").innerHTML=result.categories.map(row=>'<div><strong>'+escapeHTML(row.name)+'</strong><small>'+escapeHTML(row.count)+' products</small></div>').join("")||'<p class="muted">No product categories.</p>';
+      by("v3BrandList").innerHTML=result.brands.map(row=>'<div><strong>'+escapeHTML(row.name)+'</strong><small>'+escapeHTML(row.count)+' products</small></div>').join("")||'<p class="muted">No brands assigned.</p>';
+      by("v3CategoryFrom").innerHTML=result.categories.map(row=>'<option value="'+escapeHTML(row.name)+'">'+escapeHTML(row.name)+'</option>').join("");
+      by("v3BrandProduct").innerHTML=result.products.map(row=>'<option value="'+escapeHTML(row.id)+'">'+escapeHTML(row.name)+(row.brand?' · '+escapeHTML(row.brand):'')+'</option>').join("");
+    }catch(e){toast(e.message,true);}
+  }
+  by("v3ReloadCategories")?.addEventListener("click",loadTaxonomy);
+  by("v3ReloadBrands")?.addEventListener("click",loadTaxonomy);
+  by("v3CategoryRename")?.addEventListener("submit",async e=>{
+    e.preventDefault();const form=e.currentTarget,body=Object.fromEntries(new FormData(form).entries());
+    const button=form.querySelector('button[type="submit"]');button.disabled=true;
+    try{const result=await api("/api/admin/catalogue/categories",{method:"PATCH",body:JSON.stringify(body)});
+      toast(result.updated+" products updated.");form.reset();await loadTaxonomy();
+    }catch(err){toast(err.message,true);}finally{button.disabled=false;}
+  });
+  by("v3BrandAssign")?.addEventListener("submit",async e=>{
+    e.preventDefault();const form=e.currentTarget;
+    const body=Object.fromEntries(new FormData(form).entries());
+    const button=form.querySelector('button[type="submit"]');button.disabled=true;
+    try{await api("/api/admin/catalogue/brands",{method:"PATCH",body:JSON.stringify(body)});
+      toast("Product brand saved.");await loadTaxonomy();
+    }catch(err){toast(err.message,true);}finally{button.disabled=false;}
+  });
+  async function loadBackupAudit(){
+    if(!currentUser?.isOwner)return;
+    try{
+      const data=await api("/api/admin/audit");
+      by("v3BackupAudit").innerHTML=(data.events||[]).slice(0,25).map(e=>'<div><strong>'+escapeHTML(e.action)+'</strong><small>'+escapeHTML(e.actor)+' · '+escapeHTML(dateV3(e.at))+'</small></div>').join("")||'<p>No recent audit events.</p>';
+    }catch(e){toast(e.message,true);}
+  }
+  by("v3DownloadBackup")?.addEventListener("click",async e=>{
+    if(!currentUser?.isOwner)return;
+    const button=e.currentTarget;button.disabled=true;
+    try{
+      const response=await fetch("/api/admin/backups/operational.json",{credentials:"same-origin"});
+      if(response.status===401){lockAdmin();return;}
+      if(!response.ok){const d=await response.json().catch(()=>({}));throw Error(d.error||"Export failed.");}
+      const blob=await response.blob(),url=URL.createObjectURL(blob);
+      const link=document.createElement("a");link.href=url;link.download="aerlon-operations-"+new Date().toISOString().slice(0,10)+".json";
+      document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+      toast("Operational data export downloaded.");
+    }catch(err){toast(err.message,true);}finally{button.disabled=false;}
   });
   document.querySelectorAll("[data-v3-action]").forEach(button=>button.addEventListener("click",()=>{
     if(!currentUser)return;

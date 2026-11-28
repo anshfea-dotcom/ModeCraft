@@ -102,3 +102,8 @@ body,:root[data-theme="dark"] body{background:var(--bg);color:var(--text)}
  #section-pos .formgrid{grid-template-columns:1fr}
  #section-pos .formfield.full{grid-column:1}
 }
+
+#section-categories .card,#section-brands .card,#section-backups .card{margin-bottom:17px}
+.v3-taxonomy-list{display:grid;gap:9px;margin-bottom:16px}
+.v3-taxonomy-list>div{display:flex;justify-content:space-between;gap:16px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+.v3-taxonomy-list small{color:var(--muted)}

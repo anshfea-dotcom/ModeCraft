@@ -39,6 +39,7 @@ const registerOrderManagement = require("./services/store/orders");
 const registerProductManagement = require("./services/store/products");
 const registerInvoices = require("./services/store/invoices");
 const registerAdminOperations = require("./services/store/admin-operations");
+const registerAdminCatalogue = require("./services/store/admin-catalogue");
 const registerInventory = require("./services/store/inventory");
 const registerCheckout = require("./services/store/checkout");
 
@@ -209,6 +210,7 @@ registerOrderManagement(app, context);
 registerProductManagement(app, context);
 registerInvoices(app, context);
 registerAdminOperations(app, context);
+registerAdminCatalogue(app, context);
 registerInventory(app, context);
 registerCheckout(app, context);
 

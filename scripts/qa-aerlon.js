@@ -133,6 +133,15 @@ check('POS cash sale, shipment tracking and finance controls are wired', () => {
   includesAll(server,['registerAdminOperations(app, context)']);
 });
 
+check('Categories, brands and secure operational exports are backed by APIs',()=>{
+  const code=fs.readFileSync('services/store/admin-catalogue.js','utf8');
+  const html=fs.readFileSync('public/admin.html','utf8');
+  const js=fs.readFileSync('public/assets/js/admin-v3.js','utf8');
+  new vm.Script(code);new vm.Script(js);
+  includesAll(code,['/api/admin/catalogue/taxonomy','/api/admin/catalogue/categories','/api/admin/catalogue/brands','/api/admin/backups/operational.json','requireAdmin,requireOwner']);
+  includesAll(html,['id="section-categories"','id="section-brands"','id="section-backups"']);
+});
+
 async function checkAdminExpiry() {
   const source = fs.readFileSync('services/store/session-policy.js', 'utf8');
   const issuedAt = 1_000_000;
@@ -188,7 +197,7 @@ async function checkAdminExpiry() {
 checkAdminExpiry().then(() => {
   passed++;
   console.log('PASS ' + passed + ': Admin idle sliding expiry, eight-hour maximum and no revival');
-  console.log(passed + '/10 AERLON build checks passed.');
+  console.log(passed + '/11 AERLON build checks passed.');
 }).catch(error => {
   console.error('FAIL: admin session policy', error);
   process.exitCode = 1;

@@ -21,6 +21,8 @@
 <button data-section="shipping" id="shippingNav" class="hidden"><span class="ico">▤</span>Shipping & Delivery</button></div>
 <div class="nav-group"><h2>Catalogue</h2>
 <button data-section="products"><span class="ico">◇</span>Products</button>
+<button data-section="categories" id="categoriesNav" class="hidden"><span class="ico">▤</span>Categories</button>
+<button data-section="brands" id="brandsNav" class="hidden"><span class="ico">◇</span>Brands</button>
 <button data-section="inventory" id="inventoryNav"><span class="ico">▦</span>Inventory & Stock</button></div>
 <div class="nav-group"><h2>Marketing</h2>
 <button data-section="offers" id="offersNav" class="hidden"><span class="ico">％</span>Discounts & Coupons</button>
@@ -31,7 +33,8 @@
 <button data-section="footer" id="footerNav" class="hidden"><span class="ico">▤</span>Footer Management</button></div>
 <div class="nav-group"><h2>Management</h2>
 <button data-section="reports" id="reportsNav" class="hidden"><span class="ico">▥</span>Reports & Analytics</button>
-<button data-section="staff" id="staffNav" class="hidden"><span class="ico">♙</span>Team & Security</button></div></nav><div class="sidebottom"><div class="userchip"><div class="avatar" id="avatar">AE</div><div style="min-width:0"><strong id="sideName">Founder &amp; CEO</strong><small id="sideRole">owner</small></div></div><button class="btn" id="logout" style="width:100%">↪ Sign out</button></div></aside>
+<button data-section="staff" id="staffNav" class="hidden"><span class="ico">♙</span>Team & Security</button>
+<button data-section="backups" id="backupsNav" class="hidden"><span class="ico">▥</span>Backups & Audit Logs</button></div></nav><div class="sidebottom"><div class="userchip"><div class="avatar" id="avatar">AE</div><div style="min-width:0"><strong id="sideName">Founder &amp; CEO</strong><small id="sideRole">owner</small></div></div><button class="btn" id="logout" style="width:100%">↪ Sign out</button></div></aside>
 <main class="main"><header class="topbar"><div><div class="eyebrow" id="pageEyebrow">STORE OVERVIEW</div><h1 id="pageTitle">Store overview</h1><p class="subtitle" id="pageSubtitle">Orders, revenue and fulfilment at a glance.</p></div><div class="actions"><a class="btn" href="/" target="_blank" rel="noopener">View storefront ↗</a><button class="btn" id="themeToggle" title="Switch theme">☾ Dark mode</button><button class="btn" id="refresh">↻ Refresh</button><button class="btn gold hidden" id="addProductTop">＋ Add product</button></div></header>
 <section class="section active" id="section-overview">
 <div class="admin20-welcome v3-greeting"><div><div class="eyebrow">AERLON · STORE OPERATIONS</div><h2>Dashboard</h2><p>Your live store performance and the actions that matter.</p></div><span class="admin20-live"><span aria-hidden="true">●</span> Live business data</span></div>
@@ -79,6 +82,26 @@
 <p class="notice">GST rate, HSN and tax split are not available in current checkout records. Until tax configuration is implemented, downloads are commercial invoices—not GST tax invoices.</p>
 </article></section>
 <section class="section" id="section-reports"><article class="card"><div class="cardtitle"><div><h2>Reports & Analytics</h2><p>Live operational overview from verified orders and inventory</p></div><button class="btn small" id="v3RefreshReports">↻ Refresh</button></div><div id="v3Reports" class="v3-reportgrid"><p class="muted">Loading analytics…</p></div></article></section>
+
+<section class="section" id="section-categories"><article class="card"><div class="cardtitle"><div><h2>Product Categories</h2><p>Manage the real categories assigned to your products.</p></div><button class="btn small" id="v3ReloadCategories">↻ Refresh</button></div>
+<div id="v3CategoryList" class="v3-taxonomy-list">Loading categories…</div></article>
+<article class="card"><div class="cardtitle"><h2>Rename Category</h2></div><form id="v3CategoryRename" class="formgrid">
+<div class="formfield"><label>Existing category</label><select name="from" id="v3CategoryFrom" required></select></div>
+<div class="formfield"><label>New category name</label><input name="to" required minlength="2" maxlength="80"></div>
+<div class="formfield full"><button type="submit" class="btn gold">Apply to all matching products</button></div></form>
+<p class="muted">To create a new category, enter it in an existing product's Category field.</p>
+</article></section>
+<section class="section" id="section-brands"><article class="card"><div class="cardtitle"><div><h2>Brands</h2><p>Brand associations are stored against real products—not demo entries.</p></div><button class="btn small" id="v3ReloadBrands">↻ Refresh</button></div><div id="v3BrandList" class="v3-taxonomy-list">Loading brands…</div></article>
+<article class="card"><div class="cardtitle"><h2>Assign a Brand</h2></div><form id="v3BrandAssign" class="formgrid">
+<div class="formfield full"><label>Product</label><select name="productId" id="v3BrandProduct" required></select></div>
+<div class="formfield full"><label>Brand name</label><input name="brand" required minlength="2" maxlength="80" placeholder="e.g. AERLON"></div>
+<div class="formfield full"><button type="submit" class="btn gold">Save product brand</button></div></form></article></section>
+<section class="section" id="section-backups"><article class="card">
+<div class="cardtitle"><div><h2>Backups & Audit Logs</h2><p>Download an owner-only export of operational records.</p></div></div>
+<p class="notice">JSON exports include order/customer details and must be stored securely. Media files, application secrets and a database point-in-time restore are not included.</p>
+<button id="v3DownloadBackup" class="btn gold" type="button">Download operational data export</button>
+<div class="v3-separator"></div><h3>Recent audit events</h3><div id="v3BackupAudit" class="v3-taxonomy-list">Loading security activity…</div>
+</article></section>
 <section class="section" id="section-pos">
 <div class="v3-title-row"><h2>Point of Sale · Cash Orders</h2><p class="muted">Record an in-person sale and reduce tracked colour/size inventory atomically.</p></div>
 <article class="card"><div class="cardtitle"><div><h2>Create a walk-in sale</h2><p>A sale is marked paid only after you've actually collected the cash. Inventory is deducted once.</p></div><button type="button" class="btn small" id="v3ReloadPOS">↻ Stock</button></div>

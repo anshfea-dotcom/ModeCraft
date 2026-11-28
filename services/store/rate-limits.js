@@ -162,7 +162,34 @@ function cleanupCounters(pool) {
   job.unref?.();
   return () => clearInterval(job);
 }
+
+async function allowStandalone(req, res, pool, name, max = 600) {
+  // Standalone reader services are externally reachable if deployed separately.
+  // Gateway-managed loopback readers are protected at the gateway instead.
+  if (process.send) return true;
+  try {
+    const peer = req.socket?.remoteAddress || "unknown-peer";
+    const hash = crypto.createHash("sha256").update(name + ":" + peer).digest("hex");
+    const result = await takeCounter(pool, "rl:v1:standalone:" + name + ":" + hash, max, 60);
+    if (result.allowed) return true;
+    res.writeHead(429, {
+      "Content-Type": "application/json", "Cache-Control": "no-store",
+      "Retry-After": String(result.retryAfter), "RateLimit-Limit": String(max),
+      "RateLimit-Remaining": "0"
+    });
+    res.end(JSON.stringify({ error: "Too many requests. Please retry later.", retryAfter: result.retryAfter }));
+    return false;
+  } catch (error) {
+    console.error("Standalone service rate-limit unavailable:", error.message);
+    res.writeHead(503, {
+      "Content-Type": "application/json", "Cache-Control": "no-store", "Retry-After": "30"
+    });
+    res.end(JSON.stringify({ error: "Request protection temporarily unavailable." }));
+    return false;
+  }
+}
+
 module.exports = {
-  policyFor, createRateLimiter, clientIp, takeCounter, rejectLimited, rejectUnavailable,
+  policyFor, createRateLimiter, clientIp, takeCounter, rejectLimited, rejectUnavailable, allowStandalone,
   checkAuthLock, recordAuthFailure, clearAuthFailures, cleanupCounters
 };

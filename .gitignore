@@ -2,3 +2,19 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# Private credentials and local auth material
+*.pem
+*.p12
+*.pfx
+*.key
+id_rsa
+id_ed25519
+*.credentials.json
+service-account*.json
+credentials.json
+.npmrc
+.netrc
+.pgpass
+.aws/credentials
+secrets/

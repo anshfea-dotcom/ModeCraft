@@ -154,5 +154,44 @@ async function testManualGSTInvoice(){
   assert.ok(releaseCount>=2);
   console.log("PASS: GST invoice requires explicit manual POST, has correct intra-state tax and prevents duplicates");
 }
-(async()=>{await testPOS();await testInvoicePDF();await testManualGSTInvoice();console.log("3/3 AERLON Admin 3.0 transaction checks passed.")})()
+async function testWarehouseAllocation(){
+  const {app,routes}=appRecorder(),sql=[],audits=[];
+  let assigned=2,stock=3;
+  let inserted=0,rolledBack=0;
+  const client={released:0,async query(s,args=[]){
+    sql.push(s);
+    if(s==="BEGIN"||s==="COMMIT")return{rows:[],rowCount:0};
+    if(s==="ROLLBACK"){rolledBack++;return{rows:[],rowCount:0};}
+    if(s.startsWith("SELECT data FROM warehouses WHERE id="))return{rows:[{data:{active:true}}],rowCount:1};
+    if(s.startsWith("SELECT quantity FROM inventory_variants"))return{rows:[{quantity:stock}],rowCount:1};
+    if(s.startsWith("SELECT COALESCE(SUM(quantity)"))return{rows:[{n:assigned}],rowCount:1};
+    if(s.startsWith("INSERT INTO warehouse_stock")){inserted++;return{rows:[],rowCount:1};}
+    throw Error("Unexpected warehouse SQL: "+s);
+  },release(){this.released++;}};
+  const pool={connect:async()=>client};
+  require("../services/store/warehouses")(app,{
+    pool,requireAdmin:()=>{},requireOwner:()=>{},cleanText:(s,max)=>String(s||"").trim().slice(0,max),
+    audit:async(...args)=>audits.push(args)
+  });
+  const assign=routes.get("PUT /api/admin/warehouses/stock");
+  assert.equal(typeof assign,"function");
+  const actor={username:"owner",role:"owner"};
+  const req={adminSession:actor,body:{warehouseId:"wh-1",variantId:"var-1",quantity:2}};
+  const excess=response();
+  await assign(req,excess,e=>{throw e});
+  assert.equal(excess.statusCode,409);
+  assert.equal(inserted,0);
+  assert.equal(rolledBack,1);
+  const good=response();
+  req.body.quantity=1;
+  await assign(req,good,e=>{throw e});
+  assert.equal(good.body.ok,true);
+  assert.equal(inserted,1);
+  assert.ok(sql.some(s=>s.includes("FROM inventory_variants WHERE id=$1 FOR UPDATE")));
+  assert.ok(sql.some(s=>s.includes("FROM warehouses WHERE id=$1 FOR UPDATE")));
+  assert.ok(sql.includes("COMMIT"));
+  assert.ok(audits.some(x=>x[1]==="warehouse.stock.assigned"));
+  console.log("PASS: Warehouse allocation cannot exceed central stock and locks records during update");
+}
+(async()=>{await testPOS();await testInvoicePDF();await testManualGSTInvoice();await testWarehouseAllocation();console.log("4/4 AERLON Admin 3.0 transaction checks passed.")})()
 .catch(err=>{console.error("Admin 3.0 transaction test failed:",err.stack||err);process.exitCode=1});

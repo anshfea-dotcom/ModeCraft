@@ -68,9 +68,60 @@
     if(section==="pos") { loadPOSVariants(); loadPOSHistory(); }
     if(section==="payments") loadPayments();
     if(section==="shipping") loadShipping();
+    if(section==="warehouses") loadWarehouses();
     if(section==="categories"||section==="brands") loadTaxonomy();
     if(section==="backups") loadBackupAudit();
   };
+  let warehouseCache={warehouses:[],assignments:[],variants:[]};
+  async function loadWarehouses(){
+    if(!currentUser?.isOwner)return;
+    try{
+      const [a,b]=await Promise.all([api("/api/admin/warehouses"),api("/api/admin/warehouses/variants")]);
+      warehouseCache={warehouses:a.warehouses||[],assignments:a.assignments||[],variants:b.variants||[]};
+      by("v3WarehouseList").innerHTML=warehouseCache.warehouses.map(w=>'<div><span><strong>'+escapeHTML(w.name)+'</strong><small style="display:block">'+escapeHTML(w.code)+' · '+escapeHTML(w.city||"—")+', '+escapeHTML(w.state||"—")+' · '+(w.active?"Active":"Inactive")+'</small></span><span><small>'+escapeHTML(w.assignedUnits||0)+' assigned units</small> <button type="button" class="btn small v3-toggle-wh" data-id="'+escapeHTML(w.id)+'">'+(w.active?"Disable":"Enable")+'</button></span></div>').join("")||'<p class="muted">No warehouses created.</p>';
+      const currentWh=by("v3WarehouseId").value,oldVar=by("v3WarehouseVariantId").value;
+      by("v3WarehouseId").innerHTML='<option value="">Choose location</option>'+warehouseCache.warehouses.filter(w=>w.active).map(w=>'<option value="'+escapeHTML(w.id)+'">'+escapeHTML(w.name)+'</option>').join("");
+      by("v3WarehouseVariantId").innerHTML='<option value="">Choose variant</option>'+warehouseCache.variants.map(v=>'<option value="'+escapeHTML(v.id)+'">'+escapeHTML(v.name)+' · '+escapeHTML(v.color)+' / '+escapeHTML(v.size)+' · '+escapeHTML(v.totalStock)+' total</option>').join("");
+      if(warehouseCache.warehouses.some(w=>w.id===currentWh&&w.active))by("v3WarehouseId").value=currentWh;
+      if(warehouseCache.variants.some(v=>v.id===oldVar))by("v3WarehouseVariantId").value=oldVar;
+      showWarehouseAllocation();
+    }catch(e){by("v3WarehouseList").textContent="Cannot load warehouses: "+e.message;toast(e.message,true);}
+  }
+  function showWarehouseAllocation(){
+    const wh=by("v3WarehouseId").value,variant=by("v3WarehouseVariantId").value;
+    const x=warehouseCache.assignments.find(a=>a.warehouseId===wh&&a.variantId===variant);
+    const p=warehouseCache.variants.find(a=>a.id===variant);
+    const qty=by("v3WarehouseStockForm").elements.namedItem("quantity");
+    qty.value=wh&&variant?String(x?.quantity||0):"";
+    const other=warehouseCache.assignments.filter(a=>a.variantId===variant&&a.warehouseId!==wh).reduce((s,a)=>s+Number(a.quantity),0);
+    by("v3WarehouseAllocationSummary").textContent=p?"Central stock: "+p.totalStock+" · Assigned to other locations: "+other+" · Available to assign here: "+Math.max(0,p.totalStock-other):"Choose a product variant.";
+  }
+  by("v3WarehouseId")?.addEventListener("change",showWarehouseAllocation);
+  by("v3WarehouseVariantId")?.addEventListener("change",showWarehouseAllocation);
+  by("v3ReloadWarehouses")?.addEventListener("click",loadWarehouses);
+  by("v3WarehouseForm")?.addEventListener("submit",async e=>{
+    e.preventDefault();const form=e.currentTarget,button=form.querySelector("button[type=submit]");
+    button.disabled=true;
+    try{await api("/api/admin/warehouses",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(form).entries()))});
+      form.reset();toast("Warehouse created.");await loadWarehouses();
+    }catch(err){toast(err.message,true);}finally{button.disabled=false;}
+  });
+  by("v3WarehouseStockForm")?.addEventListener("submit",async e=>{
+    e.preventDefault();const form=e.currentTarget,button=form.querySelector("button[type=submit]");
+    button.disabled=true;
+    try{await api("/api/admin/warehouses/stock",{method:"PUT",body:JSON.stringify(Object.fromEntries(new FormData(form).entries()))});
+      toast("Warehouse assignment saved.");await loadWarehouses();
+    }catch(err){toast(err.message,true);}finally{button.disabled=false;}
+  });
+  by("v3WarehouseList")?.addEventListener("click",async e=>{
+    const button=e.target.closest(".v3-toggle-wh");if(!button)return;
+    const wh=warehouseCache.warehouses.find(x=>x.id===button.dataset.id);if(!wh)return;
+    if(!window.confirm((wh.active?"Disable ":"Enable ")+wh.name+"?"))return;
+    button.disabled=true;
+    try{await api("/api/admin/warehouses/"+encodeURIComponent(wh.id),{method:"PATCH",body:JSON.stringify({active:!wh.active})});
+      toast("Warehouse status updated.");await loadWarehouses();
+    }catch(err){toast(err.message,true);}finally{button.disabled=false;}
+  });
   by("v3ReloadInvoices")?.addEventListener("click",loadInvoices);
   function renderGstFields(){
     const isGST=by("v3InvoiceType").value==="gst";

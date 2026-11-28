@@ -18,7 +18,8 @@
 <button data-section="pos" id="posNav" class="hidden"><span class="ico">▣</span>Point of Sale</button>
 <button data-section="invoices" id="invoicesNav" class="hidden"><span class="ico">▧</span>Invoices & Billing</button>
 <button data-section="payments" id="paymentsNav" class="hidden"><span class="ico">₹</span>Payments</button>
-<button data-section="shipping" id="shippingNav" class="hidden"><span class="ico">▤</span>Shipping & Delivery</button></div>
+<button data-section="shipping" id="shippingNav" class="hidden"><span class="ico">▤</span>Shipping & Delivery</button>
+<button data-section="warehouses" id="warehousesNav" class="hidden"><span class="ico">▦</span>Warehouses</button></div>
 <div class="nav-group"><h2>Catalogue</h2>
 <button data-section="products"><span class="ico">◇</span>Products</button>
 <button data-section="categories" id="categoriesNav" class="hidden"><span class="ico">▤</span>Categories</button>
@@ -95,6 +96,27 @@
 </article></section>
 <section class="section" id="section-reports"><article class="card"><div class="cardtitle"><div><h2>Reports & Analytics</h2><p>Live operational overview from verified orders and inventory</p></div><button class="btn small" id="v3RefreshReports">↻ Refresh</button></div><div id="v3Reports" class="v3-reportgrid"><p class="muted">Loading analytics…</p></div></article></section>
 
+<section class="section" id="section-warehouses">
+<article class="card"><div class="cardtitle"><div><h2>Warehouses</h2><p>Maintain real warehouse locations and assign existing inventory variants.</p></div><button class="btn small" id="v3ReloadWarehouses">Refresh</button></div>
+<div class="notice">Warehouse assignments do not change total sellable stock or route orders automatically. Checkout continues to use central inventory until location-aware fulfilment is configured.</div>
+<div id="v3WarehouseList" class="v3-taxonomy-list"><p class="muted">Loading warehouse locations...</p></div></article>
+<article class="card"><div class="cardtitle"><h2>Add Warehouse</h2></div>
+<form id="v3WarehouseForm" class="formgrid">
+<div class="formfield"><label>Warehouse code</label><input name="code" required pattern="[A-Za-z0-9_-]{2,24}" maxlength="24" placeholder="e.g. GKP-01"></div>
+<div class="formfield"><label>Warehouse name</label><input name="name" required maxlength="100" placeholder="Main Storage"></div>
+<div class="formfield"><label>City</label><input name="city" maxlength="80"></div>
+<div class="formfield"><label>State</label><input name="state" maxlength="80"></div>
+<div class="formfield full"><label>Location address</label><textarea name="address" maxlength="350" rows="2"></textarea></div>
+<div class="formfield full"><button type="submit" class="btn gold">Save Warehouse</button></div>
+</form></article>
+<article class="card"><div class="cardtitle"><h2>Warehouse Stock Assignment</h2></div>
+<form id="v3WarehouseStockForm" class="formgrid">
+<div class="formfield"><label>Warehouse</label><select id="v3WarehouseId" name="warehouseId" required></select></div>
+<div class="formfield"><label>Product variant</label><select id="v3WarehouseVariantId" name="variantId" required></select></div>
+<div class="formfield"><label>Units assigned to selected warehouse</label><input name="quantity" type="number" min="0" step="1" required></div>
+<div class="formfield full"><button type="submit" class="btn gold">Save Stock Assignment</button></div>
+</form><p id="v3WarehouseAllocationSummary" class="muted"></p></article>
+</section>
 <section class="section" id="section-categories"><article class="card"><div class="cardtitle"><div><h2>Product Categories</h2><p>Manage the real categories assigned to your products.</p></div><button class="btn small" id="v3ReloadCategories">↻ Refresh</button></div>
 <div id="v3CategoryList" class="v3-taxonomy-list">Loading categories…</div></article>
 <article class="card"><div class="cardtitle"><h2>Rename Category</h2></div><form id="v3CategoryRename" class="formgrid">

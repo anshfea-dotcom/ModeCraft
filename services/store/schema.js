@@ -129,6 +129,22 @@ module.exports = async function initDatabase(pool) {
       UNIQUE (product_id, color, size)
     );
 
+    CREATE TABLE IF NOT EXISTS warehouses (
+      id TEXT PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE,
+      data JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS warehouse_stock (
+      warehouse_id TEXT NOT NULL REFERENCES warehouses(id) ON DELETE RESTRICT,
+      variant_id TEXT NOT NULL REFERENCES inventory_variants(id) ON DELETE CASCADE,
+      quantity INTEGER NOT NULL CHECK(quantity>=0),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY(warehouse_id, variant_id)
+    );
+    CREATE INDEX IF NOT EXISTS warehouse_stock_variant_idx ON warehouse_stock(variant_id);
+
     CREATE INDEX IF NOT EXISTS inventory_variants_product_idx
       ON inventory_variants (product_id, color, size);
 

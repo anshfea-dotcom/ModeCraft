@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "check": "node --check server.js && node scripts/qa-aerlon.js && node scripts/qa-admin-functional.js && node scripts/qa-checkout-redesign.js && node scripts/qa-checkout-functional.js && node scripts/qa-desktop-layout.js && node scripts/qa-admin-minor.js && node scripts/qa-admin-final.js && node scripts/qa-admin-notifications.js && node scripts/qa-admin-stock-grid.js",
+    "check": "node --check server.js && node scripts/qa-aerlon.js && node scripts/qa-admin-functional.js && node scripts/qa-checkout-redesign.js && node scripts/qa-checkout-functional.js && node scripts/qa-desktop-layout.js && node scripts/qa-admin-minor.js && node scripts/qa-admin-final.js && node scripts/qa-admin-notifications.js && node scripts/qa-admin-stock-grid.js && node scripts/qa-invoice-layout.js",
     "qa": "node scripts/qa-aerlon.js",
     "postinstall": "npm run check"
   },

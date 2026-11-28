@@ -346,6 +346,7 @@ module.exports = async function initDatabase(pool) {
       identity TEXT PRIMARY KEY,
       failures INTEGER NOT NULL DEFAULT 0,
       locked_until TIMESTAMPTZ,
+      window_started TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS auth_lockouts_cleanup_idx ON auth_lockouts(updated_at);

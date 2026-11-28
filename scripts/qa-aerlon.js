@@ -121,6 +121,18 @@ check('Admin 3.0 invoicing routes, permission gates and redesigned assets', () =
   includesAll(main,['registerInvoices(app, context)']);
 });
 
+check('POS cash sale, shipment tracking and finance controls are wired', () => {
+  const operations=fs.readFileSync('services/store/admin-operations.js','utf8');
+  const js=fs.readFileSync('public/assets/js/admin-v3.js','utf8');
+  const html=fs.readFileSync('public/admin.html','utf8');
+  const server=fs.readFileSync('server.js','utf8');
+  new vm.Script(operations);
+  new vm.Script(js);
+  includesAll(operations,['FOR UPDATE OF v','quantity=quantity-$2','requireAdmin,requireOwner','/api/admin/pos/orders','/api/admin/orders/:id/shipping']);
+  includesAll(html,['id="section-pos"','id="section-payments"','id="section-shipping"','id="v3POSForm"']);
+  includesAll(server,['registerAdminOperations(app, context)']);
+});
+
 async function checkAdminExpiry() {
   const source = fs.readFileSync('services/store/session-policy.js', 'utf8');
   const issuedAt = 1_000_000;
@@ -176,7 +188,7 @@ async function checkAdminExpiry() {
 checkAdminExpiry().then(() => {
   passed++;
   console.log('PASS ' + passed + ': Admin idle sliding expiry, eight-hour maximum and no revival');
-  console.log(passed + '/9 AERLON build checks passed.');
+  console.log(passed + '/10 AERLON build checks passed.');
 }).catch(error => {
   console.error('FAIL: admin session policy', error);
   process.exitCode = 1;

@@ -15,7 +15,10 @@
 <div class="nav-group"><h2>Commerce</h2>
 <button data-section="orders"><span class="ico">▤</span>Orders</button>
 <button data-section="customers" id="customersNav" class="hidden"><span class="ico">♧</span>Customers</button>
-<button data-section="invoices" id="invoicesNav" class="hidden"><span class="ico">▧</span>Invoices & Billing</button></div>
+<button data-section="pos" id="posNav" class="hidden"><span class="ico">▣</span>Point of Sale</button>
+<button data-section="invoices" id="invoicesNav" class="hidden"><span class="ico">▧</span>Invoices & Billing</button>
+<button data-section="payments" id="paymentsNav" class="hidden"><span class="ico">₹</span>Payments</button>
+<button data-section="shipping" id="shippingNav" class="hidden"><span class="ico">▤</span>Shipping & Delivery</button></div>
 <div class="nav-group"><h2>Catalogue</h2>
 <button data-section="products"><span class="ico">◇</span>Products</button>
 <button data-section="inventory" id="inventoryNav"><span class="ico">▦</span>Inventory & Stock</button></div>
@@ -42,7 +45,7 @@
 <div class="v3-actions"><div class="cardtitle"><h2>Quick actions</h2><span class="muted">Manage your store</span></div>
 <div class="v3-action-grid">
 <button type="button" data-v3-action="product" data-requires="products.manage"><span>⊕</span>Add Product</button>
-<button type="button" data-goto="orders" data-requires="orders.view"><span>▤</span>Manage Orders</button>
+<button type="button" data-goto="pos" data-requires="owner"><span>▤</span>Create Order</button>
 <button type="button" data-v3-action="invoice" data-requires="owner"><span>▧</span>Create Invoice</button>
 <button type="button" data-goto="banners" data-requires="owner"><span>▧</span>Create Banner</button>
 </div></div>
@@ -76,6 +79,24 @@
 <p class="notice">GST rate, HSN and tax split are not available in current checkout records. Until tax configuration is implemented, downloads are commercial invoices—not GST tax invoices.</p>
 </article></section>
 <section class="section" id="section-reports"><article class="card"><div class="cardtitle"><div><h2>Reports & Analytics</h2><p>Live operational overview from verified orders and inventory</p></div><button class="btn small" id="v3RefreshReports">↻ Refresh</button></div><div id="v3Reports" class="v3-reportgrid"><p class="muted">Loading analytics…</p></div></article></section>
+<section class="section" id="section-pos">
+<div class="v3-title-row"><h2>Point of Sale · Cash Orders</h2><p class="muted">Record an in-person sale and reduce tracked colour/size inventory atomically.</p></div>
+<article class="card"><div class="cardtitle"><div><h2>Create a walk-in sale</h2><p>A sale is marked paid only after you've actually collected the cash. Inventory is deducted once.</p></div><button type="button" class="btn small" id="v3ReloadPOS">↻ Stock</button></div>
+<form id="v3POSForm" class="formgrid">
+<div class="formfield"><label>Customer name</label><input name="name" required maxlength="120" placeholder="Walk-in customer"></div>
+<div class="formfield"><label>Phone (optional)</label><input name="phone" maxlength="30" inputmode="tel"></div>
+<div class="formfield full"><label>Product · colour · size</label><select id="v3POSVariant" name="variantId" required><option value="">Loading stock…</option></select></div>
+<div class="formfield"><label>Quantity</label><input name="quantity" type="number" min="1" max="25" required value="1"></div>
+<div class="formfield"><label>Payment</label><input value="Cash received in person" readonly></div>
+<div class="formfield full"><label class="v3-consent"><input type="checkbox" name="paymentConfirmed" required> I confirm the cash has been collected and this product is being handed over.</label></div>
+<div class="formfield full"><button type="submit" class="btn gold" id="v3POSSubmit">Create paid order</button></div></form>
+<p class="muted">POS supports one tracked variant per transaction in this release. Untracked products cannot be sold through POS until stock variants are configured.</p></article>
+<article class="card"><div class="cardtitle"><h2>Recent POS Sales</h2><button type="button" class="btn small" id="v3POSRefreshHistory">↻ Refresh</button></div><div class="tablewrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Time</th></tr></thead><tbody id="v3POSRows"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody></table></div></article>
+</section>
+<section class="section" id="section-payments"><article class="card"><div class="cardtitle"><div><h2>Payments</h2><p>Payment status is read from recorded transactions; online payments cannot be marked paid manually.</p></div><button type="button" class="btn small" id="v3RefreshPayments">↻ Refresh</button></div>
+<div class="v3-reportgrid" id="v3PaymentMetrics"></div><div class="tablewrap"><table><thead><tr><th>Order</th><th>Method</th><th>Payment status</th><th>Amount</th><th>Date</th></tr></thead><tbody id="v3PaymentRows"><tr><td colspan="5" class="empty">Loading payments…</td></tr></tbody></table></div></article></section>
+<section class="section" id="section-shipping"><article class="card"><div class="cardtitle"><div><h2>Shipping & Delivery</h2><p>Add tracking details to active orders. Update fulfilment status through Orders.</p></div><button type="button" class="btn small" id="v3RefreshShipping">↻ Refresh</button></div>
+<div class="tablewrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Status</th><th>Carrier / Tracking</th><th>Action</th></tr></thead><tbody id="v3ShippingRows"><tr><td colspan="5" class="empty">Loading shipments…</td></tr></tbody></table></div></article></section>
 <section class="section" id="section-orders"><div class="card"><div class="toolbar"><div class="filters"><input id="orderSearch" class="search" placeholder="Search order, customer, phone…"><select id="orderFilter"><option value="all">All statuses</option><option value="received">Received</option><option value="confirmed">Confirmed</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option><option value="awaiting_payment">Awaiting payment</option></select></div><div style="display:flex;gap:8px;align-items:center"><span id="orderCount" class="muted"></span><button class="btn small" id="toggleArchivedOrders">View trash / archived</button></div></div><div class="tablewrap"><table><thead><tr><th>Order / date</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ordersBody"><tr><td colspan="7" class="empty">Loading orders…</td></tr></tbody></table></div></div></section>
 <section class="section" id="section-customers"><div class="card"><div class="cardtitle"><div><h2>Customer directory</h2><p>Owner-only view of customer profiles and order history. Passwords are never displayed.</p></div><button class="btn small" id="refreshCustomers">↻ Refresh</button></div><div class="toolbar"><input id="customerSearch" class="search" placeholder="Search name, email or phone…"><span id="customerCount" class="muted"></span></div><div id="customersList" class="grid" style="gap:12px"><div class="empty">Loading customers…</div></div></div></section>
 <section class="section" id="section-products"><div class="notice">Product edits are saved to PostgreSQL. Drag the <strong>↕ Reorder</strong> handle on any product card to sequence products on the storefront. Use the ↑ / ↓ buttons as an accessible fallback. Your order is saved to the database.</div><div id="productsGrid" class="grid productgrid"><div class="empty">Loading products…</div></div></section>

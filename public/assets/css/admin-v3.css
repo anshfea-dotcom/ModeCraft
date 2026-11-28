@@ -80,3 +80,25 @@ body,:root[data-theme="dark"] body{background:var(--bg);color:var(--text)}
 #section-invoices .formfield.full{grid-column:1}
 }
 @media(max-width:420px){.v3-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Operations tools + full-height black mobile navigation drawer */
+#section-pos .card,#section-payments .card,#section-shipping .card{margin-bottom:16px}
+#section-pos .formgrid{max-width:780px}
+#section-shipping .v3-carrier,#section-shipping .v3-tracking{width:180px;max-width:100%;display:block;margin:0 0 6px}
+#section-shipping table{min-width:850px}
+#section-payments .v3-reportgrid{margin-bottom:18px}
+.v3-consent{display:flex;align-items:center;gap:10px}
+.v3-consent input{width:17px;height:17px;min-width:17px}
+@media(max-width:700px){
+ .sidebar .nav{position:fixed;z-index:80;top:0;left:0;bottom:0;width:min(88vw,355px);overflow-y:auto;
+  background:#0f0e0c;box-shadow:18px 0 50px #0008;display:none;grid-template-columns:1fr;gap:7px;
+  padding:66px 19px 35px;align-content:start}
+ .sidebar .workspace-menu[aria-expanded="true"]+.nav{display:grid}
+ .sidebar .workspace-menu[aria-expanded="true"]{position:fixed;top:15px;left:min(calc(88vw - 58px),295px);z-index:90;background:#32281d}
+ .sidebar:has(.workspace-menu[aria-expanded="true"]):before{content:"";position:fixed;z-index:70;inset:0;background:#0009}
+ .sidebar .nav-group{display:block}
+ .sidebar .nav-group h2{margin:13px 8px 5px}
+ .sidebar .nav button{min-height:37px;padding:7px 10px}
+ #section-pos .formgrid{grid-template-columns:1fr}
+ #section-pos .formfield.full{grid-column:1}
+}

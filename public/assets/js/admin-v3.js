@@ -61,6 +61,9 @@
     if(section==="overview") loadAlerts();
     if(section==="invoices") loadInvoices();
     if(section==="reports") loadReports();
+    if(section==="pos") { loadPOSVariants(); loadPOSHistory(); }
+    if(section==="payments") loadPayments();
+    if(section==="shipping") loadShipping();
   };
   by("v3ReloadInvoices")?.addEventListener("click",loadInvoices);
   by("v3RefreshReports")?.addEventListener("click",loadReports);
@@ -97,6 +100,70 @@
       link.href=url;link.download="AERLON-invoice-"+button.dataset.id+".pdf";
       document.body.appendChild(link);link.click();link.remove();
       setTimeout(()=>URL.revokeObjectURL(url),2000);
+    }catch(e){toast(e.message,true);}finally{button.disabled=false;}
+  });
+  async function loadPOSVariants() {
+    if(!currentUser?.isOwner)return;
+    try{
+      const data=await api("/api/admin/pos/variants");
+      by("v3POSVariant").innerHTML='<option value="">Choose stocked colour and size</option>'+
+        (data.variants||[]).map(v=>'<option value="'+escapeHTML(v.id)+'">'+escapeHTML(v.name)+' · '+escapeHTML(v.color)+' / '+escapeHTML(v.size)+' · '+escapeHTML(moneyV3(v.unitPrice))+' · '+escapeHTML(v.quantity)+' available</option>').join("");
+    }catch(e){toast(e.message,true);}
+  }
+  async function loadPOSHistory() {
+    if(!currentUser?.isOwner)return;
+    try{
+      const data=await api("/api/admin/orders");
+      const orders=(data.orders||[]).filter(o=>o.source==="pos").slice(0,30);
+      by("v3POSRows").innerHTML=orders.map(o=>'<tr><td><strong>'+escapeHTML(o.id)+'</strong></td><td>'+escapeHTML(o.customer?.name||"Walk-in")+'</td><td>'+escapeHTML(moneyV3(o.total))+'</td><td>'+escapeHTML(dateV3(o.createdAt))+'</td></tr>').join("")||'<tr><td colspan="4" class="empty">No POS sales recorded.</td></tr>';
+    }catch(e){toast(e.message,true);}
+  }
+  by("v3ReloadPOS")?.addEventListener("click",loadPOSVariants);
+  by("v3POSRefreshHistory")?.addEventListener("click",loadPOSHistory);
+  by("v3POSForm")?.addEventListener("submit",async event=>{
+    event.preventDefault();const f=event.currentTarget;
+    const data=Object.fromEntries(new FormData(f).entries());
+    data.paymentConfirmed=f.elements.paymentConfirmed.checked;
+    const b=by("v3POSSubmit");b.disabled=true;
+    try{
+      const sale=await api("/api/admin/pos/orders",{method:"POST",body:JSON.stringify(data)});
+      toast("Cash sale "+sale.orderId+" recorded. Stock updated.");
+      f.reset();await Promise.all([loadPOSVariants(),loadPOSHistory(),loadAlerts()]);
+    }catch(e){toast(e.message,true);}
+    finally{b.disabled=false;}
+  });
+  async function loadPayments() {
+    if(!currentUser?.isOwner)return;
+    try{
+      const data=await api("/api/admin/orders");
+      const orders=(data.orders||[]).filter(o=>!o.archivedAt);
+      const paid=orders.filter(o=>o.paymentStatus==="paid");
+      const unpaid=orders.filter(o=>o.paymentStatus!=="paid"&&o.orderStatus!=="cancelled");
+      by("v3PaymentMetrics").innerHTML=[
+        ['Paid revenue',moneyV3(paid.reduce((sum,o)=>sum+Number(o.total||0),0))],
+        ['Paid orders',paid.length],['Awaiting payment',unpaid.length]
+      ].map(([label,value])=>'<article><small>'+escapeHTML(label)+'</small><strong>'+escapeHTML(value)+'</strong></article>').join("");
+      by("v3PaymentRows").innerHTML=orders.slice(0,100).map(o=>'<tr><td>'+escapeHTML(o.id)+'</td><td>'+escapeHTML(o.paymentMethod||"—")+'</td><td>'+escapeHTML(o.paymentStatus||"pending")+'</td><td>'+escapeHTML(moneyV3(o.total))+'</td><td>'+escapeHTML(dateV3(o.createdAt))+'</td></tr>').join("")||'<tr><td colspan="5" class="empty">No payments recorded.</td></tr>';
+    }catch(e){toast(e.message,true);}
+  }
+  by("v3RefreshPayments")?.addEventListener("click",loadPayments);
+  async function loadShipping() {
+    if(!currentUser?.permissions?.includes("orders.update"))return;
+    try{
+      const data=await api("/api/admin/orders");
+      const orders=(data.orders||[]).filter(o=>!o.archivedAt&&!["cancelled","delivered","awaiting_payment"].includes(o.orderStatus));
+      by("v3ShippingRows").innerHTML=orders.slice(0,100).map(o=>'<tr data-order="'+escapeHTML(o.id)+'"><td><strong>'+escapeHTML(o.id)+'</strong></td><td>'+escapeHTML(o.customer?.name||"Customer")+'</td><td>'+escapeHTML(o.orderStatus)+'</td><td><input class="v3-carrier" aria-label="Carrier" placeholder="Carrier" maxlength="80" value="'+escapeHTML(o.shipment?.carrier||"")+'"><input class="v3-tracking" aria-label="Tracking reference" placeholder="Tracking ref" maxlength="100" value="'+escapeHTML(o.shipment?.trackingNumber||"")+'"></td><td><button type="button" class="btn small v3-save-shipping">Save tracking</button></td></tr>').join("")||'<tr><td colspan="5" class="empty">No active shipments.</td></tr>';
+    }catch(e){toast(e.message,true);}
+  }
+  by("v3RefreshShipping")?.addEventListener("click",loadShipping);
+  by("v3ShippingRows")?.addEventListener("click",async event=>{
+    const button=event.target.closest(".v3-save-shipping");if(!button)return;
+    const row=button.closest("tr");button.disabled=true;
+    try{
+      await api("/api/admin/orders/"+encodeURIComponent(row.dataset.order)+"/shipping",{
+        method:"PATCH",body:JSON.stringify({carrier:row.querySelector(".v3-carrier").value,trackingNumber:row.querySelector(".v3-tracking").value})
+      });
+      toast("Shipping tracking saved.");await loadShipping();
     }catch(e){toast(e.message,true);}finally{button.disabled=false;}
   });
   document.querySelectorAll("[data-v3-action]").forEach(button=>button.addEventListener("click",()=>{

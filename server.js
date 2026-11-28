@@ -105,7 +105,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Protect the raw-body webhook before JSON parsing or session middleware.
+// Validate webhook query, cookies and Content-Type before any rate counter or
+// payment database access. The raw signed body is validated *after* HMAC check.
+app.use("/api/razorpay/webhook", validateInput);
 app.use("/api/razorpay/webhook", limitRequests);
 
 // Razorpay webhook requires the unparsed request body.

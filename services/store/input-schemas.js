@@ -290,6 +290,8 @@ define("GET","/storefront-images/:slot",empty,empty,imageSlot);
 define("PUT","/api/admin/storefront/images/:slot",empty,empty,imageSlot);
 define("DELETE","/api/admin/storefront/images/:slot",empty,empty,imageSlot);
 
+define("POST","/api/razorpay/webhook");
+
 // Signed Razorpay requests contain extensive provider-owned metadata.
 // Whitelist + strip the unused provider keys, including nested payment entity.
 // The only data passed to confirmCapturedPayment is the validated projection.

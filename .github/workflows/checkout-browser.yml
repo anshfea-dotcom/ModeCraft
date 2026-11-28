@@ -1,0 +1,24 @@
+name: AERLON checkout mobile and desktop browser QA
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  checkout-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install store dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install isolated browser smoke dependency
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+      - name: Install Chromium browser and system libraries
+        run: npx playwright install --with-deps chromium
+      - name: Run real mobile and desktop checkout flows against mock API
+        run: node scripts/qa-checkout-browser.js

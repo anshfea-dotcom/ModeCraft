@@ -66,11 +66,23 @@
 <article class="card"><div class="cardtitle"><div><h2>Create an invoice</h2><p>Choose a real order. The invoice is issued only once per order and its details are preserved.</p></div></div>
 <form id="v3IssueInvoiceForm" class="formgrid">
 <div class="formfield full"><label for="v3InvoiceOrder">Order</label><select id="v3InvoiceOrder" required class="field"><option value="">Choose an order</option></select></div>
-<div class="formfield full"><button type="submit" class="btn gold" id="v3IssueInvoice">Issue invoice</button></div></form>
-<p class="muted">An invoice records the order as stored when issued. It does not mark an unpaid order as paid or alter stock.</p></article>
+<div class="formfield full"><label for="v3InvoiceType">Invoice type (manual selection)</label>
+<select id="v3InvoiceType" class="field"><option value="normal">Normal invoice</option><option value="gst">GST Tax Invoice (manual)</option></select></div>
+<div id="v3GstFields" class="formfield full hidden">
+<p class="notice">GST invoice is created only when you press Issue Invoice. Fill in actual GST details. The sum of gross line amounts must equal the order total. Verify tax rates, shipping, discount allocation and any e-invoicing obligations before issue.</p>
+<div class="formgrid">
+<div class="formfield"><label>Buyer name</label><input id="v3GstBuyerName" maxlength="120" required placeholder="Name on invoice"></div>
+<div class="formfield"><label>Buyer GSTIN (optional)</label><input id="v3GstBuyerGstin" maxlength="15" placeholder="If registered"></div>
+<div class="formfield full"><label>Buyer billing address</label><textarea id="v3GstBuyerAddress" maxlength="450" rows="2" required></textarea></div>
+<div class="formfield"><label>Place of supply: state name</label><input id="v3GstStateName" maxlength="80" required placeholder="e.g. Uttar Pradesh"></div>
+<div class="formfield"><label>Place of supply: GST state code</label><input id="v3GstStateCode" minlength="2" maxlength="2" pattern="[0-9]{2}" inputmode="numeric" required placeholder="e.g. 09"></div></div>
+<div id="v3GstOrderAmount" class="muted"></div>
+<div id="v3GstLines"></div></div>
+<div class="formfield full"><button type="submit" class="btn gold" id="v3IssueInvoice">Issue invoice manually</button></div></form>
+<p class="muted">No invoice is generated when an order arrives. Only an authorised owner or employee may issue an invoice manually. Each order receives at most one final invoice. Issuing does not alter payment, stock or email customers.</p></article>
 <article class="card"><div class="cardtitle"><div><h2>Issued invoices</h2><p>Download PDF or inspect the original order</p></div><button class="btn small" id="v3ReloadInvoices">↻ Refresh</button></div>
-<div class="tablewrap"><table><thead><tr><th>Invoice</th><th>Order</th><th>Issued</th><th>Amount</th><th>Action</th></tr></thead><tbody id="v3InvoiceRows"><tr><td colspan="5" class="empty">Loading invoices…</td></tr></tbody></table></div></article>
-<article class="card"><div class="cardtitle"><div><h2>Business details</h2><p>These details are included in newly issued invoices; past invoices stay unchanged.</p></div></div>
+<div class="tablewrap"><table><thead><tr><th>Invoice</th><th>Type</th><th>Order</th><th>Issued</th><th>Amount</th><th>Action</th></tr></thead><tbody id="v3InvoiceRows"><tr><td colspan="6" class="empty">Loading invoices…</td></tr></tbody></table></div></article>
+<article class="card" id="v3InvoiceBusinessCard"><div class="cardtitle"><div><h2>Business details</h2><p>These details are included in newly issued invoices; past invoices stay unchanged.</p></div></div>
 <form id="v3InvoiceProfile" class="formgrid">
 <div class="formfield"><label>Legal business name</label><input name="legalName" maxlength="120" required placeholder="Registered seller name"></div>
 <div class="formfield"><label>GSTIN (optional)</label><input name="gstin" maxlength="15" placeholder="GSTIN, if registered"></div>
@@ -79,7 +91,7 @@
 <div class="formfield"><label>Business phone</label><input name="phone" maxlength="30" placeholder="Contact number"></div>
 <div class="formfield full"><label>Invoice note</label><textarea name="note" maxlength="300" rows="2" placeholder="Thank you for shopping with us."></textarea></div>
 <div class="formfield full"><button type="submit" class="btn gold">Save invoice details</button></div></form>
-<p class="notice">GST rate, HSN and tax split are not available in current checkout records. Until tax configuration is implemented, downloads are commercial invoices—not GST tax invoices.</p>
+<p class="notice">Normal invoices retain their original format. GST invoices require manual per-item HSN, rate, place of supply and supplier GSTIN. A GST PDF is not an e-invoice/IRN.</p>
 </article></section>
 <section class="section" id="section-reports"><article class="card"><div class="cardtitle"><div><h2>Reports & Analytics</h2><p>Live operational overview from verified orders and inventory</p></div><button class="btn small" id="v3RefreshReports">↻ Refresh</button></div><div id="v3Reports" class="v3-reportgrid"><p class="muted">Loading analytics…</p></div></article></section>
 

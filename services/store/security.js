@@ -5,6 +5,7 @@ module.exports = function createAccessControls({ getStaff, pool }) {
   const PERMISSION_CATALOG = [
     { id: "dashboard.view", label: "View dashboard" },
     { id: "orders.view", label: "View orders" },
+    { id: "invoices.issue", label: "Manually issue and download invoices" },
     { id: "orders.update", label: "Update order status" },
     { id: "orders.cancel", label: "Cancel orders" },
     { id: "orders.payment.receive", label: "Record COD payment received" },

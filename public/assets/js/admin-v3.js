@@ -6,6 +6,7 @@
   const dateV3 = value => value ? new Date(value).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}) : "—";
   let lastInvoiceLoad = 0;
   let loadingInvoices = false;
+  let invoiceOrders = [];
 
   async function loadAlerts() {
     if (!currentUser?.permissions?.includes("analytics.view")) {
@@ -38,20 +39,23 @@
   }
 
   async function loadInvoices() {
-    if(!currentUser?.isOwner || loadingInvoices) return;
+    if(!currentUser?.permissions?.includes('invoices.issue') || loadingInvoices) return;
     loadingInvoices=true;
     try{
       const [p,items,orders]=await Promise.all([
-        api("/api/admin/invoices/profile"),
+        currentUser.isOwner ? api("/api/admin/invoices/profile") : Promise.resolve({profile:{}}),
         api("/api/admin/invoices"),
         api("/api/admin/orders")
       ]);
       const profile=p.profile||{},form=by("v3InvoiceProfile");
+       by("v3InvoiceBusinessCard")?.classList.toggle("hidden",!currentUser.isOwner);
       for(const [name,value] of Object.entries(profile)) if(form.elements.namedItem(name)) form.elements.namedItem(name).value=String(value??"");
       const options=(orders.orders||[]).filter(order=>!["cancelled","awaiting_payment"].includes(order.orderStatus));
+       invoiceOrders=options;
+       renderGstFields();
       by("v3InvoiceOrder").innerHTML='<option value="">Choose an order</option>'+options.map(order=>'<option value="'+escapeHTML(order.id)+'">'+escapeHTML(order.id)+' · '+escapeHTML(order.customer?.name||"Customer")+' · '+escapeHTML(moneyV3(order.total))+'</option>').join("");
       const invoices=items.invoices||[];
-      by("v3InvoiceRows").innerHTML=invoices.map(invoice=>'<tr><td><strong>'+escapeHTML(invoice.invoiceNumber)+'</strong></td><td>'+escapeHTML(invoice.orderId)+'</td><td>'+escapeHTML(dateV3(invoice.createdAt))+'</td><td>'+escapeHTML(moneyV3(invoice.amount))+'</td><td><button type="button" class="btn small v3-pdf" data-id="'+escapeHTML(invoice.id)+'">Download PDF</button></td></tr>').join("")||'<tr><td colspan="5" class="empty">No invoices have been issued yet.</td></tr>';
+      by("v3InvoiceRows").innerHTML=invoices.map(invoice=>'<tr><td><strong>'+escapeHTML(invoice.invoiceNumber)+'</strong></td><td>'+escapeHTML(invoice.type==="gst_tax_invoice"?"GST Tax":"Normal")+'</td><td>'+escapeHTML(invoice.orderId)+'</td><td>'+escapeHTML(dateV3(invoice.createdAt))+'</td><td>'+escapeHTML(moneyV3(invoice.amount))+'</td><td><button type="button" class="btn small v3-pdf" data-type="'+escapeHTML(invoice.type||"commercial_invoice")+'" data-id="'+escapeHTML(invoice.id)+'">Download PDF</button></td></tr>').join("")||'<tr><td colspan="6" class="empty">No invoices have been issued yet.</td></tr>';
       lastInvoiceLoad=Date.now();
     }catch(e){toast(e.message,true);}
     finally{loadingInvoices=false;}
@@ -68,6 +72,39 @@
     if(section==="backups") loadBackupAudit();
   };
   by("v3ReloadInvoices")?.addEventListener("click",loadInvoices);
+  function renderGstFields(){
+    const isGST=by("v3InvoiceType").value==="gst";
+    by("v3GstFields").classList.toggle("hidden",!isGST);
+    for(const el of by("v3GstFields").querySelectorAll("[required]")) el.disabled=!isGST;
+    if(!isGST)return;
+    const selected=invoiceOrders.find(o=>String(o.id)===by("v3InvoiceOrder").value);
+    const items=selected?.items||[];
+    by("v3GstLines").innerHTML=items.map((item,i)=>'<fieldset class="v3-gst-line" style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0"><legend>'+escapeHTML(item.name||"Item "+(i+1))+' · Qty '+escapeHTML(item.quantity)+'</legend><div class="formgrid"><div class="formfield"><label>HSN code</label><input name="hsn" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" required placeholder="HSN"></div><div class="formfield"><label>GST rate (%)</label><input name="rate" type="number" min="0" max="100" step="0.01" required placeholder="Enter actual rate"></div><div class="formfield full"><label>Gross amount including GST (INR)</label><input name="gross" type="number" min="0.01" max="999999999" step="0.01" required placeholder="Manually allocate the order total"></div></div></fieldset>').join("")||'<p class="notice">Select an order with items.</p>';
+    by("v3GstOrderAmount").textContent=selected?"Order total including taxes: "+moneyV3(selected.total):"Select an order first.";
+  }
+  function gstInvoicePayload(orderId){
+    const fields=by("v3GstFields");
+    const elements=fields.querySelectorAll("input:not([type=checkbox])");
+    for(const item of elements) if(!item.checkValidity()){item.reportValidity();throw Error("Complete every required GST invoice field.");}
+    const lines=[...by("v3GstLines").querySelectorAll(".v3-gst-line")].map(box=>({
+      hsn:box.querySelector('[name="hsn"]').value,
+      rate:box.querySelector('[name="rate"]').value,
+      gross:box.querySelector('[name="gross"]').value
+    }));
+    if(!lines.length)throw Error("Choose an order with at least one item.");
+    const selected=invoiceOrders.find(o=>String(o.id)===orderId);
+    const sum=lines.reduce((n,l)=>n+Math.round(Number(l.gross)*100),0);
+    if(sum!==Math.round(Number(selected?.total||0)*100))throw Error("The GST line gross amounts must add up to the original order total.");
+    return {
+      orderId,lines,buyerName:by("v3GstBuyerName").value,
+      buyerAddress:by("v3GstBuyerAddress").value,
+      buyerGstin:by("v3GstBuyerGstin").value,
+      placeOfSupplyCode:by("v3GstStateCode").value,
+      placeOfSupplyName:by("v3GstStateName").value
+    };
+  }
+  by("v3InvoiceType")?.addEventListener("change",renderGstFields);
+  by("v3InvoiceOrder")?.addEventListener("change",renderGstFields);
   by("v3RefreshReports")?.addEventListener("click",loadReports);
   by("v3InvoiceProfile")?.addEventListener("submit",async event=>{
     event.preventDefault();
@@ -84,7 +121,10 @@
     if(!orderId) return;
     const btn=by("v3IssueInvoice");btn.disabled=true;
     try{
-      const x=await api("/api/admin/invoices",{method:"POST",body:JSON.stringify({orderId})});
+      const gst=by("v3InvoiceType").value==="gst";
+       const body=gst?gstInvoicePayload(orderId):{orderId};
+       if(!window.confirm("Issue "+(gst?"GST Tax":"Normal")+" invoice for order "+orderId+"? This creates a permanent invoice record."))return;
+       const x=await api(gst?"/api/admin/gst-invoices":"/api/admin/invoices",{method:"POST",body:JSON.stringify(body)});
       toast(x.alreadyIssued?"Existing invoice retrieved.":"Invoice issued successfully.");
       await loadInvoices();
     }catch(e){toast(e.message,true);}
@@ -94,7 +134,7 @@
     const button=event.target.closest(".v3-pdf");if(!button)return;
     button.disabled=true;
     try{
-      const response=await fetch("/api/admin/invoices/"+encodeURIComponent(button.dataset.id)+"/pdf",{credentials:"same-origin"});
+      const response=await fetch((button.dataset.type==="gst_tax_invoice"?"/api/admin/gst-invoices/":"/api/admin/invoices/")+encodeURIComponent(button.dataset.id)+"/pdf",{credentials:"same-origin"});
       if(response.status===401){lockAdmin();return;}
       if(!response.ok){let error=await response.json().catch(()=>({}));throw Error(error.error||"Could not download PDF.");}
       const blob=await response.blob();

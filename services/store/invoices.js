@@ -3,7 +3,7 @@ const PDFDocument = require("pdfkit");
 
 // Commercial invoices use a snapshot of a real order. No GST tax breakdown is
 // inferred from payments that did not record tax rates, HSN, or place of supply.
-module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, requireOwner, cleanText, audit }) {
+module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, requireOwner, requirePermission, cleanText, audit }) {
   async function profile() {
     const result = await pool.query("SELECT data FROM store_settings WHERE key=$1", ["invoice_profile"]);
     return result.rows[0]?.data || {};
@@ -35,20 +35,21 @@ module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, 
       res.json({ok:true, profile:nextProfile});
     } catch(e){if(e.status)return res.status(e.status).json({error:e.message});next(e);}
   });
-  app.get("/api/admin/invoices", requireAdmin, requireOwner, async (_req,res,next) => {
+  app.get("/api/admin/invoices", requireAdmin, requirePermission("invoices.issue"), async (_req,res,next) => {
     try {
       const result = await pool.query("SELECT id,order_id,data,issued_at FROM invoices ORDER BY id DESC LIMIT 500");
       res.set("Cache-Control","no-store").json({invoices:result.rows.map(row=>({
         id:String(row.id),orderId:row.order_id,invoiceNumber:row.data.invoiceNumber,
-        amount:row.data.total,createdAt:row.issued_at,customerName:row.data.customer?.name||"Customer"
+        amount:row.data.total,type:row.data.type||"commercial_invoice",createdAt:row.issued_at,customerName:row.data.customer?.name||"Customer"
       }))});
     } catch(e){next(e);}
   });
-  app.post("/api/admin/invoices", requireAdmin, requireOwner, async (req,res,next) => {
+  app.post("/api/admin/invoices", requireAdmin, requirePermission("invoices.issue"), async (req,res,next) => {
     let client;
     try {
       const orderId = cleanText(req.body?.orderId, 150);
       if (!orderId) return res.status(400).json({error:"Select an order."});
+      // This route is manual-only: it is called exclusively by the authorised Create Invoice action.
       const order = await getOrder(orderId);
       if (!order) return res.status(404).json({error:"Order not found."});
       if (order.orderStatus === "cancelled" || order.orderStatus === "awaiting_payment")
@@ -76,16 +77,18 @@ module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, 
       const invoice=await client.query("SELECT id, data FROM invoices WHERE order_id=$1", [order.id]);
       await client.query("COMMIT");client.release();client=null;
       await audit(req.adminSession,saved?"invoice.issued":"invoice.retrieved",{orderId:order.id});
-      res.status(saved?201:200).json({ok:true,id:String(invoice.rows[0].id),invoiceNumber:invoice.rows[0].data.invoiceNumber,alreadyIssued:!saved});
+      if(!saved && invoice.rows[0].data.type==="gst_tax_invoice") return res.status(409).json({error:"This order already has a GST tax invoice. Download that existing invoice."});
+       res.status(saved?201:200).json({ok:true,id:String(invoice.rows[0].id),invoiceNumber:invoice.rows[0].data.invoiceNumber,alreadyIssued:!saved});
     } catch(e){if(client)await client.query("ROLLBACK").catch(()=>{});if(e.status)res.status(e.status).json({error:e.message});else next(e);}
     finally{client?.release();}
   });
-  app.get("/api/admin/invoices/:id/pdf",requireAdmin,requireOwner,async(req,res,next)=>{
+  app.get("/api/admin/invoices/:id/pdf",requireAdmin,requirePermission("invoices.issue"),async(req,res,next)=>{
     try{
       if(!/^\d{1,16}$/.test(req.params.id))return res.status(400).json({error:"Invalid invoice reference."});
       const result=await pool.query("SELECT data FROM invoices WHERE id=$1",[req.params.id]);
       if(!result.rowCount)return res.status(404).json({error:"Invoice not found."});
       const x=result.rows[0].data;
+      if(x.type==="gst_tax_invoice")return res.status(409).json({error:"Use the GST Tax Invoice download action."});
       const filename="AERLON-"+String(x.invoiceNumber).replace(/[^A-Z0-9-]/gi,"")+".pdf";
       res.set({"Content-Type":"application/pdf","Content-Disposition":'attachment; filename="'+filename+'"',"Cache-Control":"no-store"});
       const doc=new PDFDocument({size:"A4",margin:46,info:{Title:x.invoiceNumber,Author:"AERLON"}});

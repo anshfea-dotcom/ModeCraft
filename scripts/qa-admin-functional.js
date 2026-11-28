@@ -73,7 +73,7 @@ async function testInvoicePDF(){
     throw Error("Unexpected PDF test query: "+sql);
   }};
   require("../services/store/invoices")(app,{
-    pool,requireAdmin:()=>{},requireOwner:()=>{},cleanText:(v,max)=>String(v||"").slice(0,max).trim(),audit:async()=>{},getOrder:async()=>null
+    pool,requireAdmin:()=>{},requireOwner:()=>{},requirePermission:()=>()=>{},cleanText:(v,max)=>String(v||"").slice(0,max).trim(),audit:async()=>{},getOrder:async()=>null
   });
   const handler=routes.get("GET /api/admin/invoices/:id/pdf");
   assert.equal(typeof handler,"function");
@@ -93,5 +93,66 @@ async function testInvoicePDF(){
   assert.ok(stream.headers["Content-Disposition"].includes(".pdf"));
   console.log("PASS: authenticated invoice PDF handler generates a complete PDF stream");
 }
-(async()=>{await testPOS();await testInvoicePDF();console.log("2/2 AERLON Admin 3.0 transaction checks passed.")})()
+async function testManualGSTInvoice(){
+  const {app,routes}=appRecorder();
+  const sql=[],audit=[];
+  const originalOrder={id:"ORDER-MANUAL-1",orderStatus:"confirmed",total:1180,
+    items:[{name:"Cotton Shirt",quantity:1,unitPrice:1180}],createdAt:"2026-11-28T08:30:00.000Z"};
+  let stored=null,releaseCount=0;
+  const dbClient={
+    async query(query,args=[]){
+      sql.push(query);
+      if(query==="BEGIN"||query==="COMMIT"||query==="ROLLBACK")return{rows:[],rowCount:0};
+      if(query.startsWith("SELECT pg_advisory_xact_lock"))return{rows:[],rowCount:1};
+      if(query.startsWith("SELECT COUNT(*)::integer AS n"))return{rows:[{n:stored?1:0}],rowCount:1};
+      if(query.startsWith("INSERT INTO invoices")){
+        if(stored)return{rows:[],rowCount:0};
+        stored=JSON.parse(args[1]);return{rows:[{id:21}],rowCount:1};
+      }
+      throw Error("Unexpected GST SQL: "+query);
+    },
+    release(){releaseCount++;}
+  };
+  const pool={
+    async query(query,args=[]){
+      if(query.startsWith("SELECT data FROM store_settings"))
+        return{rows:[{data:{legalName:"AERLON",address:"Gorakhpur UP",gstin:"09ABCDE1234F1Z5"}}],rowCount:1};
+      throw Error("Unexpected GST query: "+query);
+    },
+    connect:async()=>dbClient
+  };
+  require("../services/store/gst-invoices")(app,{
+    pool,getOrder:async()=>originalOrder,requireAdmin:()=>{},requirePermission:p=>{assert.equal(p,"invoices.issue");return()=>{};},
+    audit:async(...a)=>audit.push(a)
+  });
+  assert.equal(stored,null,"No invoice should ever be auto-created during route registration");
+  assert.deepEqual(sql,[],"No database invoice writes before an explicit POST");
+  const issue=routes.get("POST /api/admin/gst-invoices");
+  assert.equal(typeof issue,"function");
+  const request={adminSession:{username:"owner",role:"owner"},body:{
+    orderId:originalOrder.id,buyerName:"Buyer",buyerAddress:"UP",buyerGstin:"",
+    placeOfSupplyCode:"09",placeOfSupplyName:"Uttar Pradesh",
+    lines:[{hsn:"6205",rate:18,gross:1180}]
+  }};
+  const issued=response();
+  await issue(request,issued,e=>{throw e;});
+  assert.equal(issued.statusCode,201);
+  assert.match(issued.body.invoiceNumber,/^G\\d{2}-\\d{2}-\\d{6}$/);
+  assert.equal(stored.type,"gst_tax_invoice");
+  assert.equal(stored.taxType,"intra");
+  assert.equal(stored.taxablePaisa,100000);
+  assert.equal(stored.cgstPaisa,9000);
+  assert.equal(stored.sgstPaisa,9000);
+  assert.equal(stored.igstPaisa,0);
+  assert.equal(stored.totalPaisa,118000);
+  assert.ok(sql.includes("COMMIT"));
+  assert.ok(audit.some(x=>x[1]==="gst.invoice.issued"));
+  const duplicate=response();
+  await issue(request,duplicate,e=>{throw e;});
+  assert.equal(duplicate.statusCode,409,"Issuing for a second time must be rejected");
+  assert.ok(sql.includes("ROLLBACK"));
+  assert.ok(releaseCount>=2);
+  console.log("PASS: GST invoice requires explicit manual POST, has correct intra-state tax and prevents duplicates");
+}
+(async()=>{await testPOS();await testInvoicePDF();await testManualGSTInvoice();console.log("3/3 AERLON Admin 3.0 transaction checks passed.")})()
 .catch(err=>{console.error("Admin 3.0 transaction test failed:",err.stack||err);process.exitCode=1});

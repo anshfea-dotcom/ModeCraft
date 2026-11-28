@@ -396,3 +396,11 @@ body.dark #checkout .checkout-action{background:#25211df5!important}
 }
 @media(min-width:781px){#checkout.checkout-modal{align-items:center!important;justify-content:center!important}}
 @media(max-width:780px){#checkout.checkout-modal{padding:0!important;align-items:stretch!important}}
+
+/* Checkout must eclipse the sticky storefront header, including its search.
+   Earlier .modal z-index:12 sat BELOW #storeHeader z-index:15. */
+#checkout.checkout-modal{
+  z-index:1200!important;
+  isolation:isolate;
+}
+body:has(#checkout.show){overflow:hidden;}

@@ -1,4 +1,3 @@
-const { rateLimit } = require("express-rate-limit");
 const postalGroups = require("./data/india-postal-areas.json");
 
 const pinPattern = /^[1-9]\d{5}$/;
@@ -48,7 +47,6 @@ async function reverseAddress(lat, lon) {
 }
 
 function addressRoutes(app) {
-  app.use("/api/checkout/address", rateLimit({ windowMs: 60000, limit: 15, message: { error: "Too many lookups. Enter your address manually." } }));
   app.post("/api/checkout/address/:kind", async (req, res) => {
     res.set("Cache-Control", "no-store");
     try {

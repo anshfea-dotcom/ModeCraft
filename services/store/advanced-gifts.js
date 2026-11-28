@@ -1,6 +1,5 @@
 "use strict";
 const crypto=require("node:crypto");
-const {rateLimit}=require("express-rate-limit");
 const fail=(message,status=400)=>Object.assign(new Error(message),{status});
 const read=(v,max)=>String(v||"").trim().slice(0,max);
 const toPaise=v=>Math.round(Number(v)*100);
@@ -54,7 +53,7 @@ module.exports=function registerGiftCards(app,{pool,requireAdmin,requireOwner,au
     }catch(e){if(client)await client.query("ROLLBACK").catch(()=>{});if(e.status)return res.status(e.status).json({error:e.message});next(e);}
     finally{client?.release();}
   });
-  app.post("/api/gift-cards/check",rateLimit({windowMs:60_000,limit:12}),async(req,res,next)=>{
+  app.post("/api/gift-cards/check",async(req,res,next)=>{
     try{
       const code=read(req.body?.code,60).toUpperCase();
       if(!/^AGC-[A-F0-9]{24}$/.test(code))return res.status(404).json({error:"Gift card not found."});

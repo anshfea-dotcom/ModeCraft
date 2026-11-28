@@ -4,6 +4,7 @@ const express = require('express');
 const path = require('node:path');
 const managedService = require('../managed-service');
 const { defaults, readImage } = require('./images');
+const { validateWebp } = require('../store/validate-input');
 
 module.exports = function registerImages(app, pool, requireAdmin, requireOwner, audit) {
   const media = managedService(path.join(__dirname, 'server.js'), process.env.MEDIA_SERVICE_URL);
@@ -42,7 +43,7 @@ module.exports = function registerImages(app, pool, requireAdmin, requireOwner, 
     }
     return res.redirect(302, '/editorial/' + defaults.get(req.params.slot) + '.webp');
   });
-  app.put(adminPath, requireAdmin, requireOwner, slot, express.raw({type:'image/webp', limit:'1mb'}), async (req, res, next) => {
+  app.put(adminPath, slot, express.raw({type:'image/webp', limit:'1mb'}), validateWebp, requireAdmin, requireOwner, async (req, res, next) => {
     const image = req.body;
     if (!Buffer.isBuffer(image) || image.length < 30 || image.toString('ascii',0,4) !== 'RIFF' ||
         image.toString('ascii',8,12) !== 'WEBP' || image.readUInt32LE(4) !== image.length - 8 ||

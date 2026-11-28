@@ -3,15 +3,11 @@ const Razorpay = require("razorpay");
 
 const { confirmCapturedPayment } = require("./payment");
 const { affiliateFromRequest } = require("./advanced-affiliates");
-const { rateLimit } = require("express-rate-limit");
 const { addressRoutes, postalAreas, pinPattern } = require("./address");
 const reject = (status, message) => Object.assign(new Error(message), { status });
 
 module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin, requireOwner, audit, getProducts, ensureCustomerRecord, safeEqual }) {
   addressRoutes(app);
-  app.use(["/api/orders/cod", "/api/payments/razorpay", "/api/coupons/validate"], rateLimit({
-    windowMs: 60000, limit: 24, message: { error: "Too many checkout requests. Please wait a minute." }
-  }));
 
   async function getOffers() {
     const result = await pool.query("SELECT data FROM offers ORDER BY created_at DESC");
@@ -391,7 +387,7 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
     };
   }
   app.post("/api/orders/cod", createOrder("COD"));
-  app.post("/api/orders/gift",rateLimit({windowMs:60000,limit:10,message:{error:"Too many gift payment attempts. Try again in one minute."}}),createOrder("GIFT"));
+  app.post("/api/orders/gift",createOrder("GIFT"));
   app.post("/api/payments/razorpay/order", createOrder("Razorpay"));
 
   app.post("/api/payments/razorpay/verify", async (req, res) => {

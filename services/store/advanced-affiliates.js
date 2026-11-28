@@ -1,6 +1,5 @@
 "use strict";
 const crypto=require("node:crypto");
-const {rateLimit}=require("express-rate-limit");
 const fail=(message,status=400)=>Object.assign(new Error(message),{status});
 const clean=(value,max=100)=>String(value||"").trim().slice(0,max);
 const key=()=>process.env.SESSION_SECRET||process.env.ADMIN_PASSWORD;
@@ -23,7 +22,7 @@ async function affiliateFromRequest(req,pool){
   return {code:r.rows[0].code,rate:Number(r.rows[0].commission_rate)};
 }
 module.exports=function registerAffiliates(app,{pool,requireAdmin,requireOwner,audit}){
-  app.get("/r/:code",rateLimit({windowMs:60_000,limit:90}),async(req,res,next)=>{
+  app.get("/r/:code",async(req,res,next)=>{
     try{
       const code=clean(req.params.code,24).toUpperCase();
       if(!/^[A-Z0-9_-]{4,24}$/.test(code))return res.redirect(302,"/");

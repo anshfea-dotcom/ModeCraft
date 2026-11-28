@@ -27,9 +27,12 @@ if (
   process.exit(1);
 }
 
+const { createRateLimiter, cleanupCounters } = require("./services/store/rate-limits");
 const pool = createPool(8);
+const limitRequests = createRateLimiter(pool);
 const catalogue = createCatalogueClient(() => readCatalogue(pool));
 const createAccessControls = require("./services/store/security");
+const { validateInput, validateWebhookData } = require("./services/store/validate-input");
 const initDatabase = require("./services/store/schema");
 const createRepository = require("./services/store/repository");
 const registerCustomers = require("./services/store/customers");
@@ -60,7 +63,11 @@ const context = {
 };
 
 app.disable("x-powered-by");
-app.set("trust proxy", 1);
+// Only trust explicitly configured reverse-proxy CIDRs. Numeric trust proxy = 1
+// can accept attacker-supplied X-Forwarded-For from a directly connected client.
+// Without a trusted CIDR list we use the socket IP (safe, but shared behind a proxy).
+const trustedProxies = (process.env.TRUSTED_PROXY_CIDRS || "").split(",").map(s => s.trim()).filter(Boolean);
+app.set("trust proxy", trustedProxies.length ? trustedProxies : false);
 
 // Public crawler endpoints must not depend on session or database middleware.
 for (const filename of ["robots.txt", "sitemap.xml"]) {
@@ -98,6 +105,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Validate webhook query, cookies and Content-Type before any rate counter or
+// payment database access. The raw signed body is validated *after* HMAC check.
+app.use("/api/razorpay/webhook", validateInput);
+app.use("/api/razorpay/webhook", limitRequests);
+
 // Razorpay webhook requires the unparsed request body.
 app.post(
   "/api/razorpay/webhook",
@@ -125,6 +137,9 @@ app.post(
 
     try {
       event = JSON.parse(req.body.toString("utf8"));
+      const validated = validateWebhookData(event);
+      if (!validated.success) return res.status(400).json({ error: "Invalid payment webhook payload." });
+      event = validated.data;
     } catch {
       return res.status(400).send("Invalid JSON.");
     }
@@ -138,6 +153,15 @@ app.post(
 );
 
 app.use(express.json({ limit: "100kb" }));
+// Malformed JSON is a client-input error, never a generic HTTP 500.
+app.use((error, _req, res, next) => {
+  if (error && (error.type === "entity.parse.failed" || error instanceof SyntaxError && error.status === 400))
+    return res.status(400).json({ error: "Malformed JSON request." });
+  next(error);
+});
+// Fail closed on unknown API schemas; reject invalid bodies, query strings,
+// path parameters and application cookies before any session/database access.
+app.use(validateInput);
 
 app.use(
   session({
@@ -149,6 +173,9 @@ app.use(
       ttl: Math.floor(SESSION_TTL_MS / 1000)
     }),
     secret: process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD,
+    // Trust the TLS ingress for Secure cookie delivery only; never use
+    // forwarded headers for rate-limit identity without trusted proxy CIDRs.
+    proxy: process.env.NODE_ENV === "production",
     resave: false,
     saveUninitialized: false,
     rolling: true,
@@ -160,6 +187,10 @@ app.use(
     }
   })
 );
+
+// Central coverage for every API, including dynamically registered module routes,
+// plus non-API health, affiliate redirects and database-backed image endpoints.
+app.use(["/api", "/health", "/r", "/storefront-images"], limitRequests);
 
 require('./services/store/account-pages')(app);
 
@@ -264,6 +295,8 @@ app.use((error, _req, res, _next) => {
 
 async function start() {
   await initDatabase(pool);
+  const stopRateLimitCleanup = cleanupCounters(pool);
+  process.once("SIGTERM", stopRateLimitCleanup);
   const stopAutomations=automations.start(pool);
   process.once("SIGTERM",stopAutomations);
   catalogue.start();

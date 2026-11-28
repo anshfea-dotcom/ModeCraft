@@ -88,7 +88,7 @@ check("size selection is mandatory and gives visible red warning",()=>{
   assert.ok(css.includes("#detailSizeWarning"));
 });
 check("responsive themes, syntax and retry/idempotency safeguards remain valid",()=>{
-  assert.ok(html.includes('checkout-onepage.css?v=20261128-3'));
+  assert.ok(html.includes('checkout-onepage.css?v=20261128-4'));
   assert.ok(html.includes('checkout.js?v=20261128-3'));
   assert.ok(css.includes('flex-direction:column!important'));
   assert.ok(css.includes('position:static!important'));
@@ -97,6 +97,8 @@ check("responsive themes, syntax and retry/idempotency safeguards remain valid",
 
   assert.ok(css.includes("@media(max-width:430px)"));
   assert.ok(css.includes("position:sticky!important;bottom:0!important"));
+  assert.ok(css.includes("z-index:1200!important"),"Checkout must eclipse storefront header");
+  assert.ok(css.includes("body:has(#checkout.show){overflow:hidden;}"),"Background must lock during checkout");
   assert.ok(css.includes("env(safe-area-inset-bottom)"));
   assert.ok(css.includes(".checkout-quantity"));
   assert.ok(store.includes("function renderCheckoutItems()"));

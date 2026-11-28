@@ -65,6 +65,83 @@ module.exports = function registerProductManagement(app, { requireAdmin, require
     }
   }
 
+
+  // Save the product and its entire selected colour/size stock grid in one transaction.
+  // The expected quantity prevents an open admin form from overwriting new customer orders.
+  async function saveProductAndGrid(product, grid) {
+    if (grid === undefined) return putProduct(product);
+    if (!Array.isArray(grid) || grid.length > 300) {
+      const error = new Error("A valid size-wise stock grid is required."); error.status = 400; throw error;
+    }
+    const allowed = new Map();
+    for (const color of product.colors || []) {
+      if (product.colorVariants?.[color]) continue;
+      for (const size of product.sizesByColor?.[color] || []) {
+        allowed.set(color.toLowerCase() + "\0" + String(size).toLowerCase(), { color, size: String(size) });
+      }
+    }
+    if (allowed.size !== grid.length) {
+      const error = new Error("Enter one stock quantity for every selected colour and size."); error.status = 400; throw error;
+    }
+    const seen = new Set(), entries = [];
+    for (const row of grid) {
+      const color = cleanText(row?.color, 40), size = cleanText(row?.size, 30);
+      const key = color.toLowerCase() + "\0" + size.toLowerCase();
+      const allowedRow = allowed.get(key);
+      const quantity = Number(row?.quantity);
+      const expected = row?.expectedQuantity;
+      if (!allowedRow || seen.has(key) || !Number.isSafeInteger(quantity) || quantity < 0 || quantity > 1000000 ||
+          (expected !== null && (!Number.isSafeInteger(expected) || expected < 0))) {
+        const error = new Error("Invalid or duplicate size stock. Enter whole units from 0 to 1,000,000."); error.status = 400; throw error;
+      }
+      seen.add(key);
+      entries.push({ ...allowedRow, quantity, expectedQuantity: expected });
+    }
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      // Serialise catalogue edits while customer transactions may reserve variants.
+      await client.query("SELECT id FROM products WHERE id=$1 FOR UPDATE", [product.id]);
+      const existing = await client.query(
+        "SELECT id,color,size,quantity FROM inventory_variants WHERE product_id=$1 FOR UPDATE", [product.id]
+      );
+      const previous = new Map(existing.rows.map(row => [row.color.toLowerCase() + "\0" + row.size.toLowerCase(), row]));
+      for (const [key, row] of previous) {
+        if (!seen.has(key) && Number(row.quantity) > 0) {
+          const error = new Error("Move remaining stock to zero before removing a colour or size."); error.status = 409; throw error;
+        }
+      }
+      product.stock = entries.reduce((sum, row) => sum + row.quantity, 0);
+      await putProduct(product, client);
+      for (const row of entries) {
+        const key = row.color.toLowerCase() + "\0" + row.size.toLowerCase();
+        const old = previous.get(key);
+        if (old) {
+          if (row.expectedQuantity === null || Number(old.quantity) !== row.expectedQuantity) {
+            const error = new Error("Stock changed since this form opened. Reopen the product to see current units."); error.status = 409; throw error;
+          }
+          await client.query(
+            "UPDATE inventory_variants SET quantity=$2,updated_at=NOW() WHERE id=$1",
+            [old.id, row.quantity]
+          );
+        } else {
+          if (row.expectedQuantity !== null) {
+            const error = new Error("Stock changed since this form opened. Reopen to reload."); error.status = 409; throw error;
+          }
+          const id = "inv_" + crypto.randomBytes(12).toString("hex");
+          await client.query(
+            "INSERT INTO inventory_variants(id,product_id,color,size,sku,quantity) VALUES ($1,$2,$3,$4,$5,$6)",
+            [id, product.id, row.color, row.size, "", row.quantity]
+          );
+        }
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally { client.release(); }
+  }
+
   app.post(
     "/api/admin/products",
     requireAdmin,
@@ -126,7 +203,7 @@ module.exports = function registerProductManagement(app, { requireAdmin, require
           }
         }
         await validateColorProductLinks(product, colorLinks, { isNew: true });
-        await putProduct(product);
+        await saveProductAndGrid(product, req.body?.stockGrid);
         await audit(req.adminSession, "product.created", {
           productId: product.id
         });
@@ -243,7 +320,7 @@ module.exports = function registerProductManagement(app, { requireAdmin, require
         }
 
         await validateColorProductLinks(product, product.colorVariants || {});
-        await putProduct(product);
+        await saveProductAndGrid(product, req.body?.stockGrid);
 
         await audit(req.adminSession, "product.updated", {
           productId: product.id

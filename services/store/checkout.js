@@ -355,6 +355,31 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
           order.razorpayOrderId = result.id;
         }
         await ensureCustomerRecord(order.customer, client);
+
+        // Atomic stock reservation happens at order placement, never again on payment or delivery.
+        // Any failed line rolls back all reservations and the order insert.
+        order.stockReservations = [];
+        for (const item of order.items) {
+          const quantity = Number(item.quantity);
+          const available = await client.query(
+            "SELECT id FROM inventory_variants WHERE product_id=$1 LIMIT 1", [item.id]
+          );
+          if (available.rowCount) {
+            const taken = await client.query(
+              "UPDATE inventory_variants SET quantity=quantity-$4,updated_at=NOW() WHERE product_id=$1 AND LOWER(color)=LOWER($2) AND LOWER(size)=LOWER($3) AND quantity >= $4 RETURNING id",
+              [item.id, String(item.color || ""), String(item.size || ""), quantity]
+            );
+            if (!taken.rowCount) throw reject(409, "Some selected sizes are no longer in stock. Refresh the bag and retry.");
+            order.stockReservations.push({ kind: "variant", id: taken.rows[0].id, quantity });
+          } else {
+            const taken = await client.query(
+              "UPDATE products SET data=jsonb_set(data,'{stock}',to_jsonb((data->>'stock')::int-$2)),updated_at=NOW() WHERE id=$1 AND COALESCE((data->>'stock')::int,0)>=$2 RETURNING id",
+              [item.id, quantity]
+            );
+            if (!taken.rowCount) throw reject(409, "This product is no longer in stock. Refresh your bag and retry.");
+            order.stockReservations.push({ kind: "product", id: item.id, quantity });
+          }
+        }
         await client.query("INSERT INTO orders(id,data) VALUES($1,$2::jsonb)", [id, JSON.stringify(order)]);
         if (!online && order.couponCode) await client.query("UPDATE offers SET data=jsonb_set(data,'{usageCount}',to_jsonb(COALESCE((data->>'usageCount')::int,0)+1)) WHERE code=$1", [order.couponCode]);
         await client.query("COMMIT");

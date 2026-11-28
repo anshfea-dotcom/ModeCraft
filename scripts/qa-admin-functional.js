@@ -156,15 +156,17 @@ async function testManualGSTInvoice(){
 }
 async function testWarehouseAllocation(){
   const {app,routes}=appRecorder(),sql=[],audits=[];
-  let assigned=2,stock=3;
+  let assigned=2,stock=3,productStock=3,productAllocated=2;
   let inserted=0,rolledBack=0;
   const client={released:0,async query(s,args=[]){
     sql.push(s);
     if(s==="BEGIN"||s==="COMMIT")return{rows:[],rowCount:0};
     if(s==="ROLLBACK"){rolledBack++;return{rows:[],rowCount:0};}
     if(s.startsWith("SELECT data FROM warehouses WHERE id="))return{rows:[{data:{active:true}}],rowCount:1};
-    if(s.startsWith("SELECT quantity FROM inventory_variants"))return{rows:[{quantity:stock}],rowCount:1};
+    if(s.startsWith("SELECT quantity,product_id FROM inventory_variants"))return{rows:[{quantity:stock,product_id:"prod-1"}],rowCount:1};
     if(s.startsWith("SELECT COALESCE(SUM(quantity)"))return{rows:[{n:assigned}],rowCount:1};
+    if(s.startsWith("SELECT data FROM products WHERE id="))return{rows:[{data:{stock:productStock}}],rowCount:1};
+    if(s.includes("FROM warehouse_stock ws"))return{rows:[{n:productAllocated}],rowCount:1};
     if(s.startsWith("INSERT INTO warehouse_stock")){inserted++;return{rows:[],rowCount:1};}
     throw Error("Unexpected warehouse SQL: "+s);
   },release(){this.released++;}};
@@ -187,11 +189,26 @@ async function testWarehouseAllocation(){
   await assign(req,good,e=>{throw e});
   assert.equal(good.body.ok,true);
   assert.equal(inserted,1);
+  // Even with ample stock of this size, another size or warehouse may exhaust
+  // the declared product-wide quantity.
+  assigned=0;stock=100;productStock=100;productAllocated=99;
+  const extra=response();
+  req.body.quantity=2;
+  await assign(req,extra,e=>{throw e});
+  assert.equal(extra.statusCode,409);
+  assert.match(extra.body.error,/100 total units/);
+  assert.equal(inserted,1,"Over-allocation must not write inventory");
+  const available=response();
+  req.body.quantity=1;
+  await assign(req,available,e=>{throw e});
+  assert.equal(available.body.ok,true);
+  assert.equal(inserted,2);
   assert.ok(sql.some(s=>s.includes("FROM inventory_variants WHERE id=$1 FOR UPDATE")));
   assert.ok(sql.some(s=>s.includes("FROM warehouses WHERE id=$1 FOR UPDATE")));
+  assert.ok(sql.some(s=>s.includes("FROM products WHERE id=$1 FOR UPDATE")));
   assert.ok(sql.includes("COMMIT"));
   assert.ok(audits.some(x=>x[1]==="warehouse.stock.assigned"));
-  console.log("PASS: Warehouse allocation cannot exceed central stock and locks records during update");
+  console.log("PASS: Warehouse stock allocation respects variant supply and product-wide total under row locks");
 }
 
 function testSEO(){

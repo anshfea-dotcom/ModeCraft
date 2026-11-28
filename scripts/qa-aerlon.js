@@ -115,7 +115,7 @@ check('Admin 3.0 invoicing routes, permission gates and redesigned assets', () =
   const main = fs.readFileSync('server.js','utf8');
   new vm.Script(js);
   new vm.Script(invoices);
-  includesAll(html,['id="section-invoices"','id="section-reports"','src="/admin-v3.js?v=20261128-3"','href="/admin-v3.css?v=20261128-3"','data-section="invoices"','id="v3LowStock"']);
+  includesAll(html,['id="section-invoices"','id="section-reports"','src="/admin-v3.js?v=20261128-4"','href="/admin-v3.css?v=20261128-3"','data-section="invoices"','id="v3LowStock"']);
   includesAll(invoices,['requireAdmin, requireOwner','/api/admin/invoices','/api/admin/invoices/:id/pdf','ON CONFLICT(order_id) DO NOTHING']);
   includesAll(schema,['CREATE TABLE IF NOT EXISTS invoices']);
   includesAll(main,['registerInvoices(app, context)']);

@@ -153,3 +153,96 @@
  .admin-notification-head{align-items:flex-start}
  .admin-notification-head-actions{justify-content:flex-end}
 }
+
+/* AERLON Admin: dependable notification layer + premium icon-led navigation. */
+.app>.sidebar>.nav .admin-nav-head{display:none}
+.app>.sidebar>.nav .nav-group h2{
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:14px!important;font-weight:500!important;letter-spacing:.06em!important;
+  text-transform:none!important;color:#e0bb7f!important;
+  margin:17px 12px 7px!important;padding-top:8px;
+  border-top:1px solid rgba(193,157,102,.17);
+}
+.app>.sidebar>.nav .nav-group:first-of-type h2{border-top:0}
+.app>.sidebar>.nav .nav-group button[data-section]{
+  display:flex;align-items:center;gap:11px;
+  font-family:Inter,system-ui,sans-serif;
+  font-size:12px!important;font-weight:500!important;letter-spacing:.01em!important;
+  line-height:1.35;min-height:42px!important;
+  padding:9px 11px!important;border-radius:10px!important;
+}
+.app>.sidebar>.nav .nav-group button[data-section] .ico{
+  display:grid;place-items:center;flex:0 0 27px;width:27px;height:27px;
+  border:1px solid rgba(198,165,115,.19);border-radius:8px;
+  color:#dbb678;background:rgba(196,149,79,.07);
+}
+.app>.sidebar>.nav .nav-group button[data-section] .ico svg{
+  width:17px;height:17px;display:block;stroke:currentColor;
+}
+.app>.sidebar>.nav .nav-group button.active .ico{
+  color:#fff9e9;background:rgba(255,255,255,.16);
+  border-color:rgba(255,255,255,.25);
+}
+.app>.sidebar>#adminNotificationPanel{
+  border:1px solid #a98858;
+  background:#191714;box-shadow:0 22px 65px rgba(0,0,0,.48);
+}
+.app>.sidebar>#adminNotificationPanel .admin-notification-empty{
+  padding:18px 11px;line-height:1.6;
+}
+.app>.sidebar>#adminNotificationPanel .admin-notification-head{
+  position:sticky;top:0;z-index:2;background:#191714;
+}
+.app>.sidebar>#adminNotificationPanel .admin-notification-head strong{
+  color:#f5dfb7;font-family:Georgia,serif;letter-spacing:.02em;font-size:18px;
+}
+.app>.sidebar>#adminNotificationPanel button{
+  min-height:32px;
+}
+@media(max-width:700px){
+  /* The prior scrollable sidebar clipped the absolutely positioned bell popup. */
+  .app>.sidebar{overflow:visible!important}
+  .app>.sidebar>#adminNotificationPanel{
+    display:block;position:fixed!important;
+    z-index:130!important;
+    top:calc(65px + env(safe-area-inset-top))!important;
+    left:9px!important;right:9px!important;width:auto!important;
+    max-height:min(70dvh,580px)!important;overflow-y:auto!important;
+    box-sizing:border-box;border-radius:15px!important;
+    padding:13px!important;
+  }
+  .app>.sidebar>#adminNotificationPanel[hidden]{display:none!important}
+  .app>.sidebar>.nav .admin-nav-head{
+    display:grid;gap:12px;padding:0 4px 10px;
+  }
+  .app>.sidebar>.nav .admin-nav-eyebrow{
+    font-size:9px;font-weight:750;letter-spacing:.2em;color:#bda47b;
+  }
+  .app>.sidebar>.nav #adminNavBack{
+    display:inline-flex!important;align-items:center;justify-content:flex-start;
+    gap:9px;width:100%;min-height:42px;padding:9px 11px!important;
+    border:1px solid #8c6e47;border-radius:10px!important;
+    color:#f1d5a4;background:#30261b;font:700 12px/1.2 Inter,system-ui,sans-serif;
+  }
+  .app>.sidebar>.nav #adminNavBack span{
+    display:grid;place-items:center;width:23px;height:23px;
+    border-radius:7px;color:#fff2dd;background:#5a452a;font-size:20px;
+  }
+  .app>.sidebar>.nav .nav-group h2{margin:13px 10px 6px!important;font-size:14px!important}
+  .app>.sidebar>.nav .nav-group button[data-section]{
+    min-height:40px!important;padding:7px 9px!important;
+    font-size:12px!important;
+  }
+  .app>.sidebar .workspace-menu[aria-expanded="true"]{
+    width:43px;height:43px;min-width:43px;border-radius:11px;
+    font-size:28px!important;line-height:1;
+  }
+  body:has(.app>.sidebar>.workspace-menu[aria-expanded="true"]){overflow:hidden}
+}
+@media(max-width:360px){
+ .app>.sidebar>#adminNotificationPanel{
+   left:6px!important;right:6px!important;
+   padding:10px!important;
+ }
+ .app>.sidebar>.nav .nav-group button[data-section]{font-size:11px!important}
+}

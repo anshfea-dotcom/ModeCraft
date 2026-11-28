@@ -1,6 +1,7 @@
 const http = require("node:http");
 const { createPool } = require("../database");
 const { readCatalogue } = require("./catalogue");
+const { allowStandalone } = require("../store/rate-limits");
 
 const pool = createPool(2);
 const server = http.createServer(async (req, res) => {
@@ -8,6 +9,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(404).end();
     return;
   }
+  if (!await allowStandalone(req, res, pool, "catalogue", 600)) return;
   try {
     const data = await readCatalogue(pool);
     res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });

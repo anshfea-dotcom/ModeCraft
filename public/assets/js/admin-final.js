@@ -25,12 +25,18 @@
   const syncMenu = () => {
     if(!menu)return;
     const open=menuOpen();
-    menu.textContent=open ? "←" : "☰";
-    menu.setAttribute("aria-label",open?"Back to dashboard":"Open navigation menu");
+    menu.textContent=open ? "×" : "☰";
+    menu.setAttribute("aria-label",open?"Close navigation menu":"Open navigation menu");
     menu.setAttribute("title",open?"Close navigation":"Open navigation menu");
   };
   syncMenu();
   menu?.addEventListener("click",syncMenu);
+  by("adminNavBack")?.addEventListener("click",()=>{
+    if(!currentUser)return;
+    navigate("overview");
+    syncMenu();
+    window.scrollTo({top:0,behavior:"instant"});
+  });
   nav?.addEventListener("click",event=>{
     if(event.target.closest("button[data-section]"))syncMenu();
   });
@@ -193,6 +199,13 @@
   async function loadNotifications(){
     if(!currentUser || app.classList.contains("hidden") || loadingNotices)return;
     loadingNotices=true;
+    if(!notificationPanel.hidden){
+      notificationList.replaceChildren();
+      const message=document.createElement("p");
+      message.className="admin-notification-empty";
+      message.textContent="Checking orders, payments, stock and automation alerts…";
+      notificationList.append(message);
+    }
     const checks=[{kind:"deleted",work:api("/api/admin/notifications/deleted")}];
     if(currentUser.permissions?.includes("orders.view"))checks.push({kind:"orders",work:api("/api/admin/orders")});
     if(currentUser.permissions?.includes("products.view"))checks.push({kind:"inventory",work:api("/api/admin/inventory/alerts")});
@@ -264,6 +277,7 @@
     if(!currentUser)return;
     const opening=notificationPanel.hidden;
     if(opening && searchPanel && !searchPanel.hidden)search.click();
+    if(opening && menuOpen())menu.click();
     notificationPanel.hidden=!opening;
     bell.setAttribute("aria-expanded",String(opening));
     if(opening)await loadNotifications();
@@ -273,6 +287,7 @@
     for(const notice of notices)readKeys.add(notice.key);
     saveReadKeys();renderNotifications();
   });
+  menu?.addEventListener("click",closeNotifications);
   search?.addEventListener("click",closeNotifications);
   nav?.addEventListener("click",closeNotifications);
   document.addEventListener("pointerdown",event=>{
@@ -288,5 +303,17 @@
     }
     loadNotifications();
   }).observe(app,{attributes:true,attributeFilter:["class"]});
+
+  /* Trustworthy inline vector glyphs: no external icon library or network dependency. */
+  const adminMenuIconPaths={"overview":"<rect x=\"3\" y=\"3\" width=\"8\" height=\"8\" rx=\"1.5\"/><rect x=\"13\" y=\"3\" width=\"8\" height=\"5\" rx=\"1.5\"/><rect x=\"13\" y=\"10\" width=\"8\" height=\"11\" rx=\"1.5\"/><rect x=\"3\" y=\"13\" width=\"8\" height=\"8\" rx=\"1.5\"/>","activity":"<path d=\"M3 12h4l3-7 4 14 3-7h4\"/>","orders":"<rect x=\"5\" y=\"5\" width=\"14\" height=\"16\" rx=\"2\"/><path d=\"M9 3v4m6-4v4M9 12h6m-6 4h6\"/>","customers":"<circle cx=\"9\" cy=\"8\" r=\"3\"/><path d=\"M3 20v-2a6 6 0 0 1 12 0v2M17 6a3 3 0 0 1 0 6m2 8v-2a6 6 0 0 0-3-5\"/>","pos":"<rect x=\"3\" y=\"4\" width=\"18\" height=\"13\" rx=\"2\"/><path d=\"M8 21h8m-4-4v4\"/>","invoices":"<path d=\"M7 3h10l3 3v15l-4-2-4 2-4-2-4 2V6z\"/><path d=\"M9 9h6m-6 4h8\"/>","payments":"<rect x=\"2.5\" y=\"5\" width=\"19\" height=\"14\" rx=\"2\"/><path d=\"M2.5 10h19m-14 5h4\"/>","shipping":"<path d=\"M3 6h11v12H3zM14 10h4l3 3v5h-7\"/><circle cx=\"7\" cy=\"19\" r=\"2\"/><circle cx=\"18\" cy=\"19\" r=\"2\"/>","warehouses":"<path d=\"M3 10 12 4l9 6v11H3zM8 21v-8h8v8M3 10h18\"/>","products":"<path d=\"m8 4 4 2 4-2 5 5-4 4-1-1v9H8v-9l-1 1-4-4z\"/>","categories":"<path d=\"m12 3 9 5-9 5-9-5zm-9 10 9 5 9-5M3 18l9 5 9-5\"/>","brands":"<path d=\"M3 12V4h8l10 10-8 8z\"/><circle cx=\"7.5\" cy=\"8\" r=\"1\"/>","inventory":"<rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"2\"/><path d=\"M4 10h16m-8-6v16\"/>","offers":"<circle cx=\"7\" cy=\"7\" r=\"2\"/><circle cx=\"17\" cy=\"17\" r=\"2\"/><path d=\"M5 19 19 5\"/>","banners":"<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2\"/><circle cx=\"8\" cy=\"9\" r=\"2\"/><path d=\"m3 17 6-5 4 3 3-4 5 5\"/>","giftcards":"<rect x=\"3\" y=\"9\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M3 13h18M12 9v12m0-12c-3 0-7-1-6-4 1-3 5 0 6 4zm0 0c3 0 7-1 6-4-1-3-5 0-6 4z\"/>","affiliates":"<circle cx=\"12\" cy=\"4\" r=\"2\"/><circle cx=\"5\" cy=\"19\" r=\"2\"/><circle cx=\"19\" cy=\"19\" r=\"2\"/><path d=\"M11 6 6 17m7-11 5 11M7 19h10\"/>","settings":"<path d=\"M4 7h16M4 12h16M4 17h16\"/><circle cx=\"9\" cy=\"7\" r=\"2\"/><circle cx=\"16\" cy=\"12\" r=\"2\"/><circle cx=\"8\" cy=\"17\" r=\"2\"/>","images":"<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2\"/><circle cx=\"8\" cy=\"9\" r=\"2\"/><path d=\"m4 19 6-6 3 3 3-4 5 6\"/>","footer":"<path d=\"M4 4h16M4 10h16M4 16h10M4 21h7\"/>","reports":"<path d=\"M4 20V10m5 10V6m5 14v-8m5 8V3\"/><path d=\"M2 21h20\"/>","staff":"<path d=\"m12 2 8 4v6c0 5-4 8-8 10-4-2-8-5-8-10V6z\"/><circle cx=\"12\" cy=\"10\" r=\"2\"/><path d=\"M8 16c1-3 7-3 8 0\"/>","backups":"<rect x=\"4\" y=\"4\" width=\"16\" height=\"5\" rx=\"1\"/><path d=\"M5 9v11h14V9m-9 5h4\"/>","automations":"<path d=\"m13 2-9 12h7l-1 8 10-12h-7z\"/>","seo":"<circle cx=\"10\" cy=\"10\" r=\"7\"/><path d=\"m15 15 6 6\"/>","wallet":"<rect x=\"3\" y=\"6\" width=\"18\" height=\"15\" rx=\"2\"/><path d=\"M3 10h18m-5 4h5v4h-5z\"/>"};
+  for(const button of nav?.querySelectorAll("button[data-section]")||[]){
+    const icon=button.querySelector(".ico");
+    const drawing=adminMenuIconPaths[button.dataset.section];
+    if(icon&&drawing){
+      icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+drawing+'</svg>';
+      icon.setAttribute("aria-hidden","true");
+    }
+  }
+
   /* Session checking stays in the existing security module; avoid background API polling. */
 })();

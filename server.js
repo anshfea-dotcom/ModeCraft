@@ -28,8 +28,10 @@ if (
 }
 
 const pool = createPool(8);
+const limitRequests = createRateLimiter(pool);
 const catalogue = createCatalogueClient(() => readCatalogue(pool));
 const createAccessControls = require("./services/store/security");
+const { createRateLimiter, cleanupCounters } = require("./services/store/rate-limits");
 const initDatabase = require("./services/store/schema");
 const createRepository = require("./services/store/repository");
 const registerCustomers = require("./services/store/customers");
@@ -60,7 +62,11 @@ const context = {
 };
 
 app.disable("x-powered-by");
-app.set("trust proxy", 1);
+// Only trust explicitly configured reverse-proxy CIDRs. Numeric trust proxy = 1
+// can accept attacker-supplied X-Forwarded-For from a directly connected client.
+// Without a trusted CIDR list we use the socket IP (safe, but shared behind a proxy).
+const trustedProxies = (process.env.TRUSTED_PROXY_CIDRS || "").split(",").map(s => s.trim()).filter(Boolean);
+app.set("trust proxy", trustedProxies.length ? trustedProxies : false);
 
 // Public crawler endpoints must not depend on session or database middleware.
 for (const filename of ["robots.txt", "sitemap.xml"]) {
@@ -97,6 +103,9 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Protect the raw-body webhook before JSON parsing or session middleware.
+app.use("/api/razorpay/webhook", limitRequests);
 
 // Razorpay webhook requires the unparsed request body.
 app.post(
@@ -160,6 +169,10 @@ app.use(
     }
   })
 );
+
+// Central coverage for every API, including dynamically registered module routes,
+// plus non-API health, affiliate redirects and database-backed image endpoints.
+app.use(["/api", "/health", "/r", "/storefront-images"], limitRequests);
 
 require('./services/store/account-pages')(app);
 
@@ -264,6 +277,8 @@ app.use((error, _req, res, _next) => {
 
 async function start() {
   await initDatabase(pool);
+  const stopRateLimitCleanup = cleanupCounters(pool);
+  process.once("SIGTERM", stopRateLimitCleanup);
   const stopAutomations=automations.start(pool);
   process.once("SIGTERM",stopAutomations);
   catalogue.start();

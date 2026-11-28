@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 const Razorpay = require("razorpay");
 
 const { confirmCapturedPayment } = require("./payment");
+const { affiliateFromRequest } = require("./advanced-affiliates");
 const { rateLimit } = require("express-rate-limit");
 const { addressRoutes, postalAreas, pinPattern } = require("./address");
 const reject = (status, message) => Object.assign(new Error(message), { status });
@@ -317,6 +318,7 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
         if (await replay()) return;
         const customer = await validateAddress(body.customer);
         const data = { customer, ...await priceBag(body) };
+        const attribution = await affiliateFromRequest(req,pool);
         if (body.expectedTotal !== undefined && body.expectedTotal !== data.total)
           throw reject(409, "The bag total has changed. Refresh your bag and review the new total.");
         const id = "MC-" + crypto.randomBytes(10).toString("hex").toUpperCase();
@@ -325,7 +327,7 @@ module.exports = function registerCheckout(app, { pool, cleanText, requireAdmin,
         await client.query("BEGIN");
         const claim = await client.query("INSERT INTO checkout_attempts(id,fingerprint,order_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [attemptId,fingerprint,id]);
         if (!claim.rowCount) { if (client) { await client.query("ROLLBACK"); client.release(); client = null; } await replay(); return; }
-        const order = { ...data, id, paymentMethod: method, paymentStatus: online ? "created" : "pending",
+        const order = { ...data, ...(attribution?{affiliateCode:attribution.code,affiliateRate:attribution.rate}:{}), id, paymentMethod: method, paymentStatus: online ? "created" : "pending",
           orderStatus: online ? "awaiting_payment" : "received", createdAt: new Date().toISOString(), statusHistory: [] };
         if (online) {
           const result = await gateway().orders.create({ amount: Math.round(order.total * 100), currency: order.currency, receipt: id });

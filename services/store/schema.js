@@ -111,6 +111,57 @@ module.exports = async function initDatabase(pool) {
     );
     CREATE INDEX IF NOT EXISTS invoices_issued_at_idx ON invoices (issued_at DESC);
 
+    CREATE TABLE IF NOT EXISTS affiliates (
+      id UUID PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      commission_rate NUMERIC(5,2) NOT NULL CHECK(commission_rate BETWEEN 0 AND 30),
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      clicks INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS gift_cards (
+      id UUID PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE,
+      label TEXT NOT NULL,
+      initial_paise INTEGER NOT NULL CHECK(initial_paise>0),
+      balance_paise INTEGER NOT NULL CHECK(balance_paise>=0),
+      active BOOLEAN NOT NULL DEFAULT FALSE,
+      funding_ref TEXT,
+      expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS gift_card_redemptions (
+      id BIGSERIAL PRIMARY KEY,
+      card_id UUID NOT NULL REFERENCES gift_cards(id),
+      reference TEXT NOT NULL,
+      amount_paise INTEGER NOT NULL CHECK(amount_paise>0),
+      actor TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(card_id,reference)
+    );
+    CREATE TABLE IF NOT EXISTS automation_rules (
+      id UUID PRIMARY KEY,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('low_stock','unpaid_orders','unfulfilled_orders')),
+      threshold INTEGER NOT NULL DEFAULT 5,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS automation_alerts (
+      id UUID PRIMARY KEY,
+      rule_id UUID NOT NULL REFERENCES automation_rules(id),
+      entity_key TEXT NOT NULL,
+      period DATE NOT NULL,
+      detail TEXT,
+      acknowledged BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(rule_id,entity_key,period)
+    );
+
     CREATE TABLE IF NOT EXISTS staff (
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,

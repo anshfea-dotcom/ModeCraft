@@ -44,6 +44,10 @@ const registerWarehouses = require("./services/store/warehouses");
 const registerAdminCatalogue = require("./services/store/admin-catalogue");
 const registerInventory = require("./services/store/inventory");
 const registerCheckout = require("./services/store/checkout");
+const registerSEO = require("./services/store/advanced-seo");
+const registerAffiliates = require("./services/store/advanced-affiliates");
+const registerGiftCards = require("./services/store/advanced-gifts");
+const automations = require("./services/store/advanced-automations");
 
 const repository = createRepository({ listProducts, pool, cleanText });
 const access = createAccessControls({ getStaff: repository.getStaff, pool });
@@ -162,6 +166,7 @@ app.use("/editorial", express.static(path.join(ROOT, "public/assets/images/edito
 for (const directory of ["css", "js"]) {
   app.use(express.static(path.join(ROOT, "public/assets", directory)));
 }
+registerSEO(app,context,path.join(ROOT,"public","index.html"));
 app.use(express.static(path.join(ROOT, "public")));
 
 app.get("/health", async (_req, res) => {
@@ -217,6 +222,9 @@ registerWarehouses(app, context);
 registerAdminCatalogue(app, context);
 registerInventory(app, context);
 registerCheckout(app, context);
+registerAffiliates(app, context);
+registerGiftCards(app, context);
+automations(app, context);
 
 app.use((req, res, next) => {
   if (req.path.startsWith("/api/")) {
@@ -245,6 +253,8 @@ app.use((error, _req, res, _next) => {
 
 async function start() {
   await initDatabase(pool);
+  const stopAutomations=automations.start(pool);
+  process.once("SIGTERM",stopAutomations);
   catalogue.start();
   media.start();
 

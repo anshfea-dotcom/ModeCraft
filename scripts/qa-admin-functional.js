@@ -193,5 +193,105 @@ async function testWarehouseAllocation(){
   assert.ok(audits.some(x=>x[1]==="warehouse.stock.assigned"));
   console.log("PASS: Warehouse allocation cannot exceed central stock and locks records during update");
 }
-(async()=>{await testPOS();await testInvoicePDF();await testManualGSTInvoice();await testWarehouseAllocation();console.log("4/4 AERLON Admin 3.0 transaction checks passed.")})()
+
+function testSEO(){
+  const seo=require("../services/store/advanced-seo");
+  const template='<html><head><title>Old</title><meta name="description" content="OLD"><meta property="og:title" content="Old"></head><body>Test</body></html>';
+  const profile={title:'Great <script>alert("x")</script>',description:"Search & Shop",ogTitle:"AERLON Preview",ogDescription:"Styles",ogImage:""};
+  const output=seo.renderSEO(template,profile);
+  assert.ok(output.includes("Great &lt;script&gt;"));
+  assert.ok(!output.includes("<script>alert"));
+  assert.ok(output.includes("https://aerlon.in/"));
+  assert.equal((output.match(/name="description"/g)||[]).length,1);
+  assert.equal((output.match(/property="og:title"/g)||[]).length,1);
+  assert.equal((output.match(/<title>/g)||[]).length,1);
+  assert.throws(()=>seo.validateSEO({...profile,ogImage:"javascript:alert(1)"}));
+  console.log("PASS: SEO escapes unsafe text and emits a single canonical title/description");
+}
+async function testAffiliateAttribution(){
+  const {app,routes}=appRecorder();
+  const pool={query:async sql=>{
+    if(sql.startsWith("UPDATE affiliates SET clicks"))return{rowCount:1,rows:[{code:"PARTNER1"}]};
+    if(sql.startsWith("SELECT code,commission_rate FROM affiliates"))return{rowCount:1,rows:[{code:"PARTNER1",commission_rate:"5.00"}]};
+    throw Error("Unexpected affiliate SQL "+sql);
+  }};
+  const moduleAff=require("../services/store/advanced-affiliates");
+  moduleAff(app,{pool,requireAdmin:()=>{},requireOwner:()=>{},audit:async()=>{}});
+  let cookie=null,redirect="";
+  const reply={cookie(name,value,options){assert.equal(name,"aerlon_aff");assert.equal(options.httpOnly,true);cookie=name+"="+value;return this;},
+    redirect(status,url){assert.equal(status,302);redirect=url;return this;}};
+  await routes.get("GET /r/:code")({params:{code:"partner1"}},reply,e=>{throw e});
+  assert.equal(redirect,"/");
+  assert.ok(cookie&&cookie.includes("."));
+  const result=await moduleAff.affiliateFromRequest({headers:{cookie}},pool);
+  assert.equal(result.code,"PARTNER1");
+  assert.equal(result.rate,5);
+  const tampered=moduleAff.readAffiliateCode({headers:{cookie:cookie.replace("PARTNER1","PARTNER2")}});
+  assert.equal(tampered,null);
+  console.log("PASS: Affiliate referral cookies are signed; tampering blocks attribution");
+}
+async function testGiftLedger(){
+  const {app,routes}=appRecorder();
+  let remaining=1000,insertions=0,rollbacks=0,seen=false;
+  const client={released:0,async query(sql,params=[]){
+    if(sql==="BEGIN"||sql==="COMMIT")return{rowCount:1,rows:[]};
+    if(sql==="ROLLBACK"){rollbacks++;return{rowCount:1,rows:[]};}
+    if(sql.startsWith("SELECT id,active,balance_paise"))return{rowCount:1,rows:[{id:"gift-1",active:true,balance_paise:remaining,expires_at:null}]};
+    if(sql.startsWith("INSERT INTO gift_card_redemptions")){
+      if(seen)return{rowCount:0,rows:[]};
+      seen=true;insertions++;return{rowCount:1,rows:[{id:1}]};
+    }
+    if(sql.startsWith("UPDATE gift_cards SET balance_paise")){remaining=params[1];return{rowCount:1,rows:[]};}
+    throw Error("Unexpected gift SQL "+sql);
+  },release(){this.released++;}};
+  require("../services/store/advanced-gifts")(app,{pool:{connect:async()=>client},requireAdmin:()=>{},requireOwner:()=>{},audit:async()=>{}});
+  assert.equal(remaining,1000,"No card balances change at registration");
+  const redeem=routes.get("POST /api/admin/gift-cards/:id/redeem");
+  const request={params:{id:"gift-1"},body:{amount:"5",reference:"POS-100"},adminSession:{username:"owner"}};
+  const good=response();await redeem(request,good,e=>{throw e});
+  assert.equal(good.statusCode,200);
+  assert.equal(good.body.remainingPaise,500);
+  assert.equal(remaining,500);
+  const duplicate=response();await redeem(request,duplicate,e=>{throw e});
+  assert.equal(duplicate.statusCode,409);
+  assert.equal(remaining,500);
+  assert.equal(insertions,1);
+  assert.ok(rollbacks>0);
+  console.log("PASS: Gift-card balance is transactional and offline references are idempotent");
+}
+async function testAutomationAlerts(){
+  let saved=false;
+  const pool={query:async sql=>{
+    if(sql.startsWith("SELECT id,type,threshold"))return{rows:[{id:"rule-1",type:"low_stock",threshold:5}]};
+    if(sql.startsWith("SELECT id AS key,quantity::text"))return{rows:[{key:"var-1",detail:"2"}]};
+    if(sql.startsWith("INSERT INTO automation_alerts")){if(saved)return{rowCount:0};saved=true;return{rowCount:1};}
+    throw Error("Unexpected automation SQL "+sql);
+  }};
+  const run=require("../services/store/advanced-automations").evaluate;
+  const first=await run(pool),second=await run(pool);
+  assert.equal(first.checked,1);assert.equal(first.created,1);
+  assert.equal(second.created,0);
+  console.log("PASS: Automation alerts are backed by rules and deduplicate repeated scans");
+}
+function testAdvancedWiring(){
+  const fs=require("node:fs");
+  const html=fs.readFileSync("public/admin.html","utf8");
+  const admin=fs.readFileSync("public/assets/js/admin.js","utf8");
+  const frontend=fs.readFileSync("public/assets/js/admin-advanced.js","utf8");
+  const server=fs.readFileSync("server.js","utf8");
+  const checkout=fs.readFileSync("services/store/checkout.js","utf8");
+  for(const id of ["giftcards","affiliates","automations","seo","wallet"]){
+    assert.ok(html.includes('id="section-'+id+'"'),"Missing "+id+" section");
+    assert.ok(admin.includes("$('#"+id+"Nav').classList.toggle"),"Missing nav permission "+id);
+  }
+  assert.ok(html.includes("Wallet & Rewards")&&html.includes("Coming Soon"));
+  assert.ok(server.includes('registerSEO(app,context,path.join(ROOT,"public","index.html"))'));
+  assert.ok(checkout.includes("affiliateFromRequest(req,pool)"));
+  assert.ok(frontend.includes("window.loadAerlonV3Section"));
+  console.log("PASS: Advanced modules are routed, permissioned and Wallet remains Coming Soon");
+}
+
+(async()=>{await testPOS();await testInvoicePDF();await testManualGSTInvoice();await testWarehouseAllocation();
+ testSEO();await testAffiliateAttribution();await testGiftLedger();await testAutomationAlerts();testAdvancedWiring();
+ console.log("9/9 AERLON Admin 3.0 transaction and advanced checks passed.");})()
 .catch(err=>{console.error("Admin 3.0 transaction test failed:",err.stack||err);process.exitCode=1});

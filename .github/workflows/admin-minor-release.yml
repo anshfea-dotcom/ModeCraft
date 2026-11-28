@@ -24,6 +24,8 @@ jobs:
         run: |
           npm install --no-save --ignore-scripts playwright@1.56.1
           npx playwright install chromium --with-deps
+      - name: Test admin bell and navigation in mobile and desktop Chromium
+        run: node scripts/qa-admin-browser.js
       - name: Test checkout in mobile and desktop Chromium
         env:
           SESSION_SECRET: test-only-ci-key-not-production

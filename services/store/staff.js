@@ -1,20 +1,12 @@
 const crypto = require("node:crypto");
-const rateLimit = require("express-rate-limit").rateLimit;
+const { checkAuthLock, recordAuthFailure, clearAuthFailures } = require("./rate-limits");
 
 module.exports = function registerStaff(app, { pool, cleanText, safeEqual, getStaff, verifyPassword, effectivePermissions, audit, requireAdmin, SESSION_COOKIE, requireOwner, publicStaff, ROLE_PERMISSIONS, validatePermissions, hashPassword, putStaff, removeStaff, requirePermission }) {
-  const loginAttempts = new Map();
-
-  const adminChallengeLimit = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 60,
-    message: { error: "Too many sign-in requests. Please try again later." }
-  });
-
   function challengeHash(token) {
     return crypto.createHash("sha256").update(token).digest("hex");
   }
 
-  app.post("/api/admin/login-challenge", adminChallengeLimit, async (req, res, next) => {
+  app.post("/api/admin/login-challenge", async (req, res, next) => {
     try {
       if (req.get("X-Admin-Login") !== "1") {
         return res.status(403).json({ error: "Please sign in from the admin page." });
@@ -66,24 +58,9 @@ module.exports = function registerStaff(app, { pool, cleanText, safeEqual, getSt
         });
       }
 
-      const ip = req.ip || req.socket?.remoteAddress || "unknown";
-      const now = Date.now();
-      let attempt = loginAttempts.get(ip);
-
-      if (
-        attempt &&
-        now - attempt.startedAt < 15 * 60 * 1000 &&
-        attempt.count >= 10
-      ) {
-        return res.status(429).json({
-          error: "Too many login attempts. Please wait 15 minutes."
-        });
-      }
-
-      if (!attempt || now - attempt.startedAt >= 15 * 60 * 1000) {
-        attempt = { startedAt: now, count: 0 };
-        loginAttempts.set(ip, attempt);
-      }
+      const lockedFor = await checkAuthLock(pool, "admin", username);
+      if (lockedFor) return res.set("Retry-After", String(lockedFor)).status(429)
+        .json({ error: "Too many sign-in failures. Please retry later.", retryAfter: lockedFor });
 
       let account = null;
 
@@ -120,14 +97,12 @@ module.exports = function registerStaff(app, { pool, cleanText, safeEqual, getSt
       }
 
       if (!account) {
-        attempt.count += 1;
-
+        await recordAuthFailure(pool, "admin", username);
         return res.status(401).json({
           error: "Incorrect username or password, or account disabled."
         });
       }
-
-      loginAttempts.delete(ip);
+      await clearAuthFailures(pool, "admin", username);
 
       req.session.regenerate(error => {
         if (error) return next(error);

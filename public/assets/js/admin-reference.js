@@ -197,7 +197,7 @@
     el("aeProfileAvatar").textContent=name.trim().slice(0,1).toUpperCase();
     if(el("section-overview")?.classList.contains("active"))el("pageTitle").textContent="Welcome back, "+name;
   }
-  new MutationObserver(()=>{if(!el("app")?.classList.contains("hidden")){refreshIdentity();renderTopSelling();}}).observe(el("app"),{attributes:true,attributeFilter:["class"]});
+  new MutationObserver(()=>{if(!el("app")?.classList.contains("hidden")){refreshIdentity();renderTopSelling();refreshNotifications().catch(error=>console.warn("Notification refresh unavailable:",error.message));}}).observe(el("app"),{attributes:true,attributeFilter:["class"]});
 
   async function buildSearch() {
     if(!currentUser) return [];

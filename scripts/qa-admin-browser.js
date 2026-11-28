@@ -23,7 +23,7 @@ const server=http.createServer((req,res)=>{
  let file=pathname==="/" ? path.join(root,"admin.html") : path.resolve(root,"."+pathname);
  if(!file.startsWith(root+path.sep)&&file!==path.join(root,"admin.html")){res.writeHead(403);res.end();return;}
  if(!fs.existsSync(file)||!fs.statSync(file).isFile()){
-   const name=pathname.replace(/^\\/+/, "");
+   const name=pathname.replace(/^[/]+/, "");
    file=["assets/js","assets/css","assets/images"].map(d=>path.join(root,d,name)).find(p=>fs.existsSync(p)&&fs.statSync(p).isFile());
  }
  if(!file){res.writeHead(404);res.end();return;}

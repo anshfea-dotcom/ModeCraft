@@ -13,7 +13,8 @@ async function main() {
       key TEXT PRIMARY KEY, hits INTEGER NOT NULL DEFAULT 0, expires_at TIMESTAMPTZ NOT NULL)`);
     await pool.query(`CREATE TABLE IF NOT EXISTS auth_lockouts (
       identity TEXT PRIMARY KEY, failures INTEGER NOT NULL DEFAULT 0,
-      locked_until TIMESTAMPTZ, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
+      locked_until TIMESTAMPTZ, window_started TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
     const key = "ci-rate-limit:" + crypto.randomUUID();
     const races = await Promise.all(Array.from({ length: 30 }, () => takeCounter(pool, key, 5, 60)));
     assert.equal(races.filter(x => x.allowed).length, 5, "Atomic counter exceeded max during concurrent requests");

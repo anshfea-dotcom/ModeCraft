@@ -43,3 +43,15 @@ This is a starter, not a complete production commerce platform:
 - Use HTTPS in production. Set `ALLOWED_ORIGIN` to your actual domain.
 - For a production deployment, move orders to PostgreSQL/MySQL or a managed database, and store payment state based on verified server-side events.
 - Check Razorpay's current eligibility, KYC, settlement, fee and policy requirements directly with Razorpay before going live.
+
+## Secret configuration and safe deployment
+
+Copy `.env.example` to a local `.env` file and set values on the **server only**. Never commit a real `.env` file. Configure the same server-side values in your deployment platform's secret/environment settings, not in public JavaScript, HTML, or client-prefixed variables (`NEXT_PUBLIC_`, `VITE_`, `REACT_APP_`).
+
+`SESSION_SECRET` is mandatory and must be at least 32 UTF-8 bytes. Generate a unique cryptographically random value with `node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"`; store its output only in your secret manager or local `.env`. Never reuse `ADMIN_PASSWORD` as the session secret. `AFFILIATE_SIGNING_SECRET` is optional; if omitted, affiliate cookies use the server-side `SESSION_SECRET`, with domain-separated HMAC inputs. Rotating these values invalidates existing signed sessions/referral cookies.
+
+`RAZORPAY_KEY_ID` is a publishable checkout identifier; `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` must remain private. `DATABASE_URL`, admin credentials, Resend/SMTP passwords and session/signing secrets must remain private. The example file contains no live values.
+
+**Production rollout:** configure `SESSION_SECRET` before deploying a build that requires it. Test a fresh admin login and session expiration, payment webhook signature validation, and affiliate referrals in staging first. Rotate any credential found in Git history **before** history rewriting; rewriting history does not invalidate a leaked credential.
+
+For a complete local secret scan, run `gitleaks git --log-opts="--all" --redact` (Gitleaks 8.24+) on a fully fetched clone, and run `gitleaks dir --redact .` for the working tree. Inspect every candidate without sharing secret values. Run it again after cleanup and before production deployment.

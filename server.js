@@ -19,10 +19,12 @@ const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 if (
   !process.env.DATABASE_URL ||
   !process.env.ADMIN_USERNAME ||
-  !process.env.ADMIN_PASSWORD
+  !process.env.ADMIN_PASSWORD ||
+  !process.env.SESSION_SECRET ||
+  Buffer.byteLength(process.env.SESSION_SECRET || "", "utf8") < 32
 ) {
   console.error(
-    "Missing required environment variables: DATABASE_URL, ADMIN_USERNAME, ADMIN_PASSWORD"
+    "Missing or invalid server-side environment configuration: DATABASE_URL, ADMIN_USERNAME, ADMIN_PASSWORD and SESSION_SECRET (minimum 32 bytes)"
   );
   process.exit(1);
 }
@@ -148,7 +150,7 @@ app.use(
       createTableIfMissing: false,
       ttl: Math.floor(SESSION_TTL_MS / 1000)
     }),
-    secret: process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD,
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     rolling: true,

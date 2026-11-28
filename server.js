@@ -32,6 +32,7 @@ const limitRequests = createRateLimiter(pool);
 const catalogue = createCatalogueClient(() => readCatalogue(pool));
 const createAccessControls = require("./services/store/security");
 const { createRateLimiter, cleanupCounters } = require("./services/store/rate-limits");
+const { validateInput, validateWebhookData } = require("./services/store/validate-input");
 const initDatabase = require("./services/store/schema");
 const createRepository = require("./services/store/repository");
 const registerCustomers = require("./services/store/customers");
@@ -134,6 +135,9 @@ app.post(
 
     try {
       event = JSON.parse(req.body.toString("utf8"));
+      const validated = validateWebhookData(event);
+      if (!validated.success) return res.status(400).json({ error: "Invalid payment webhook payload." });
+      event = validated.data;
     } catch {
       return res.status(400).send("Invalid JSON.");
     }
@@ -147,6 +151,9 @@ app.post(
 );
 
 app.use(express.json({ limit: "100kb" }));
+// Fail closed on unknown API schemas; reject invalid bodies, query strings,
+// path parameters and application cookies before any session/database access.
+app.use(validateInput);
 
 app.use(
   session({

@@ -77,6 +77,37 @@ const server=http.createServer((req,res)=>{
        assert.equal((await page.locator("#pageTitle").innerText()).trim(),"Store overview");
        assert.equal(await page.locator("#workspaceMenu").getAttribute("aria-expanded"),"false");
      }
+
+     // Product creation UI and size-wise quantities at both compact and wide widths.
+     if(width===390||width===1366){
+       let posted=null;
+       await page.route("**/api/admin/products",async route=>{
+         if(route.request().method()==="POST"){
+           posted=route.request().postDataJSON();
+           await route.fulfill({status:201,contentType:"application/json",body:JSON.stringify({ok:true,product:{...posted,id:"test-new"}})});
+         }else await route.continue();
+       });
+       await page.evaluate(()=>navigate("products"));
+       await page.locator("#addProductTop").click();
+       const form=page.locator("#productForm");
+       await form.waitFor({state:"visible"});
+       await form.locator('input[name="name"]').fill("AERLON browser stock test");
+       await form.locator('input[name="price"]').fill("999");
+       await form.locator('input[name="productColor"][value="Black"]').check();
+       await form.locator('input[type="checkbox"][name="size_Black"][value="XS"]').check();
+       await form.locator('input[type="checkbox"][name="size_Black"][value="M"]').check();
+       await form.locator('input[data-stock-units][data-color="Black"][data-size="XS"]').fill("3");
+       await form.locator('input[data-stock-units][data-color="Black"][data-size="M"]').fill("8");
+       assert.equal(await form.locator('input[name="stock"]').inputValue(),"11");
+       const dialog=await page.locator("#modalHost .modal").boundingBox();
+       assert.ok(dialog && dialog.y>=0 && dialog.y+dialog.height<=844+2,"Product editor must stay within viewport");
+       await form.locator('button[type="submit"]').click();
+       await page.waitForFunction(()=>!document.querySelector("#productForm"),{timeout:10000});
+       assert.deepEqual(posted.stockGrid.map(({color,size,quantity})=>({color,size,quantity})),[{color:"Black",size:"XS",quantity:3},{color:"Black",size:"M",quantity:8}]);
+       assert.equal(posted.stock,11);
+       console.log("PASS admin product browser: Black XS=3, M=8, responsive editor and atomic save payload at "+width+"px");
+     }
+
      assert.deepEqual(errors,[],"Browser runtime errors at "+width+"px");
      await context.close();
      console.log("PASS admin browser: bell, refresh, visibility, menu and dashboard navigation at "+width+"px");

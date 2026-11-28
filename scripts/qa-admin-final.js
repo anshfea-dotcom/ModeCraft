@@ -9,15 +9,15 @@ const core=fs.readFileSync("public/assets/js/admin.js","utf8");
 const mobile=fs.readFileSync("public/assets/js/admin-minor.js","utf8");
 const check=(name,work)=>{work();console.log("PASS compact admin:",name)};
 check("New presentation and interaction scripts load after working Admin baseline",()=>{
-  assert.ok(html.includes('admin-final.css?v=20261128-2'));
-  assert.ok(html.includes('admin-final.js?v=20261128-2'));
+  assert.ok(html.includes('admin-final.css?v=20261128-3'));
+  assert.ok(html.includes('admin-final.js?v=20261128-3'));
   assert.ok(html.indexOf("admin-final.css")>html.indexOf("admin-minor.css"));
   assert.ok(html.indexOf("admin-final.js")>html.indexOf("admin-minor.js"));
   new vm.Script(js,{filename:"admin-final.js"});
   new vm.Script(core,{filename:"admin.js"});
 });
 check("Three-line navigation exposes every permissioned sidebar section; bottom tabs are suppressed",()=>{
-  assert.ok(js.includes('menu.textContent=open ? "←" : "☰"'));
+  assert.ok(js.includes('menu.textContent=open ? "×" : "☰"'));
   assert.ok(js.includes('aria-expanded'));
   assert.ok(css.includes("#admin20Bottom{display:none!important}"));
   assert.ok(html.includes('id="nav"'));
@@ -25,6 +25,15 @@ check("Three-line navigation exposes every permissioned sidebar section; bottom 
   assert.ok(html.includes('data-section="products"'));
   assert.ok(mobile.includes('navigate(item.section)'));
   assert.ok(core.includes("document.querySelector('#workspaceMenu').setAttribute('aria-expanded','false')"));
+  assert.ok(html.includes('id="adminNavBack"'));
+  assert.ok(js.includes('navigate("overview")'));
+  assert.ok(js.includes('adminMenuIconPaths'));
+  assert.ok(js.includes('icon.innerHTML'));
+  assert.ok(css.includes('overflow:visible!important'),"Mobile sidebar must not clip notifications");
+  assert.ok(css.includes('#adminNotificationPanel[hidden]{display:none!important}'),"Hidden notices stay hidden");
+  assert.ok(css.includes('.nav-group h2'),"Premium grouping titles remain");
+  assert.ok(css.includes('position:fixed!important'),"Mobile notices appear in viewport");
+  assert.ok(js.includes('Checking orders, payments, stock and automation alerts'),"Loading feedback must render on bell click");
 });
 check("Compact layout preserves four approved functional shortcut hooks",()=>{
   for(const label of ["Add Product","Create Invoice","Warehouse","Add-on"])

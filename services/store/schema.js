@@ -134,16 +134,6 @@ module.exports = async function initDatabase(pool) {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       CHECK (balance_paise <= initial_paise)
     );
-    CREATE TABLE IF NOT EXISTS wallet_ledger (
-      id BIGSERIAL PRIMARY KEY,
-      customer_id TEXT NOT NULL REFERENCES customers(id),
-      amount_paise BIGINT NOT NULL CHECK (amount_paise <> 0),
-      note TEXT NOT NULL,
-      actor TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-    CREATE INDEX IF NOT EXISTS wallet_ledger_customer_idx ON wallet_ledger(customer_id,id DESC);
-
     CREATE TABLE IF NOT EXISTS admin_notifications (
       id BIGSERIAL PRIMARY KEY,
       event_type TEXT NOT NULL,
@@ -210,6 +200,16 @@ module.exports = async function initDatabase(pool) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS wallet_ledger (
+      id BIGSERIAL PRIMARY KEY,
+      customer_id TEXT NOT NULL REFERENCES customers(id),
+      amount_paise BIGINT NOT NULL CHECK (amount_paise <> 0),
+      note TEXT NOT NULL,
+      actor TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS wallet_ledger_customer_idx ON wallet_ledger(customer_id,id DESC);
 
     CREATE TABLE IF NOT EXISTS product_reviews (
       id TEXT PRIMARY KEY,

@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
 <title>AERLON™ | Admin Panel 3.0 — Store Control Center</title>
 <link rel="stylesheet" href="/assets/css/admin.css?v=20261128-3">
-<link rel="stylesheet" href="/admin-workspace.css?v=20261128-3"><link rel="stylesheet" href="/control-sizes.css?v=20261128-3"><link rel="stylesheet" href="/admin-v3.css?v=20261128-3">
+<link rel="stylesheet" href="/admin-workspace.css?v=20261128-3"><link rel="stylesheet" href="/control-sizes.css?v=20261128-3"><link rel="stylesheet" href="/admin-v3.css?v=20261128-3"><link rel="stylesheet" href="/admin-reference.css?v=20261128-4">
 </head>
 <body>
 <div id="loginScreen" class="loginwrap"><section class="loginbox"><div class="brand" style="padding:0 0 18px">AERLON<small>STORE CONTROL CENTER <b class="v3-version-tag">3.0</b></small></div><div class="eyebrow">Secure workspace</div><h1>Welcome back.</h1><p class="subtitle">Sign in to manage your store.</p><form id="loginForm"><label for="username">Username</label><input class="field" id="username" autocomplete="username" required maxlength="100"><label for="password">Password</label><input class="field" id="password" type="password" autocomplete="current-password" required><p id="loginError" class="error" role="alert"></p><button id="loginButton" class="btn gold" style="width:100%;padding:13px" type="submit">Sign in securely →</button></form><p class="muted" style="font-size:11px;margin:18px 0 0">Only authorised store users may access this dashboard.</p></section></div>
@@ -32,10 +32,12 @@
 <div class="nav-group"><h2>Storefront</h2>
 <button data-section="settings" id="settingsNav" class="hidden"><span class="ico">⚙</span>Storefront Management</button>
 <button data-section="images" id="imagesNav" class="hidden"><span class="ico">▧</span>Collections & Images</button>
-<button data-section="footer" id="footerNav" class="hidden"><span class="ico">▤</span>Footer Management</button></div>
+<button data-section="footer" id="footerNav" class="hidden"><span class="ico">▤</span>Footer Management</button>
+<a class="ae-support-link" href="/customer-care.html" target="_blank" rel="noopener"><span class="ico">♧</span>Customer Care Website ↗</a></div>
 <div class="nav-group"><h2>Management</h2>
 <button data-section="reports" id="reportsNav" class="hidden"><span class="ico">▥</span>Reports & Analytics</button>
 <button data-section="staff" id="staffNav" class="hidden"><span class="ico">♙</span>Team & Security</button>
+<button data-section="invoices" class="ae-gst-shortcut"><span class="ico">▧</span>Taxes &amp; GST / Invoices</button>
 <button data-section="backups" id="backupsNav" class="hidden"><span class="ico">▥</span>Backups & Audit Logs</button>
 <button data-section="automations" id="automationsNav" class="hidden"><span class="ico">⚡</span>Automations</button><button data-section="seo" id="seoNav" class="hidden"><span class="ico">◎</span>SEO</button><button data-section="wallet" id="walletNav" class="hidden"><span class="ico">◇</span>Wallet & Rewards · Coming Soon</button></div></nav><div class="sidebottom"><div class="userchip"><div class="avatar" id="avatar">AE</div><div style="min-width:0"><strong id="sideName">Founder &amp; CEO</strong><small id="sideRole">owner</small></div></div><button class="btn" id="logout" style="width:100%">↪ Sign out</button></div></aside>
 <main class="main"><header class="topbar"><div class="v3-topbar-heading"><div class="v3-edition"><b>03</b><span>THE AERLON CONTROL CENTER</span><small>ADMIN 3.0 · NOV 2026</small></div><div class="eyebrow" id="pageEyebrow">STORE OVERVIEW</div><h1 id="pageTitle">Store overview</h1><p class="subtitle" id="pageSubtitle">Orders, revenue and fulfilment at a glance.</p></div><div class="actions"><a class="btn" href="/" target="_blank" rel="noopener">View storefront ↗</a><button class="btn" id="themeToggle" title="Switch theme">☾ Dark mode</button><button class="btn" id="refresh">↻ Refresh</button><button class="btn gold hidden" id="addProductTop">＋ Add product</button></div></header>
@@ -224,4 +226,4 @@
 <footer class="muted" style="font-size:11px;padding:22px 2px">AERLON Admin Panel 3.0 · November 2026 · Keep access credentials private.</footer></main><nav class="admin20-bottom" id="admin20Bottom" aria-label="Mobile admin navigation"><button type="button" data-goto="overview" class="active"><span>⌂</span>Home</button><button type="button" data-goto="orders"><span>▤</span>Orders</button><button type="button" data-goto="products"><span>◇</span>Products</button><button type="button" data-goto="customers"><span>♧</span>Customers</button><button type="button" data-goto="settings"><span>⚙</span>Settings</button></nav></div>
 <div id="modalHost"></div><div id="toast" class="toast hidden" role="status"></div>
 <script src="/assets/js/admin.js?v=20261128-3"></script>
-<script src="/admin-images.js?v=20261128-3"></script><script src="/admin-v3.js?v=20261128-3"></script><script src="/admin-advanced.js?v=20261128-3"></script></body></html>
+<script src="/admin-images.js?v=20261128-3"></script><script src="/admin-v3.js?v=20261128-3"></script><script src="/admin-advanced.js?v=20261128-3"></script><script src="/admin-reference.js?v=20261128-4"></script></body></html>

@@ -10,7 +10,7 @@
 <meta name="description" content="Discover elevated everyday fashion at AERLON. Explore thoughtfully designed hoodies, clothing and accessories with a premium shopping experience."><meta property="og:site_name" content="AERLON"><meta property="og:type" content="website"><meta property="og:title" content="AERLON — Elevated Everyday Fashion"><meta property="og:description" content="Explore thoughtfully designed everyday essentials at AERLON."><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AERLON","url":"/","description":"An online fashion store offering thoughtfully designed everyday clothing and accessories."}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"AERLON","url":"/","potentialAction":{"@type":"SearchAction","target":"/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
 
 <link rel="stylesheet" href="/control-sizes.css">
-<link rel="stylesheet" href="/assets/css/checkout.css"><link rel="stylesheet" href="/assets/css/checkout-onepage.css?v=20261128-3">
+<link rel="stylesheet" href="/assets/css/checkout.css"><link rel="stylesheet" href="/assets/css/checkout-onepage.css?v=20261128-6">
 </head>
 <body>
 <div class="mc-intro" id="mcIntro" role="status" aria-label="Opening AERLON" aria-live="off">
@@ -122,32 +122,34 @@
     <p class="checkout-form-error" id="checkoutError" role="alert" aria-live="assertive" hidden></p>
     <form id="orderForm">
      <fieldset id="deliveryFields">
-      <legend>Address section</legend><div class="checkout-section-heading"><p>Where should we deliver your order?</p></div>
-      <div class="checkout-address-tools">
-       <button type="button" id="checkoutAddAddress" class="checkout-small-action">＋ Add new address</button>
-       <button type="button" id="checkoutSaveAddress" class="checkout-small-action">✓ Save address</button>
+      <legend class="sr-only">Delivery Address</legend>
+      <div class="checkout-address-heading">
+       <h3><span class="checkout-heading-pin" aria-hidden="true">⌖</span> Delivery Address</h3>
+       <div class="checkout-address-tools"><button type="button" id="checkoutAddAddress" class="checkout-small-action" aria-expanded="true" aria-controls="checkoutAddressFields">＋ Add New Address</button></div>
       </div>
       <div id="checkoutSavedAddresses" class="checkout-saved-addresses" aria-label="Saved addresses" hidden></div>
       <p id="checkoutAddressSaveMessage" class="checkout-helper-note" role="status" aria-live="polite">Sign in to save delivery addresses to your AERLON account.</p>
+      
+      <div class="checkout-address-fields" id="checkoutAddressFields">
+      <div class="delivery-grid">
+       <label>Full name<input id="name" autocomplete="name" maxlength="100" placeholder="Full name" required></label>
+       <label>Mobile number (+91)<input id="phone" type="tel" autocomplete="tel-national" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" placeholder="10-digit mobile number" required></label>
+       <label>PIN code<input id="pin" inputmode="numeric" autocomplete="postal-code" pattern="[1-9][0-9]{5}" maxlength="6" placeholder="6-digit PIN" required></label>
+       <label>City / District<input id="city" autocomplete="address-level2" maxlength="100" placeholder="City / District" required></label>
+       <label>State<input id="state" autocomplete="address-level1" maxlength="100" placeholder="State" required></label>
+       <label>House / Flat / Building<input id="house" autocomplete="address-line1" maxlength="100" placeholder="House / Flat / Building" required></label>
+       <label>Road / Street / Locality<input id="address" autocomplete="address-line2" maxlength="180" placeholder="Road / Street / Locality" required></label>
+       <label>Landmark (optional)<input id="landmark" maxlength="100" placeholder="Landmark (optional)"></label>
+       <div class="checkout-type-field"><span class="checkout-type-caption">Address type</span><select id="addressType" class="checkout-type-select" aria-label="Address type"><option>Home</option><option>Work</option><option>Other</option></select><div class="checkout-type-options" role="group" aria-label="Address type"><button type="button" class="checkout-type-option is-selected" data-address-type="Home" aria-pressed="true"><span aria-hidden="true">⌂</span>Home</button><button type="button" class="checkout-type-option" data-address-type="Work" aria-pressed="false"><span aria-hidden="true">▦</span>Work</button><button type="button" class="checkout-type-option" data-address-type="Other" aria-pressed="false"><span aria-hidden="true">◇</span>Other</button></div></div>
+       <label>Email for order updates<input id="email" type="email" autocomplete="email" maxlength="180" placeholder="Email address" required></label>
+      </div>
+      <div class="checkout-address-form-actions"><button type="button" id="checkoutSaveAddress" class="checkout-small-action checkout-save-address">Save Address <span aria-hidden="true">✓</span></button></div>
+     </div>
       <div class="location-row">
        <span class="location-row-label"><strong>Find my address</strong><small>Auto-fill city, state and PIN with your permission</small></span>
        <span class="location-row-actions"><button type="button" id="locateAddress">⌖ Use my location</button><button type="button" id="enterPin">Enter PIN</button></span>
       </div>
       <p id="addressMessage" class="checkout-location-message" role="status" aria-live="polite"></p>
-      <div class="checkout-address-fields" id="checkoutAddressFields">
-      <div class="delivery-grid">
-       <label>Full name<input id="name" autocomplete="name" maxlength="100" required></label>
-       <label>Mobile number (+91)<input id="phone" type="tel" autocomplete="tel-national" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" required></label>
-       <label>PIN code<input id="pin" inputmode="numeric" autocomplete="postal-code" pattern="[1-9][0-9]{5}" maxlength="6" required></label>
-       <label>City / District<input id="city" autocomplete="address-level2" maxlength="100" required></label>
-       <label>State<input id="state" autocomplete="address-level1" maxlength="100" required></label>
-       <label>House / Flat / Building<input id="house" autocomplete="address-line1" maxlength="100" required></label>
-       <label>Road / Street / Locality<input id="address" autocomplete="address-line2" maxlength="180" required></label>
-       <label>Landmark (optional)<input id="landmark" maxlength="100"></label>
-       <div class="checkout-type-field"><span class="checkout-type-caption">Address type</span><select id="addressType" class="checkout-type-select" aria-label="Address type"><option>Home</option><option>Work</option><option>Other</option></select><div class="checkout-type-options" role="group" aria-label="Address type"><button type="button" class="checkout-type-option is-selected" data-address-type="Home" aria-pressed="true"><span aria-hidden="true">⌂</span>Home</button><button type="button" class="checkout-type-option" data-address-type="Work" aria-pressed="false"><span aria-hidden="true">▦</span>Work</button><button type="button" class="checkout-type-option" data-address-type="Other" aria-pressed="false"><span aria-hidden="true">◇</span>Other</button></div></div>
-       <label>Email for order updates<input id="email" type="email" autocomplete="email" maxlength="180" required></label>
-      </div>
-     </div>
      </fieldset>
       <details id="couponPanel" class="checkout-compact-coupon">
        <summary><span aria-hidden="true">⌑</span> Apply coupon <span class="checkout-coupon-chevron" aria-hidden="true">⌄</span></summary>
@@ -175,7 +177,7 @@
 
   </div>
   <div class="checkout-action"><div class="checkout-action-total"><small>ORDER TOTAL</small><strong id="checkoutDockTotal">₹0</strong></div>
-   <div class="checkout-action-buttons"><button type="button" class="checkout-back-shopping" id="checkoutContinueShopping"><span class="checkout-back-icon" aria-hidden="true">←</span><span>Back to shopping</span></button><button type="submit" class="btn" form="orderForm" id="placeOrder">Place order</button></div>
+   <div class="checkout-action-buttons"><button type="button" class="checkout-back-shopping" id="checkoutContinueShopping"><span class="checkout-back-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 4 10l5 5M4 10h10a6 6 0 1 1-6 6"/></svg></span><span>Back to Shopping</span></button><button type="submit" class="btn" form="orderForm" id="placeOrder">Place Order <span class="checkout-place-arrow" aria-hidden="true">→</span></button></div>
   </div>
   <p class="checkout-bottom-note">Questions? <a href="/customer-care.html" target="_blank" rel="noopener">Customer care</a> · <a href="/return-refund-policy.html" target="_blank" rel="noopener">Returns policy</a></p>
  </div>

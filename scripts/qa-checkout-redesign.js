@@ -88,7 +88,7 @@ check("size selection is mandatory and gives visible red warning",()=>{
   assert.ok(css.includes("#detailSizeWarning"));
 });
 check("responsive themes, syntax and retry/idempotency safeguards remain valid",()=>{
-  assert.ok(html.includes('checkout-onepage.css?v=20261128-3'));
+  assert.ok(html.includes('checkout-onepage.css?v=20261128-6'));
   assert.ok(html.includes('checkout.js?v=20261128-3'));
   assert.ok(css.includes('flex-direction:column!important'));
   assert.ok(css.includes('position:static!important'));
@@ -97,12 +97,22 @@ check("responsive themes, syntax and retry/idempotency safeguards remain valid",
 
   assert.ok(css.includes("@media(max-width:430px)"));
   assert.ok(css.includes("position:sticky!important;bottom:0!important"));
+  assert.ok(css.includes("z-index:1200!important"),"Checkout must eclipse storefront header");
+  assert.ok(css.includes("body:has(#checkout.show){overflow:hidden;}"),"Background must lock during checkout");
   assert.ok(css.includes("env(safe-area-inset-bottom)"));
   assert.ok(css.includes(".checkout-quantity"));
   assert.ok(store.includes("function renderCheckoutItems()"));
   assert.ok(store.includes("minus.dataset.checkoutQuantity"));
   assert.ok(store.includes("plus.dataset.checkoutQuantity"));
   assert.ok(client.includes("by('checkoutContinueShopping')"));
+  assert.ok(checkout.includes('class="checkout-address-heading"'),"Approved delivery address heading must remain");
+  assert.ok(checkout.includes('id="checkoutSaveAddress"'),"Save Address must remain reachable");
+  assert.ok(checkout.indexOf('id="checkoutAddressFields"')<checkout.indexOf('id="locateAddress"'),"Address and type choices must come before location controls");
+  assert.ok(checkout.includes('checkout-back-icon'),"Premium return-to-shopping icon must remain");
+  assert.ok(css.includes('Approved AERLON third checkout concept'),"Restored card styling must remain");
+  assert.ok(css.includes('#checkout .checkout-address-radio'),"Saved address radio selection must remain");
+  assert.ok(css.includes('#checkout .checkout-place-arrow'),"Checkout CTA arrow must remain");
+  assert.ok(store.includes('if(i)i.quantity++'),"Two identical variants must aggregate quantities");
   assert.ok(client.includes("setAddressFieldsOpen(edit)"));
   assert.ok(css.includes("body.dark #checkout"));
   assert.ok(css.includes("prefers-reduced-motion"));

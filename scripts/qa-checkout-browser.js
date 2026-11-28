@@ -31,8 +31,31 @@ async function checkSequence(page){
  assert.equal(result.display,"flex");
  assert.equal(result.direction,"column");
  assert.ok(result.verticalSummaryBeforeAddress,"Order summary must be visually before address");
- assert.ok(result.boxWidth<=result.viewport+2,"Checkout must not overflow the device");
+ assert.ok(result.boxWidth<=result.viewport+2,"Checkout must not overflow the device: "+JSON.stringify(result));
  assert.equal(result.horizontalOverflow,false,"Checkout should scroll vertically without sideways overflow");
+}
+async function checkCheckoutAboveHeader(page){
+ const result=await page.evaluate(()=>{
+   const checkout=document.getElementById('checkout');
+   const header=document.getElementById('storeHeader');
+   const close=document.getElementById('closeCheckout');
+   const headerRect=header.getBoundingClientRect();
+   const closeRect=close.getBoundingClientRect();
+   const at=(rect)=>document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+   return {
+     modalTop:checkout.getBoundingClientRect().top,
+     modalZ:Number(getComputedStyle(checkout).zIndex),
+     headerZ:Number(getComputedStyle(header).zIndex),
+     headerCovered:checkout.contains(at(headerRect)),
+     closeTouchable:close===at(closeRect)||close.contains(at(closeRect)),
+     pageLocked:getComputedStyle(document.body).overflow==='hidden'
+   };
+ });
+ assert.ok(result.modalTop>=-1 && result.modalTop<=1,"Checkout must start at viewport top: "+JSON.stringify(result));
+ assert.ok(result.modalZ>result.headerZ,"Checkout must layer above the sticky storefront header: "+JSON.stringify(result));
+ assert.ok(result.headerCovered,"Storefront search/header must not cover checkout: "+JSON.stringify(result));
+ assert.ok(result.closeTouchable,"Checkout close control must be tappable: "+JSON.stringify(result));
+ assert.ok(result.pageLocked,"Background document must not scroll behind checkout");
 }
 const product={
  id:"qa-shirt",name:"AERLON Test Shirt",category:"Shirts",active:true,price:1000,stock:20,
@@ -125,6 +148,7 @@ async function openCheckout(page,url){
    await openCheckout(page,url);
    assert.equal(await page.locator("#checkout .checkout-box").isVisible(),true);
    await checkSequence(page);
+   await checkCheckoutAboveHeader(page);
    const initialAction=await page.locator("#placeOrder").evaluate(el=>{
      const r=el.getBoundingClientRect();
      return {top:r.top,bottom:r.bottom,viewport:innerHeight,position:getComputedStyle(el.closest('.checkout-action')).position};
@@ -132,11 +156,42 @@ async function openCheckout(page,url){
    assert.equal(initialAction.position,'static',"Mobile actions should remain docked outside the scrollable form");
    assert.ok(initialAction.top>=-1 && initialAction.bottom<=initialAction.viewport+2,"Place Order must fit above mobile browser controls: "+JSON.stringify(initialAction));
    assert.equal(await page.locator("#checkoutContinueShopping").isVisible(),true);
+   // Each device receives a fresh viewport: resizing one mobile emulation
+   // retains its original device screen width and yields misleading 100vw geometry.
+   for(const width of [320,360,430,768]){
+     const device=await browser.newContext({viewport:{width,height:760},isMobile:true,hasTouch:true,reducedMotion:"reduce"});
+     const mobile=await device.newPage();
+     await mobile.addInitScript(()=>sessionStorage.setItem("aerlon-puzzle-entry-v1","1"));
+     await openCheckout(mobile,url);
+     await checkSequence(mobile);
+     await checkCheckoutAboveHeader(mobile);
+     const buttonBox=await mobile.locator('#placeOrder').boundingBox();
+     const backBox=await mobile.locator('#checkoutContinueShopping').boundingBox();
+     assert.ok(buttonBox&&buttonBox.y>=-1&&buttonBox.y+buttonBox.height<=762,
+       'Place Order must be on-screen at '+width+'px');
+     assert.ok(backBox&&backBox.y>=-1&&backBox.y+backBox.height<=762,
+       'Back to Shopping must be on-screen at '+width+'px');
+     await device.close();
+   }
+   await page.locator("#checkoutContinueShopping").click();
+   assert.equal(await page.locator("#checkout").isVisible(),false,"Back to Shopping must exit checkout");
+   await page.locator("#bagBtn").click();
+   await page.locator("#checkoutBtn").click();
+   assert.equal(await page.locator("#checkout .checkout-box").isVisible(),true,"Return to shopping must preserve cart for reopening checkout");
    await page.locator('[data-checkout-quantity][data-delta="1"]').first().click();
    assert.equal((await page.locator(".checkout-quantity-value").first().innerText()).trim(),"2");
    assert.ok((await page.locator("#checkoutGrandTotal").innerText()).includes("2,000"));
    await page.locator('[data-checkout-quantity][data-delta="-1"]').first().click();
    assert.equal((await page.locator(".checkout-quantity-value").first().innerText()).trim(),"1");
+   await page.evaluate(()=>{add('qa-shirt','Black','M');renderCheckoutItems();updateCheckoutSummary();});
+   assert.equal(await page.locator('#checkout .checkout-line-item').count(),1,"Same product, size and colour must consolidate into one summary row");
+   assert.equal((await page.locator('.checkout-quantity-value').first().innerText()).trim(),'2',"Adding same variant again must show quantity 2");
+   assert.equal((await page.locator('#checkoutItemCount').innerText()).trim(),'2 items');
+   assert.ok((await page.locator('#checkoutGrandTotal').innerText()).includes('2,000'));
+   await page.locator('[data-checkout-quantity][data-delta="-1"]').first().click();
+   assert.equal((await page.locator('.checkout-quantity-value').first().innerText()).trim(),'1');
+   assert.equal(await page.locator('#checkout .checkout-address-heading').isVisible(),true);
+   assert.equal(await page.locator('#checkoutAddAddress').isVisible(),true);
    await page.locator("#placeOrder").click();
    await page.locator("#checkoutError").waitFor({state:"visible"});
    assert.match(await page.locator("#checkoutError").innerText(),/address|delivery/i);
@@ -192,6 +247,7 @@ async function openCheckout(page,url){
    await dp.addInitScript(()=>sessionStorage.setItem("aerlon-puzzle-entry-v1","1"));
    await openCheckout(dp,url);
    await checkSequence(dp);
+   await checkCheckoutAboveHeader(dp);
    assert.equal(await dp.locator("#placeOrder").isVisible(),true);
    assert.equal(await dp.locator("#checkoutContinueShopping").isVisible(),true);
    assert.equal(await dp.locator('[data-checkout-quantity][data-delta="1"]').count(),1);

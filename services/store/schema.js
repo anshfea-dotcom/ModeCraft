@@ -142,6 +142,16 @@ module.exports = async function initDatabase(pool) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE(card_id,reference)
     );
+    -- Dismissed dashboard notifications; this never deletes operational source records.
+    CREATE TABLE IF NOT EXISTS admin_notification_deletions (
+      actor TEXT NOT NULL,
+      notification_key TEXT NOT NULL,
+      deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (actor, notification_key)
+    );
+    CREATE INDEX IF NOT EXISTS admin_notification_deletions_actor_date_idx
+      ON admin_notification_deletions (actor, deleted_at DESC);
+
     CREATE TABLE IF NOT EXISTS automation_rules (
       id UUID PRIMARY KEY,
       name TEXT NOT NULL,

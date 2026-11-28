@@ -141,6 +141,17 @@ module.exports = function createAccessControls({ getStaff, pool }) {
           JSON.stringify(details)
         ]
       );
+      // Enabled automation rules create real owner alerts for selected audit events.
+      // A failed notification must not block the primary business transaction.
+      try {
+        const rules = await pool.query("SELECT data->>'message' AS message FROM admin3_records WHERE kind='automation' AND active=TRUE AND data->>'event'=$1 LIMIT 20", [action]);
+        for (const rule of rules.rows) {
+          const message = String(rule.message || "Event completed").slice(0,240);
+          await pool.query("INSERT INTO admin_notifications(event_type,message) VALUES($1,$2)",[action,message]);
+        }
+      } catch (notificationError) {
+        console.warn("Admin notification rule unavailable:", notificationError.message);
+      }
     } catch (error) {
       console.error("Audit logging failed:", error.message);
     }

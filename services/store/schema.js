@@ -111,6 +111,48 @@ module.exports = async function initDatabase(pool) {
     );
     CREATE INDEX IF NOT EXISTS invoices_issued_at_idx ON invoices (issued_at DESC);
 
+    CREATE TABLE IF NOT EXISTS admin3_records (
+      id UUID PRIMARY KEY,
+      kind TEXT NOT NULL CHECK (kind IN ('warehouse','affiliate','collection','automation','support_ticket')),
+      code TEXT NOT NULL,
+      data JSONB NOT NULL DEFAULT '{}'::jsonb,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(kind,code)
+    );
+    CREATE INDEX IF NOT EXISTS admin3_records_kind_idx ON admin3_records(kind,updated_at DESC);
+
+    CREATE TABLE IF NOT EXISTS gift_cards (
+      code TEXT PRIMARY KEY,
+      initial_paise BIGINT NOT NULL CHECK (initial_paise > 0),
+      balance_paise BIGINT NOT NULL CHECK (balance_paise >= 0),
+      customer_email TEXT NOT NULL DEFAULT '',
+      expires_at TIMESTAMPTZ,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CHECK (balance_paise <= initial_paise)
+    );
+    CREATE TABLE IF NOT EXISTS wallet_ledger (
+      id BIGSERIAL PRIMARY KEY,
+      customer_id TEXT NOT NULL REFERENCES customers(id),
+      amount_paise BIGINT NOT NULL CHECK (amount_paise <> 0),
+      note TEXT NOT NULL,
+      actor TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS wallet_ledger_customer_idx ON wallet_ledger(customer_id,id DESC);
+
+    CREATE TABLE IF NOT EXISTS admin_notifications (
+      id BIGSERIAL PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      message TEXT NOT NULL,
+      read_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS admin_notifications_recent_idx ON admin_notifications(created_at DESC);
+
     CREATE TABLE IF NOT EXISTS staff (
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,

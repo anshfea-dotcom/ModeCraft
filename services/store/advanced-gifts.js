@@ -8,7 +8,7 @@ module.exports=function registerGiftCards(app,{pool,requireAdmin,requireOwner,au
   app.get("/api/admin/gift-cards",requireAdmin,requireOwner,async(_req,res,next)=>{
     try{
       const r=await pool.query("SELECT id,code,label,initial_paise,balance_paise,active,funding_ref,expires_at,created_at FROM gift_cards ORDER BY created_at DESC LIMIT 500");
-      res.set("Cache-Control","no-store").json({cards:r.rows,checkoutRedemptionEnabled:false});
+      res.set("Cache-Control","no-store").json({cards:r.rows,checkoutRedemptionEnabled:true});
     }catch(e){next(e);}
   });
   app.post("/api/admin/gift-cards",requireAdmin,requireOwner,async(req,res,next)=>{
@@ -61,7 +61,7 @@ module.exports=function registerGiftCards(app,{pool,requireAdmin,requireOwner,au
       const r=await pool.query("SELECT balance_paise,active,expires_at FROM gift_cards WHERE code=$1",[code]);
       const row=r.rows[0];
       if(!row||!row.active||row.expires_at&&new Date(row.expires_at)<new Date())return res.status(404).json({error:"Gift card unavailable."});
-      res.set("Cache-Control","no-store").json({ok:true,balance:row.balance_paise/100,currency:"INR",checkoutRedemptionEnabled:false});
+      res.set("Cache-Control","no-store").json({ok:true,balance:row.balance_paise/100,currency:"INR",checkoutRedemptionEnabled:true});
     }catch(e){next(e);}
   });
 };

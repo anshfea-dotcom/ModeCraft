@@ -104,7 +104,14 @@
       const other=(w.assignments||[]).filter(x=>x.warehouseId!==warehouseId&&x.variantId===variantId).reduce((sum,x)=>sum+Number(x.quantity||0),0);
       const next=current+delta;
       if(!Number.isSafeInteger(next)||next+other>Number(variant.totalStock)){
-        throw Error("Only "+Math.max(0,Number(variant.totalStock)-current-other)+" unassigned units are available. Increase central inventory first.");
+        throw Error("Only "+Math.max(0,Number(variant.totalStock)-current-other)+" unassigned units are available for this size. Increase central inventory first.");
+      }
+      const overallCap=Number(variant.productStock);
+      if(Number.isSafeInteger(overallCap)&&overallCap>0){
+        const ids=new Set((v.variants||[]).filter(row=>row.productId===variant.productId).map(row=>row.id));
+        const assignedAcrossProduct=(w.assignments||[]).filter(row=>ids.has(row.variantId)).reduce((sum,row)=>sum+Number(row.quantity||0),0);
+        if(assignedAcrossProduct+delta>overallCap)
+          throw Error("This product has "+overallCap+" total units. Only "+Math.max(0,overallCap-assignedAcrossProduct)+" unassigned units remain across all sizes and warehouses.");
       }
       const qty=form.elements.namedItem("quantity");
       qty.value=String(next);

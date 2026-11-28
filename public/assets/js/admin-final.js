@@ -17,7 +17,8 @@
   const calendarPanel = by("adminCalendarPanel");
   const from = by("adminDateFrom");
   const to = by("adminDateTo");
-  let notices = [], loadingNotices = false;
+  let notices = [], loadingNotices = false, deletingNotices = false;
+  let deletedKeys = new Set();
   let readKeys = new Set();
 
   const menuOpen = () => menu?.getAttribute("aria-expanded") === "true";
@@ -128,6 +129,8 @@
     notificationCount.textContent=String(Math.min(99,unread))+(unread>99?"+":"");
     notificationCount.hidden=unread===0;
     bell.setAttribute("aria-label",unread?unread+" unread admin notifications":"Notifications");
+    const allButton=by("adminNotificationDeleteAll");
+    if(allButton)allButton.hidden=!notices.length;
     if(!notices.length){
       const p=document.createElement("p");p.className="admin-notification-empty";
       p.textContent="No active order, payment, stock or automation alerts.";
@@ -135,13 +138,15 @@
       return;
     }
     for(const item of notices.slice(0,35)){
-      const button=document.createElement("button");button.type="button";
-      button.className="admin-notification-item"+(readKeys.has(item.key)?"":" unread");
+      const row=document.createElement("div");
+      row.className="admin-notification-item"+(readKeys.has(item.key)?"":" unread");
       const icon=document.createElement("span");icon.className="admin-n-icon";icon.setAttribute("aria-hidden","true");icon.textContent=item.icon;
-      const body=document.createElement("span"),title=document.createElement("strong"),description=document.createElement("small");
+      const body=document.createElement("span");body.className="admin-notification-body";
+      const title=document.createElement("strong"),description=document.createElement("small");
       title.textContent=item.title;description.textContent=item.detail;
-      body.append(title,description);button.append(icon,body);
-      button.addEventListener("click",()=>{
+      const actions=document.createElement("span");actions.className="admin-notification-actions";
+      const view=document.createElement("button");view.type="button";view.textContent="View";view.setAttribute("aria-label","View "+item.title);
+      view.addEventListener("click",()=>{
         readKeys.add(item.key);saveReadKeys();renderNotifications();closeNotifications();
         const permission=document.querySelector('#nav button[data-section="'+item.section+'"]:not(.hidden)');
         if(!permission)return;
@@ -151,22 +156,58 @@
           if(query){query.value=item.orderId;renderOrders();}
         }
       });
-      notificationList.append(button);
+      const remove=document.createElement("button");remove.type="button";
+      remove.textContent="Delete";remove.className="admin-delete-notice";
+      remove.setAttribute("aria-label","Delete notification "+item.title);
+      remove.addEventListener("click",async()=>{
+        remove.disabled=true;
+        await deleteNotices([item.key]);
+        remove.disabled=false;
+      });
+      actions.append(view,remove);
+      body.append(title,description,actions);row.append(icon,body);
+      notificationList.append(row);
     }
   };
+  async function deleteNotices(keys){
+    if(deletingNotices||!currentUser)return;
+    const valid=[...new Set(keys)].filter(key=>notices.some(n=>n.key===key));
+    if(!valid.length)return;
+    deletingNotices=true;
+    try{
+      await api("/api/admin/notifications/delete",{
+        method:"POST",body:JSON.stringify({keys:valid})
+      });
+      for(const key of valid)deletedKeys.add(key);
+      notices=notices.filter(n=>!deletedKeys.has(n.key));
+      renderNotifications();
+      toast(valid.length===1?"Notification deleted.":valid.length+" notifications deleted.");
+    }catch(err){toast("Could not delete notification: "+err.message,true);}
+    finally{deletingNotices=false;}
+  }
+  by("adminNotificationDeleteAll")?.addEventListener("click",async()=>{
+    if(!notices.length||deletingNotices)return;
+    if(!window.confirm("Delete all "+notices.length+" visible notifications? Orders and stock records will not be deleted."))return;
+    await deleteNotices(notices.map(n=>n.key));
+  });
   async function loadNotifications(){
     if(!currentUser || app.classList.contains("hidden") || loadingNotices)return;
     loadingNotices=true;
-    const checks=[];
+    const checks=[{kind:"deleted",work:api("/api/admin/notifications/deleted")}];
     if(currentUser.permissions?.includes("orders.view"))checks.push({kind:"orders",work:api("/api/admin/orders")});
     if(currentUser.permissions?.includes("products.view"))checks.push({kind:"inventory",work:api("/api/admin/inventory/alerts")});
     if(currentUser.isOwner)checks.push({kind:"automation",work:api("/api/admin/automations")});
     const results=await Promise.allSettled(checks.map(item=>item.work));
     const items=[];
-    let failed=0;
+    let failed=0, deletionStateLoaded=false;
     for(let i=0;i<checks.length;i++){
       if(results[i].status!=="fulfilled"){failed++;continue;}
       const data=results[i].value;
+      if(checks[i].kind==="deleted"){
+        deletedKeys=new Set(Array.isArray(data.deletedKeys)?data.deletedKeys:[]);
+        deletionStateLoaded=true;
+        continue;
+      }
       if(checks[i].kind==="orders"){
         const orders=(data.orders||[]).filter(o=>!o.archivedAt&&o.orderStatus!=="cancelled")
           .sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,12);
@@ -198,8 +239,18 @@
         }
       }
     }
+    // A failed deletion-state fetch must not show previously deleted alerts again.
+    if(!deletionStateLoaded){
+      notificationList.replaceChildren();
+      const message=document.createElement("p");
+      message.className="admin-notification-empty";
+      message.textContent="Could not load your deleted-notification state. Refresh notifications to retry.";
+      notificationList.append(message);
+      loadingNotices=false;
+      return;
+    }
     items.sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
-    notices=items.slice(0,60);
+    notices=items.filter(item=>!deletedKeys.has(item.key)).slice(0,60);
     readKeys=getReadKeys();
     renderNotifications();
     if(failed && !notices.length){
@@ -232,7 +283,7 @@
   });
   new MutationObserver(()=>{
     if(app.classList.contains("hidden")){
-      closeNotifications();notices=[];notificationCount.hidden=true;
+      closeNotifications();notices=[];deletedKeys.clear();notificationCount.hidden=true;
       return;
     }
     loadNotifications();

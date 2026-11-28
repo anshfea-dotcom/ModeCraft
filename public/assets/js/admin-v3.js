@@ -81,7 +81,7 @@
       by("v3WarehouseList").innerHTML=warehouseCache.warehouses.map(w=>'<div><span><strong>'+escapeHTML(w.name)+'</strong><small style="display:block">'+escapeHTML(w.code)+' · '+escapeHTML(w.city||"—")+', '+escapeHTML(w.state||"—")+' · '+(w.active?"Active":"Inactive")+'</small></span><span><small>'+escapeHTML(w.assignedUnits||0)+' assigned units</small> <button type="button" class="btn small v3-toggle-wh" data-id="'+escapeHTML(w.id)+'">'+(w.active?"Disable":"Enable")+'</button></span></div>').join("")||'<p class="muted">No warehouses created.</p>';
       const currentWh=by("v3WarehouseId").value,oldVar=by("v3WarehouseVariantId").value;
       by("v3WarehouseId").innerHTML='<option value="">Choose location</option>'+warehouseCache.warehouses.filter(w=>w.active).map(w=>'<option value="'+escapeHTML(w.id)+'">'+escapeHTML(w.name)+'</option>').join("");
-      by("v3WarehouseVariantId").innerHTML='<option value="">Choose variant</option>'+warehouseCache.variants.map(v=>'<option value="'+escapeHTML(v.id)+'">'+escapeHTML(v.name)+' · '+escapeHTML(v.color)+' / '+escapeHTML(v.size)+' · '+escapeHTML(v.totalStock)+' total</option>').join("");
+      by("v3WarehouseVariantId").innerHTML='<option value="">Choose variant</option>'+warehouseCache.variants.map(v=>'<option value="'+escapeHTML(v.id)+'">'+escapeHTML(v.name)+' · '+escapeHTML(v.color)+' / '+escapeHTML(v.size)+' · '+escapeHTML(v.totalStock)+' in stock</option>').join("");
       if(warehouseCache.warehouses.some(w=>w.id===currentWh&&w.active))by("v3WarehouseId").value=currentWh;
       if(warehouseCache.variants.some(v=>v.id===oldVar))by("v3WarehouseVariantId").value=oldVar;
       showWarehouseAllocation();
@@ -92,10 +92,37 @@
     const x=warehouseCache.assignments.find(a=>a.warehouseId===wh&&a.variantId===variant);
     const p=warehouseCache.variants.find(a=>a.id===variant);
     const qty=by("v3WarehouseStockForm").elements.namedItem("quantity");
+    const status=by("v3WarehouseVariantStockStatus"), productStatus=by("v3WarehouseProductStockStatus");
     qty.value=wh&&variant?String(x?.quantity||0):"";
-    const other=warehouseCache.assignments.filter(a=>a.variantId===variant&&a.warehouseId!==wh).reduce((s,a)=>s+Number(a.quantity),0);
-    by("v3WarehouseAllocationSummary").textContent=p?"Central stock: "+p.totalStock+" · Assigned to other locations: "+other+" · Available to assign here: "+Math.max(0,p.totalStock-other):"Choose a product variant.";
+    if(!p){
+      qty.removeAttribute("max");
+      by("v3WarehouseAllocationSummary").textContent="Choose a product variant.";
+      if(status)status.textContent="Choose a size to see available stock.";
+      if(productStatus)productStatus.textContent="";
+      return;
+    }
+    const central=Number(p.totalStock)||0,current=Number(x?.quantity||0);
+    const other=warehouseCache.assignments.filter(a=>a.variantId===variant&&a.warehouseId!==wh)
+      .reduce((sum,a)=>sum+Number(a.quantity||0),0);
+    const used=warehouseCache.assignments.filter(a=>warehouseCache.variants.some(v=>v.id===a.variantId&&v.productId===p.productId))
+      .reduce((sum,a)=>sum+Number(a.quantity||0),0);
+    const cap=Number(p.productStock);
+    const capSet=Number.isSafeInteger(cap)&&cap>0;
+    const totalMax=capSet?Math.max(0,cap-(used-current)):Infinity;
+    const variantMax=Math.max(0,central-other);
+    const max=Math.max(0,Math.min(totalMax,variantMax));
+    qty.max=String(Math.floor(max));
+    by("v3WarehouseAllocationSummary").textContent="Size "+p.size+" · Central: "+central+
+      " · Assigned elsewhere: "+other+" · Unassigned: "+Math.max(0,central-other-current)+
+      " · Maximum here: "+max;
+    if(status)status.textContent="Available for this size: "+Math.max(0,central-other-current)+
+      " unit(s) · Already here: "+current+" · Maximum assignment here: "+max;
+    if(productStatus)productStatus.textContent=capSet?
+      "Product-wide limit: "+cap+" units · Assigned across all sizes/warehouses: "+used+
+      " · Remaining: "+Math.max(0,cap-used)+". The server blocks any total above "+cap+".":
+      "No positive product-wide limit is configured; this size remains limited by its real central inventory.";
   }
+
   by("v3WarehouseId")?.addEventListener("change",showWarehouseAllocation);
   by("v3WarehouseVariantId")?.addEventListener("change",showWarehouseAllocation);
   by("v3ReloadWarehouses")?.addEventListener("click",loadWarehouses);

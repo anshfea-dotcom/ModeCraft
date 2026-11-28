@@ -12,7 +12,7 @@ check("Admin scripts are valid JavaScript",()=>{
 });
 check("Minor UX stylesheet and script are loaded after existing Admin 3.0",()=>{
  assert.ok(html.indexOf('admin-minor.css?v=20261128-5')>html.indexOf('admin-v3.css?v=20261128-3'));
- assert.ok(html.indexOf('admin-minor.js?v=20261128-5')>html.indexOf('admin-advanced.js?v=20261128-3'));
+ assert.ok(html.indexOf('admin-minor.js?v=20261128-6')>html.indexOf('admin-advanced.js?v=20261128-3'));
 });
 check("Product cards are compact full-width rows and existing controls are preserved",()=>{
  assert.ok(css.includes("grid-template-columns:minmax(0,1fr)!important"));
@@ -47,7 +47,7 @@ check("Warehouse quick-add preserves absolute assignment API and performs additi
  assert.ok(js.includes('"/api/admin/warehouses/stock"'));
  assert.ok(js.includes('await Promise.all(['));
  assert.ok(warehouse.includes('assigned.rows[0].n'));
- assert.ok(warehouse.includes("cannot exceed central stock"));
+ assert.ok(warehouse.includes("cannot exceed this size\'s available central stock"));
  assert.ok(css.includes("#section-warehouses.active>article.card:nth-of-type(3){order:0}"));
 });
 check("No new endpoint, auto invoice or central stock mutation introduced",()=>{

@@ -128,3 +128,28 @@
  .admin-ref-filter>label{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.v3-action-grid button{transition:none}}
+
+
+/* Dashboard-only shortcuts occupy the first content row; never overlay other pages. */
+#section-overview > .v3-actions:first-child{margin:0 0 15px!important;position:static!important}
+#section-overview > .v3-actions:first-child .cardtitle{margin-bottom:6px}
+#section-overview > .v3-actions:first-child .v3-action-grid button{min-height:66px!important}
+#section-warehouses .warehouse-stock-status{display:block;margin-top:7px;padding:7px 10px;border-radius:8px;border:1px solid var(--line);color:var(--accent2);background:var(--surface2);font-size:11px;line-height:1.5}
+#section-warehouses .warehouse-product-stock-status{margin:0;padding:10px 12px;font-size:12px;line-height:1.5;border:1px solid var(--line);border-radius:10px;background:var(--surface2)}
+#section-warehouses input[name="quantity"]:out-of-range{border-color:var(--bad)!important;outline-color:var(--bad)!important}
+.admin-notification-head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.admin-notification-head-actions [hidden]{display:none!important}
+.admin-notification-head-actions .admin-delete-all,.admin-notification-actions .admin-delete-notice{color:var(--bad)}
+#adminNotificationItems .admin-notification-item{cursor:default;align-items:flex-start}
+#adminNotificationItems .admin-notification-body{display:block;flex:1;min-width:0}
+#adminNotificationItems .admin-notification-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#adminNotificationItems .admin-notification-actions button{color:var(--accent2);border:1px solid var(--line);background:var(--surface);font:650 11px/1.2 system-ui;padding:7px 12px;border-radius:8px;min-height:32px;cursor:pointer}
+#adminNotificationItems .admin-notification-actions .admin-delete-notice{color:var(--bad)}
+#adminNotificationItems .admin-notification-actions button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#adminNotificationItems .admin-notification-actions button:disabled{opacity:.6;cursor:wait}
+@media(max-width:700px){
+ #section-overview > .v3-actions:first-child{margin:0 0 11px!important}
+ #section-overview > .v3-actions:first-child .v3-action-grid button{min-height:68px!important}
+ .admin-notification-head{align-items:flex-start}
+ .admin-notification-head-actions{justify-content:flex-end}
+}

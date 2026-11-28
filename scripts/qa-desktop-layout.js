@@ -35,7 +35,7 @@ check("Admin modules remain cache-safe while visible release labels stay minimal
   assert.ok(files.adminHTML.includes("v3-edition"));
   assert.ok(files.adminHTML.includes("v3-version-tag"));
   assert.ok(files.adminHTML.includes('href="/admin-v3.css?v=20261128-3"'));
-  assert.ok(files.adminHTML.includes('src="/admin-v3.js?v=20261128-3"'));
+  assert.ok(files.adminHTML.includes('src="/admin-v3.js?v=20261128-4"'));
   assert.ok(files.admin.includes(".v3-edition"));
   assert.ok(files.admin.includes(".app>.main{margin-left:268px"));
 });

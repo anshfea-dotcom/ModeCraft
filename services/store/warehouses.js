@@ -24,7 +24,8 @@ module.exports=function registerWarehouses(app,{pool,requireAdmin,requireOwner,a
   });
   app.get("/api/admin/warehouses/variants",requireAdmin,requireOwner,async(_req,res,next)=>{
     try{
-      const r=await pool.query(`SELECT v.id,v.quantity AS "totalStock",v.color,v.size,COALESCE(p.data->>'name','Product') AS name
+      const r=await pool.query(`SELECT v.id,v.product_id AS "productId",v.quantity AS "totalStock",v.color,v.size,
+           p.data->>'stock' AS "productStock",COALESCE(p.data->>'name','Product') AS name
         FROM inventory_variants v JOIN products p ON p.id=v.product_id ORDER BY name,v.color,v.size LIMIT 10000`);
       res.set("Cache-Control","no-store").json({variants:r.rows});
     }catch(e){next(e);}
@@ -68,10 +69,29 @@ module.exports=function registerWarehouses(app,{pool,requireAdmin,requireOwner,a
       client=await pool.connect();await client.query("BEGIN");
       const wh=await client.query("SELECT data FROM warehouses WHERE id=$1 FOR UPDATE",[warehouseId]);
       if(!wh.rowCount||!wh.rows[0].data.active)throw problem("Warehouse not found or disabled.",404);
-      const v=await client.query("SELECT quantity FROM inventory_variants WHERE id=$1 FOR UPDATE",[variantId]);
+      const v=await client.query("SELECT quantity,product_id FROM inventory_variants WHERE id=$1 FOR UPDATE",[variantId]);
       if(!v.rowCount)throw problem("Inventory variant not found.",404);
       const assigned=await client.query("SELECT COALESCE(SUM(quantity),0)::integer AS n FROM warehouse_stock WHERE variant_id=$1 AND warehouse_id<>$2",[variantId,warehouseId]);
-      if(Number(assigned.rows[0].n)+quantity>Number(v.rows[0].quantity))throw problem("Warehouse assignments cannot exceed central stock. Reduce the quantity.",409);
+      if(Number(assigned.rows[0].n)+quantity>Number(v.rows[0].quantity))
+         throw problem("Warehouse assignments cannot exceed this size's available central stock. Reduce the quantity.",409);
+       // Serialize all warehouse assignments for one product and respect its declared
+       // overall stock budget when >0. Do not mistake legacy zero/unset stock for
+       // an explicit limit when size-specific inventory is already in use.
+       const productId=v.rows[0].product_id;
+       const productRow=await client.query("SELECT data FROM products WHERE id=$1 FOR UPDATE",[productId]);
+       const cap=Number(productRow.rows[0]?.data?.stock);
+       if(Number.isSafeInteger(cap)&&cap>0){
+         const total=await client.query(
+           `SELECT COALESCE(SUM(ws.quantity),0)::integer AS n
+            FROM warehouse_stock ws
+            JOIN inventory_variants iv ON iv.id=ws.variant_id
+            WHERE iv.product_id=$1 AND NOT(ws.warehouse_id=$2 AND ws.variant_id=$3)`,
+           [productId,warehouseId,variantId]);
+         const otherUnits=Number(total.rows[0]?.n||0);
+         if(otherUnits+quantity>cap)
+           throw problem("This product has "+cap+" total units; "+otherUnits+
+             " are already allocated to other sizes/locations. Maximum allowed here: "+Math.max(0,cap-otherUnits)+".",409);
+       }
       if(quantity===0)await client.query("DELETE FROM warehouse_stock WHERE warehouse_id=$1 AND variant_id=$2",[warehouseId,variantId]);
       else await client.query(`INSERT INTO warehouse_stock(warehouse_id,variant_id,quantity,updated_at)
          VALUES($1,$2,$3,NOW()) ON CONFLICT(warehouse_id,variant_id)

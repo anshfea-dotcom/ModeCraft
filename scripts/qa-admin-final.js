@@ -9,8 +9,8 @@ const core=fs.readFileSync("public/assets/js/admin.js","utf8");
 const mobile=fs.readFileSync("public/assets/js/admin-minor.js","utf8");
 const check=(name,work)=>{work();console.log("PASS compact admin:",name)};
 check("New presentation and interaction scripts load after working Admin baseline",()=>{
-  assert.ok(html.includes('admin-final.css?v=20261128-1'));
-  assert.ok(html.includes('admin-final.js?v=20261128-1'));
+  assert.ok(html.includes('admin-final.css?v=20261128-2'));
+  assert.ok(html.includes('admin-final.js?v=20261128-2'));
   assert.ok(html.indexOf("admin-final.css")>html.indexOf("admin-minor.css"));
   assert.ok(html.indexOf("admin-final.js")>html.indexOf("admin-minor.js"));
   new vm.Script(js,{filename:"admin-final.js"});
@@ -45,17 +45,39 @@ check("Date picker validates an actual from/to pair and filters real orders and 
   assert.ok(core.includes("const endCutoff=custom?"));
   assert.ok(core.includes("const spanDays=custom?"));
 });
-check("Permission-scoped notifications fetch real existing APIs without any write side effects",()=>{
-  for(const id of ["adminNotificationToggle","adminNotificationPanel","adminNotificationCount","adminNotificationItems","adminNotificationRead"])
+check("Permission-scoped notifications include persistent View/Delete and Delete All without touching source data",()=>{
+  for(const id of ["adminNotificationToggle","adminNotificationPanel","adminNotificationCount","adminNotificationItems","adminNotificationRead","adminNotificationDeleteAll"])
     assert.ok(html.includes('id="'+id+'"'),id);
-  for(const route of ["/api/admin/orders","/api/admin/inventory/alerts","/api/admin/automations"])
+  for(const route of ["/api/admin/orders","/api/admin/inventory/alerts","/api/admin/automations","/api/admin/notifications/deleted","/api/admin/notifications/delete"])
     assert.ok(js.includes(route),route);
   assert.ok(js.includes('currentUser.permissions?.includes("orders.view")'));
   assert.ok(js.includes('currentUser.permissions?.includes("products.view")'));
   assert.ok(js.includes("if(currentUser.isOwner)"));
-  assert.ok(js.includes('title.textContent=item.title'));
-  assert.ok(!js.includes('method:"POST"')&&!js.includes('method:"PATCH"'));
+  assert.ok(js.includes("title.textContent=item.title"));
+  assert.ok(js.includes('view.textContent="View"'));
+  assert.ok(js.includes('remove.textContent="Delete"'));
+  assert.ok(js.includes("items.filter(item=>!deletedKeys.has(item.key))"));
   assert.ok(!js.includes("setInterval("),"Do not extend admin sessions with polling");
+  assert.ok(!js.includes('method:"DELETE"'),"Operational records must never be deleted by notification UI");
+});
+check("Quick actions are first, dashboard-only and never sticky across admin pages",()=>{
+  const section=html.indexOf('id="section-overview"');
+  const actions=html.indexOf('<div class="v3-actions">',section);
+  const stats=html.indexOf('<div class="grid stats',section);
+  assert.ok(section>=0&&actions>section&&actions<stats);
+  assert.ok(css.includes("#section-overview > .v3-actions:first-child"));
+  assert.ok(css.includes("position:static!important"));
+});
+check("Warehouse size dropdown exposes actual availability with explicit max bounds",()=>{
+  assert.ok(html.includes('id="v3WarehouseVariantStockStatus"'));
+  assert.ok(html.includes('id="v3WarehouseProductStockStatus"'));
+  const v3=fs.readFileSync("public/assets/js/admin-v3.js","utf8");
+  const wh=fs.readFileSync("services/store/warehouses.js","utf8");
+  assert.ok(v3.includes('qty.max=String(Math.floor(max))'));
+  assert.ok(v3.includes('Product-wide limit:'));
+  assert.ok(wh.includes('p.data->>\'stock\' AS "productStock"'));
+  assert.ok(wh.includes('FROM products WHERE id=$1 FOR UPDATE'));
+  assert.ok(wh.includes("otherUnits+quantity>cap"));
 });
 check("Recent orders still show customer name, phone, order amount, status and date",()=>{
   for(const s of ["o.customer?.name","o.customer?.phone","money(o.total)","o.orderStatus","date(o.createdAt)"])

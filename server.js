@@ -40,6 +40,7 @@ const registerProductManagement = require("./services/store/products");
 const registerInvoices = require("./services/store/invoices");
 const registerAdminOperations = require("./services/store/admin-operations");
 const registerAdminCatalogue = require("./services/store/admin-catalogue");
+const registerAdvancedManagement = require("./services/store/admin-advanced");
 const registerInventory = require("./services/store/inventory");
 const registerCheckout = require("./services/store/checkout");
 
@@ -160,6 +161,23 @@ app.use("/editorial", express.static(path.join(ROOT, "public/assets/images/edito
 for (const directory of ["css", "js"]) {
   app.use(express.static(path.join(ROOT, "public/assets", directory)));
 }
+// Serve owner-managed SEO metadata to crawlers without altering static storefront assets.
+app.get("/", async (_req,res,next)=>{
+  try{
+    const fs=require("node:fs");
+    const settings=await pool.query("SELECT data FROM store_settings WHERE key='seo_profile'");
+    const seo=settings.rows[0]?.data;
+    if(!seo?.title||!seo?.description)return res.sendFile(path.join(ROOT,"public","index.html"));
+    const escape=value=>String(value||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    let html=fs.readFileSync(path.join(ROOT,"public","index.html"),"utf8");
+    html=html.replace(/<title>[^<]*<\/title>/i,"<title>"+escape(seo.title)+"</title>");
+    html=html.replace(/<meta name="description" content="[^"]*">/i,'<meta name="description" content="'+escape(seo.description)+'">');
+    html=html.replace(/<meta property="og:title" content="[^"]*">/i,'<meta property="og:title" content="'+escape(seo.title)+'">');
+    html=html.replace(/<meta property="og:description" content="[^"]*">/i,'<meta property="og:description" content="'+escape(seo.description)+'">');
+    if(seo.socialImage&&/^https:\/\//i.test(seo.socialImage))html=html.replace("</head>",'<meta property="og:image" content="'+escape(seo.socialImage)+'"></head>');
+    res.type("html").set("Cache-Control","public, max-age=30").send(html);
+  }catch(e){next(e);}
+});
 app.use(express.static(path.join(ROOT, "public")));
 
 app.get("/health", async (_req, res) => {
@@ -211,6 +229,7 @@ registerProductManagement(app, context);
 registerInvoices(app, context);
 registerAdminOperations(app, context);
 registerAdminCatalogue(app, context);
+registerAdvancedManagement(app, context);
 registerInventory(app, context);
 registerCheckout(app, context);
 

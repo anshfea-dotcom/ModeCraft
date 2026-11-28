@@ -5,7 +5,10 @@ const { isIP } = require("node:net");
 // One shared PostgreSQL store for all application instances; no memory counters.
 const minute = (name, limit, extra = {}) => ({ name, limit, seconds: 60, ...extra });
 function policyFor(method, path) {
-  const p = String(path || "").split("?")[0], verb = String(method || "GET").toUpperCase();
+  // Express routes are case-insensitive and ignore trailing / by default.
+  // Match its behavior so path variants cannot downgrade to a weaker tier.
+  const p = (String(path || "").split("?")[0].toLowerCase().replace(/\/+$/, "") || "/");
+  const verb = String(method || "GET").toUpperCase();
   if (p === "/api/razorpay/webhook") return minute("payment-webhook", 300, { ipOnly: true });
   if (p === "/health") return minute("health", 60, { ipOnly: true });
   if (/^\/storefront-images\/[^/]+$/.test(p)) return minute("storefront-media", 180, { ipOnly: true });

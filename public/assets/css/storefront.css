@@ -1086,3 +1086,19 @@ body.dark .mc-footer{background:#080808;border-top-color:#29231b}
 @media(max-width:480px){.delivery-grid{grid-template-columns:1fr}}
 body:has(#checkout.show) #ac-launch,body:has(#checkout.show) #aerlon-concierge {visibility:hidden}
 @media(min-width:781px){#checkout .checkout-action{position:static;background:transparent;padding-bottom:0}#placeOrder{width:100%}}
+
+
+/* Laptop header: prevent the desktop search field from forcing the action icons off-screen. */
+@media (min-width: 721px) {
+  .nav { min-width: 0; }
+  .nav .site-wordmark { min-width: 0; white-space: nowrap; }
+  .nav .aerlon-header-search, .nav .aerlon-header-search-field { min-width: 0; }
+  .nav .navactions { display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; gap: clamp(6px, .8vw, 10px); }
+  .hero > *, #shop .tools > * { min-width: 0; }
+}
+@media (min-width: 721px) and (max-width: 1100px) {
+  .nav { gap: clamp(10px, 1.7vw, 22px); padding-inline: clamp(15px, 2.3vw, 24px); }
+  .nav .site-wordmark { font-size: clamp(19px, 2.3vw, 26px); letter-spacing: .13em !important; }
+  .nav .navactions :is(.aerlon-camera-link, #menuBtn, #bagBtn) { min-width: 42px; width: 42px; height: 44px; }
+  .nav .aerlon-header-search > button { padding-inline: 12px; }
+}

@@ -387,3 +387,12 @@ body.dark #checkout .checkout-action{background:#25211df5!important}
  #checkout .checkout-box{height:100dvh!important;max-height:100dvh!important}
  #checkout .checkout-layout,#checkout[data-step="3"] .checkout-layout{scrollbar-gutter:auto}
 }
+
+/* Store header offsets must not displace checkout below the visible viewport. */
+#checkout.checkout-modal{
+  inset:0!important;top:0!important;bottom:0!important;
+  width:100vw!important;height:100dvh!important;max-height:100dvh!important;
+  overflow:hidden!important;
+}
+@media(min-width:781px){#checkout.checkout-modal{align-items:center!important;justify-content:center!important}}
+@media(max-width:780px){#checkout.checkout-modal{padding:0!important;align-items:stretch!important}}

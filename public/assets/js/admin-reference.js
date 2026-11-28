@@ -22,6 +22,12 @@
   main.insertBefore(bar, oldHeader);
 
   const profileButton = el("aeProfileToggle");
+  const gstShortcut=document.querySelector(".ae-gst-shortcut");
+  if(gstShortcut){
+    const showGst=()=>gstShortcut.classList.toggle("hidden",!hasAccess("invoices.issue"));
+    new MutationObserver(showGst).observe(el("app"),{attributes:true,attributeFilter:["class"]});
+    showGst();
+  }
   const profileMenu = el("aeProfileMenu");
   const bell = el("aeNotificationToggle");
   const panel = el("aeNotificationPanel");
@@ -270,7 +276,7 @@
     const count=entries.length;
     el("aeNotificationCount").hidden=!count;
     el("aeNotificationCount").textContent=count>99?"99+":String(count);
-    status.textContent=settled.some(x=>x.status==="rejected")?"Some notifications could not be loaded.":count+" current notifications from permitted store records";
+    status.textContent=settled.some(x=>x.status==="rejected")?"Some notifications could not be loaded.":"Showing "+count+" recent notifications from permitted store records";
     list.replaceChildren();
     if(!count){const p=document.createElement("p");p.className="ae-empty";p.textContent=settled.some(x=>x.status==="rejected")?"Unable to fetch all alerts. Try refresh.":"No outstanding operational notifications.";list.append(p);return;}
     for(const notification of entries){
@@ -314,5 +320,6 @@
   dateSelect?.addEventListener("change",()=>renderTopSelling());
   // Preserve the supported mobile drawer and existing delegated nav click handling.
   el("nav")?.addEventListener("click",()=>{if(matchMedia("(max-width:700px)").matches)sideToggle.setAttribute("aria-expanded","false");});
+  document.querySelector("#nav")?.addEventListener("click",()=>queueMicrotask(refreshIdentity));
   renderTopSelling();
 })();

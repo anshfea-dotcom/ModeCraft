@@ -1,5 +1,4 @@
 "use strict";
-const PDFDocument = require("pdfkit");
 
 // Commercial invoices use a snapshot of a real order. No GST tax breakdown is
 // inferred from payments that did not record tax rates, HSN, or place of supply.
@@ -40,7 +39,7 @@ module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, 
       const result = await pool.query("SELECT id,order_id,data,issued_at FROM invoices ORDER BY id DESC LIMIT 500");
       res.set("Cache-Control","no-store").json({invoices:result.rows.map(row=>({
         id:String(row.id),orderId:row.order_id,invoiceNumber:row.data.invoiceNumber,
-        amount:row.data.total,type:row.data.type||"commercial_invoice",createdAt:row.issued_at,customerName:row.data.customer?.name||"Customer"
+        amount:row.data.type==="gst_tax_invoice"?Number(row.data.totalPaisa||0)/100:row.data.total,type:row.data.type||"commercial_invoice",createdAt:row.issued_at,customerName:row.data.customer?.name||row.data.buyer?.name||"Customer",deletable:row.data.type!=="gst_tax_invoice"&&!row.data.seller?.gstin
       }))});
     } catch(e){next(e);}
   });
@@ -82,6 +81,39 @@ module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, 
     } catch(e){if(client)await client.query("ROLLBACK").catch(()=>{});if(e.status)res.status(e.status).json({error:e.message});else next(e);}
     finally{client?.release();}
   });
+  // Owner-only permanent deletion, available only for non-GST commercial bills.
+  // The original order is never deleted or altered; issued GST records remain immutable.
+  app.delete("/api/admin/invoices/:id",requireAdmin,requireOwner,async(req,res,next)=>{
+    let client;
+    try{
+      if(!/^\d{1,16}$/.test(req.params.id))return res.status(400).json({error:"Invalid invoice reference."});
+      const confirmation=String(req.body?.confirmInvoiceNumber||"").trim();
+      if(!confirmation)return res.status(400).json({error:"Type the invoice number to confirm permanent deletion."});
+      client=await pool.connect();
+      await client.query("BEGIN");
+      const found=await client.query("SELECT id,order_id,data FROM invoices WHERE id=$1 FOR UPDATE",[req.params.id]);
+      if(!found.rowCount){
+        await client.query("ROLLBACK");client.release();client=null;
+        return res.status(404).json({error:"Invoice not found."});
+      }
+      const record=found.rows[0],data=record.data||{};
+      if(data.type==="gst_tax_invoice"||data.seller?.gstin){
+        await client.query("ROLLBACK");client.release();client=null;
+        return res.status(409).json({error:"Issued GST or GST-registered business invoices must be retained. Use the applicable correction or credit-note process instead."});
+      }
+      if(confirmation!==data.invoiceNumber){
+        await client.query("ROLLBACK");client.release();client=null;
+        return res.status(400).json({error:"Invoice number does not match. Nothing was deleted."});
+      }
+      await client.query("DELETE FROM invoices WHERE id=$1",[record.id]);
+      await client.query("COMMIT");client.release();client=null;
+      await audit(req.adminSession,"invoice.deleted",{id:String(record.id),invoiceNumber:data.invoiceNumber,orderId:record.order_id}).catch(error=>console.error("Invoice deletion audit failed:",error.message));
+      res.set("Cache-Control","no-store").json({ok:true,deletedId:String(record.id),invoiceNumber:data.invoiceNumber});
+    }catch(e){
+      if(client)await client.query("ROLLBACK").catch(()=>{});
+      next(e);
+    }finally{client?.release();}
+  });
   app.get("/api/admin/invoices/:id/pdf",requireAdmin,requirePermission("invoices.issue"),async(req,res,next)=>{
     try{
       if(!/^\d{1,16}$/.test(req.params.id))return res.status(400).json({error:"Invalid invoice reference."});
@@ -89,61 +121,8 @@ module.exports = function registerInvoices(app, { pool, getOrder, requireAdmin, 
       if(!result.rowCount)return res.status(404).json({error:"Invoice not found."});
       const x=result.rows[0].data;
       if(x.type==="gst_tax_invoice")return res.status(409).json({error:"Use the GST Tax Invoice download action."});
-      const filename="AERLON-"+String(x.invoiceNumber).replace(/[^A-Z0-9-]/gi,"")+".pdf";
-      res.set({"Content-Type":"application/pdf","Content-Disposition":'attachment; filename="'+filename+'"',"Cache-Control":"no-store"});
-      const doc=new PDFDocument({size:"A4",margin:46,info:{Title:x.invoiceNumber,Author:"AERLON"}});
-      doc.on("error",error=>{if(!res.headersSent)next(error);else res.destroy(error);});
-      doc.pipe(res);
-      const ink="#1b1b1a",gold="#a27e40";
-      doc.font("Helvetica-Bold").fontSize(25).fillColor(ink).text("A E R L O N",46,43);
-      doc.font("Helvetica").fontSize(10).fillColor(gold).text("COMMERCIAL INVOICE",46,78);
-      doc.moveTo(46,102).lineTo(548,102).lineWidth(1).stroke(gold);
-      doc.fillColor(ink).font("Helvetica-Bold").fontSize(11).text(String(x.seller.legalName),46,121,{width:310});
-      doc.font("Helvetica").fontSize(9).text(String(x.seller.address),46,139,{width:310});
-      if(x.seller.gstin)doc.text("Seller GSTIN: "+x.seller.gstin,{width:310});
-      if(x.seller.email)doc.text(x.seller.email,{width:310});
-      if(x.seller.phone)doc.text(x.seller.phone,{width:310});
-      doc.fontSize(9).text("Invoice: "+x.invoiceNumber,370,122,{width:175,align:"right"});
-      doc.text("Issued: "+new Date(x.createdAt).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}),370,137,{width:175,align:"right"});
-      doc.text("Order: "+String(x.orderId),370,152,{width:175,align:"right"});
-      const billY=Math.max(217,doc.y+28);
-      doc.font("Helvetica-Bold").fontSize(10).text("BILL TO",46,billY);
-      const buyer=x.customer||{};
-      doc.font("Helvetica").fontSize(9).text(String(buyer.name||"Customer"),46,billY+17,{width:480});
-      let buyerLine=[buyer.house,buyer.street,buyer.address,buyer.city,buyer.state,buyer.postalCode].filter(Boolean).join(", ");
-      if(buyerLine)doc.text(buyerLine,46,doc.y+3,{width:480});
-      if(buyer.email)doc.text(String(buyer.email),46,doc.y+3);
-      let y=Math.max(315,doc.y+28);
-      function rowHeader(){
-        doc.rect(46,y,502,25).fill("#f5f0e8");
-        doc.fillColor(ink).font("Helvetica-Bold").fontSize(9);
-        doc.text("Item",55,y+8,{width:290}).text("Qty",367,y+8,{width:40,align:"right"}).text("Amount (INR)",421,y+8,{width:117,align:"right"});
-        y+=32;
-      }
-      rowHeader();
-      for(const line of x.items){
-        if(y>680){doc.addPage();y=52;rowHeader();}
-        const price=Number(line.unitPrice||0),qty=Number(line.quantity||0);
-        const name=String(line.name||line.id||"Product").slice(0,110);
-        doc.font("Helvetica").fontSize(9).fillColor(ink).text(name,55,y,{width:296});
-        const variant=[line.color,line.size].filter(Boolean).join(" / ");
-        if(variant)doc.fontSize(8).fillColor("#646464").text(String(variant).slice(0,90),55,y+14,{width:296});
-        doc.fillColor(ink).fontSize(9).text(String(qty),367,y,{width:40,align:"right"})
-          .text((price*qty).toFixed(2),421,y,{width:117,align:"right"});
-        y+=variant?42:32;
-        doc.moveTo(46,y-5).lineTo(548,y-5).strokeColor("#dedbd6").stroke();
-      }
-      if(y>677){doc.addPage();y=65;}
-      const amount=n=>"INR "+Number(n||0).toFixed(2);
-      doc.font("Helvetica").fontSize(10).fillColor(ink)
-        .text("Subtotal: "+amount(x.subtotal),335,y+12,{width:210,align:"right"});
-      doc.text("Discount: "+amount(x.discount),335,y+30,{width:210,align:"right"});
-      doc.font("Helvetica-Bold").fontSize(13).text("TOTAL: "+amount(x.total),315,y+55,{width:230,align:"right"});
-      const footerY=Math.min(750,y+116);
-      doc.font("Helvetica").fontSize(8).fillColor("#555").text("Payment: "+String(x.paymentMethod)+" · "+String(x.paymentStatus),46,footerY,{width:490});
-      if(x.seller.note)doc.text(String(x.seller.note),46,footerY+16,{width:490});
-      doc.fontSize(7.5).fillColor("#6d6d6d").text("This is a commercial invoice, not a GST tax invoice. HSN and tax breakdown have not been recorded.",46,790,{width:500});
-      doc.end();
+      require("./invoice-pdf").renderCommercial(x,res);
+
     }catch(e){next(e);}
   });
 };

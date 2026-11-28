@@ -109,28 +109,61 @@ check('Bag and menu links run once across refresh and history traversal', () => 
 });
 async function checkAdminExpiry() {
   const source = fs.readFileSync('services/store/session-policy.js', 'utf8');
-  const clock = { now: () => now };
-  const module = { exports: {} };
-  vm.runInNewContext(source, { module, Date: clock });
   const issuedAt = 1_000_000;
   let now = issuedAt;
-  for (const elapsed of [0, 60_000, 240_000, 299_999, 300_000, 301_000]) {
-    now = issuedAt + elapsed;
-    for (const role of ['owner', 'staff']) {
-      for (const active of [false, true]) {
-        const req = { session: { admin: { role, issuedAt } } };
-        const left = await module.exports.remainingSession(null, req, 'admin', active);
-        assert.equal(left, Math.max(0, 300_000 - elapsed));
-      }
-    }
+  class TestDate extends Date { static now() { return now; } }
+  const module = { exports: {} };
+  vm.runInNewContext(source, { module, Date: TestDate });
+  const remainingSession = module.exports.remainingSession;
+  const minute = 60_000;
+  const idle = 30 * minute;
+  const absolute = 8 * 60 * minute;
+
+  function fakePool(initialActivity = null) {
+    let lastActivity = initialActivity;
+    return { async query(sql, [sid, issued, idleMs, absoluteMs]) {
+      assert.equal(sid, 'test-session-id');
+      assert.equal(issued.getTime(), issuedAt);
+      assert.equal(idleMs, idle);
+      assert.equal(absoluteMs, absolute);
+      assert.ok(sql.includes('expire > NOW()'), 'Only unexpired stored sessions may be renewed');
+      const deadline = Math.min(issuedAt + absolute, (lastActivity ?? issuedAt) + idle);
+      if (now >= deadline) return { rows: [] };
+      if (sql.startsWith('UPDATE')) lastActivity = Math.max(lastActivity ?? issuedAt, now);
+      return { rows: [{ remaining: Math.min(issuedAt + absolute, (lastActivity ?? issuedAt) + idle) - now }] };
+    } };
   }
-  assert.equal(await module.exports.remainingSession(null, {session: {admin: {}}}, 'admin', true), 0);
+
+  for (const role of ['owner', 'staff']) {
+    const req = { sessionID: 'test-session-id', session: { admin: { role, issuedAt } } };
+    const pool = fakePool();
+    now = issuedAt;
+    assert.equal(await remainingSession(pool, req, 'admin', false), idle);
+    now = issuedAt + 29 * minute;
+    assert.equal(await remainingSession(pool, req, 'admin', false), minute);
+    assert.equal(await remainingSession(pool, req, 'admin', true), idle);
+    now = issuedAt + 58 * minute;
+    assert.equal(await remainingSession(pool, req, 'admin', false), minute);
+    assert.equal(await remainingSession(pool, req, 'admin', true), idle);
+    for (let elapsed = 80 * minute; elapsed < absolute; elapsed += 20 * minute) {
+      now = issuedAt + elapsed;
+      assert.equal(await remainingSession(pool, req, 'admin', true), Math.min(idle, absolute - elapsed));
+    }
+    now = issuedAt + absolute;
+    assert.equal(await remainingSession(pool, req, 'admin', true), 0);
+    const idlePool = fakePool();
+    now = issuedAt + idle;
+    assert.equal(await remainingSession(idlePool, req, 'admin', true), 0, 'Idle sessions must not revive');
+  }
+  now = issuedAt;
+  assert.equal(await remainingSession(fakePool(), { session: { admin: {} } }, 'admin', true), 0);
+  assert.equal(await remainingSession(fakePool(), { session: { admin: { issuedAt: issuedAt + 1 } } }, 'admin', true), 0);
 }
 checkAdminExpiry().then(() => {
   passed++;
-  console.log('PASS ' + passed + ': Admin deadline survives refresh and activity and expires at five minutes');
+  console.log('PASS ' + passed + ': Admin idle sliding expiry, eight-hour maximum and no revival');
   console.log(passed + '/8 AERLON build checks passed.');
 }).catch(error => {
-  console.error('FAIL: fixed admin session deadline', error);
+  console.error('FAIL: admin session policy', error);
   process.exitCode = 1;
 });

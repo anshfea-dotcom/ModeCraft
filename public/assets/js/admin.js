@@ -17,7 +17,9 @@ async function checkDeadline() {
   try {
     await api('/api/admin/me');
   } catch {
-    lockAdmin();
+    // A temporary network error is not evidence of session expiry.
+    if (Date.now() >= sessionDeadline) lockAdmin();
+    else if (currentUser) toast('Could not verify session. Check your connection.', true);
   }
 }
 
@@ -31,13 +33,28 @@ async function api(url, opts = {}) {
   const remaining = Number(r.headers.get('X-Session-Remaining-Ms'));
   if (remaining > 0) {
     const deadline = started + remaining;
-    sessionDeadline = sessionDeadline ? Math.min(sessionDeadline, deadline) : deadline;
+    sessionDeadline = Math.max(sessionDeadline, deadline);
     clearTimeout(sessionTimer);
     sessionTimer = setTimeout(lockAdmin, Math.max(0, sessionDeadline - Date.now()));
   }
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw Error(d.error || `Request failed (${r.status})`);
   return d;
+}
+
+// Refresh idle time only for genuine workspace interaction, never a background poll.
+let lastSessionActivityPing = 0;
+function markAdminActivity() {
+  if (!currentUser || document.hidden || Date.now() >= sessionDeadline) return;
+  const now = Date.now();
+  if (now - lastSessionActivityPing < 120_000) return;
+  lastSessionActivityPing = now;
+  api('/api/admin/session/activity', { method: 'POST', body: '{}' }).catch(() => {
+    // Protected routes and the local deadline continue to enforce expiration.
+  });
+}
+for (const event of ['pointerdown', 'keydown', 'input']) {
+  document.addEventListener(event, markAdminActivity, { passive: true });
 }
 
 document.addEventListener('visibilitychange', () => {

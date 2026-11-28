@@ -161,6 +161,15 @@ async function openCheckout(page,url){
    assert.ok((await page.locator("#checkoutGrandTotal").innerText()).includes("2,000"));
    await page.locator('[data-checkout-quantity][data-delta="-1"]').first().click();
    assert.equal((await page.locator(".checkout-quantity-value").first().innerText()).trim(),"1");
+   await page.evaluate(()=>{add('qa-shirt','Black','M');renderCheckoutItems();updateCheckoutSummary();});
+   assert.equal(await page.locator('#checkout .checkout-line-item').count(),1,"Same product, size and colour must consolidate into one summary row");
+   assert.equal((await page.locator('.checkout-quantity-value').first().innerText()).trim(),'2',"Adding same variant again must show quantity 2");
+   assert.equal((await page.locator('#checkoutItemCount').innerText()).trim(),'2 items');
+   assert.ok((await page.locator('#checkoutGrandTotal').innerText()).includes('2,000'));
+   await page.locator('[data-checkout-quantity][data-delta="-1"]').first().click();
+   assert.equal((await page.locator('.checkout-quantity-value').first().innerText()).trim(),'1');
+   assert.equal(await page.locator('#checkout .checkout-address-heading').isVisible(),true);
+   assert.equal(await page.locator('#checkoutAddAddress').isVisible(),true);
    await page.locator("#placeOrder").click();
    await page.locator("#checkoutError").waitFor({state:"visible"});
    assert.match(await page.locator("#checkoutError").innerText(),/address|delivery/i);

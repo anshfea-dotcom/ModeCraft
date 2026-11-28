@@ -107,6 +107,20 @@ check('Bag and menu links run once across refresh and history traversal', () => 
     }
   }
 });
+check('Admin 3.0 invoicing routes, permission gates and redesigned assets', () => {
+  const html = fs.readFileSync('public/admin.html','utf8');
+  const js = fs.readFileSync('public/assets/js/admin-v3.js','utf8');
+  const invoices = fs.readFileSync('services/store/invoices.js','utf8');
+  const schema = fs.readFileSync('services/store/schema.js','utf8');
+  const main = fs.readFileSync('server.js','utf8');
+  new vm.Script(js);
+  new vm.Script(invoices);
+  includesAll(html,['id="section-invoices"','id="section-reports"','src="/admin-v3.js"','href="/admin-v3.css"','data-section="invoices"','id="v3LowStock"']);
+  includesAll(invoices,['requireAdmin, requireOwner','/api/admin/invoices','/api/admin/invoices/:id/pdf','ON CONFLICT(order_id) DO NOTHING']);
+  includesAll(schema,['CREATE TABLE IF NOT EXISTS invoices']);
+  includesAll(main,['registerInvoices(app, context)']);
+});
+
 async function checkAdminExpiry() {
   const source = fs.readFileSync('services/store/session-policy.js', 'utf8');
   const issuedAt = 1_000_000;
@@ -162,7 +176,7 @@ async function checkAdminExpiry() {
 checkAdminExpiry().then(() => {
   passed++;
   console.log('PASS ' + passed + ': Admin idle sliding expiry, eight-hour maximum and no revival');
-  console.log(passed + '/8 AERLON build checks passed.');
+  console.log(passed + '/9 AERLON build checks passed.');
 }).catch(error => {
   console.error('FAIL: admin session policy', error);
   process.exitCode = 1;

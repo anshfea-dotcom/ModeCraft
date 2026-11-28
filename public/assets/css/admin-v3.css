@@ -1,0 +1,82 @@
+
+/* AERLON Admin 3.0 · gold-on-ivory / gold-on-charcoal, responsive mobile first */
+:root{--bg:#f7f4ef;--surface:#fffdf9;--surface2:#f0ebe3;--text:#1a1917;--muted:#716a60;--line:#e4ded4;--accent:#b58c49;--accent2:#7c581e;--good:#16743a;--warn:#955d0a;--bad:#bc3030;--shadow:0 5px 20px #33200e0b}
+:root[data-theme="light"]{color-scheme:light}
+:root[data-theme="dark"]{--bg:#12110f;--surface:#1e1c19;--surface2:#302c26;--text:#f7f2e7;--muted:#bdb3a4;--line:#4b4238;--accent:#d4aa66;--accent2:#edcd9a;--good:#7fdeaa;--warn:#f1c476;--bad:#ff9c93}
+body,:root[data-theme="dark"] body{background:var(--bg);color:var(--text)}
+.sidebar,:root[data-theme="dark"] .sidebar{background:#10100f;border-color:#382e24}
+.sidebar .brand{color:#eed4a6;letter-spacing:.29em;font:500 24px Georgia,serif}
+.sidebar .brand small{letter-spacing:.15em;color:#a68b65;margin-top:9px}
+.sidebar .nav{gap:4px}
+.sidebar .nav button{min-height:38px;padding:8px 11px;font-weight:500;color:#d0c8bb}
+.sidebar .nav button.active{background:linear-gradient(90deg,#80603c,#a4804a);color:#fff9ed;box-shadow:none}
+.sidebar .nav button:hover{color:#fff9ed}
+.sidebar .nav .ico{font-size:18px;color:#d5af70}
+.sidebar .nav-group h2{color:#d9b675;margin:11px 12px 5px;letter-spacing:.12em}
+.sidebar .sidebottom{border-color:#453a2c;color:#ede4d7}
+.sidebar .userchip small{color:#c7b8a1}
+.sidebar #logout{background:#29231d;color:#f2e4c6;border-color:#594b38}
+.main .topbar,:root[data-theme="dark"] .main .topbar{background:#11100e;border:1px solid #453725;border-radius:14px;box-shadow:0 10px 20px #0000000a}
+.main .topbar h1{color:#f4e2bf;font-family:Georgia,serif;letter-spacing:.025em}
+.main .topbar .subtitle{color:#cbb99b}
+.main .topbar .eyebrow{color:#d6b57b}
+.main .topbar .btn{background:#2b241d;color:#f4e5c8;border:1px solid #665030}
+.main .topbar .btn.gold{background:#c29a5c;color:#18120d}
+.main .card,.main .stat,.main .admin20-quick,:root[data-theme="dark"] .main .card,:root[data-theme="dark"] .main .stat{background:var(--surface);border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow)}
+.main .card h2,.main .cardtitle h2,#section-overview .cardtitle h2{color:var(--text)}
+.main .stat strong,.main .stat .stathead{color:var(--text)}
+.admin20-welcome{padding:3px 0 10px;margin:0 0 12px}
+.admin20-welcome h2{font:700 clamp(26px,3vw,33px) Inter,system-ui,sans-serif;letter-spacing:-.04em;margin:5px 0}
+.admin-ref-filter select{background:var(--surface);color:var(--text);border:1px solid var(--line)}
+#section-overview .stats.admin-ref-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.admin-ref-stats .stat,:root[data-theme="dark"] .admin-ref-stats .stat{background:var(--surface);border-color:var(--line);min-height:136px}
+.admin-ref-stats .stathead{font-size:12px}
+.admin-ref-stats .stat strong{margin:10px 0 2px;font-size:clamp(21px,2.6vw,30px)}
+.admin-ref-stats .stat small{margin:0}
+.admin-ref-icon{border-radius:50%;background:color-mix(in srgb,var(--accent) 17%,var(--surface))!important;color:var(--accent2)!important}
+.v3-actions{margin:12px 0 18px}
+.v3-actions .cardtitle{align-items:center;margin-bottom:11px}
+.v3-actions .cardtitle h2{margin:0;font-size:17px}
+.v3-action-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.v3-action-grid button{min-height:92px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:14px;padding:13px 8px;box-shadow:var(--shadow);font-weight:650;cursor:pointer}
+.v3-action-grid button:hover{border-color:var(--accent)}
+.v3-action-grid button span{display:block;color:var(--accent2);font-size:27px;font-weight:400}
+.v3-action-grid button[hidden]{display:none}
+.v3-contentgrid{grid-template-columns:minmax(0,1.25fr) minmax(270px,1fr)!important}
+#section-overview .card,#section-overview .v3-actions{background:transparent;border:0}
+#section-overview .card{background:var(--surface);border:1px solid var(--line)}
+.admin-ref-chart{background:repeating-linear-gradient(to bottom,transparent 0,transparent 46px,var(--line) 47px)!important}
+.admin-ref-chart-labels,.admin-ref-legend-row,.admin-ref-legend-row b{color:var(--muted)}
+.admin-ref-donut>div{background:var(--surface)}
+.v3-alerts{display:grid;gap:9px}
+.v3-alerts button{border:1px solid var(--line);border-radius:12px;background:var(--surface2);color:var(--text);padding:10px 12px;display:grid;grid-template-columns:26px auto 1fr;align-items:center;text-align:left;gap:10px}
+.v3-alerts button span{font-size:22px;color:var(--accent2)}
+.v3-alerts button strong{font-size:17px}
+.v3-alerts button small{color:var(--muted)}
+.v3-separator{border-top:1px solid var(--line);margin:17px 0}
+.v3-small-heading{font-size:14px;margin:0 0 14px}
+.v3-recent{margin-top:10px}
+.v3-title-row{margin:15px 0}
+.v3-title-row h2{margin:0;font-size:24px}
+.v3-title-row p{margin:4px 0}
+#section-invoices .card,#section-reports .card{margin-bottom:16px}
+#section-invoices .tablewrap table{min-width:620px}
+.v3-reportgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.v3-reportgrid article{background:var(--surface2);border-radius:12px;padding:18px;border:1px solid var(--line)}
+.v3-reportgrid article strong{font-size:25px;display:block;margin-top:8px}
+.v3-reportgrid article small{color:var(--muted)}
+@media(max-width:1150px){#section-overview .stats.admin-ref-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.v3-contentgrid{grid-template-columns:1fr!important}}
+@media(max-width:700px){
+.sidebar{background:#10100f!important}
+.main{background:var(--bg)}
+#section-overview .stats.admin-ref-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.v3-action-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.v3-action-grid button{padding:9px 3px;font-size:10px;min-height:80px}
+.v3-action-grid button span{font-size:24px}
+.v3-alerts button{grid-template-columns:25px 30px 1fr}
+.admin20-welcome{margin:0 0 8px}
+.admin20-welcome h2{font-size:27px}
+#section-invoices .formgrid{grid-template-columns:1fr}
+#section-invoices .formfield.full{grid-column:1}
+}
+@media(max-width:420px){.v3-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

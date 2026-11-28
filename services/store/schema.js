@@ -103,6 +103,14 @@ module.exports = async function initDatabase(pool) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS invoices (
+      id BIGSERIAL PRIMARY KEY,
+      order_id TEXT NOT NULL UNIQUE REFERENCES orders(id),
+      data JSONB NOT NULL,
+      issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS invoices_issued_at_idx ON invoices (issued_at DESC);
+
     CREATE TABLE IF NOT EXISTS staff (
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,

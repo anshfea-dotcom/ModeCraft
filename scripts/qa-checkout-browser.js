@@ -125,6 +125,18 @@ async function openCheckout(page,url){
    await openCheckout(page,url);
    assert.equal(await page.locator("#checkout .checkout-box").isVisible(),true);
    await checkSequence(page);
+   const initialAction=await page.locator("#placeOrder").evaluate(el=>{
+     const r=el.getBoundingClientRect();
+     return {top:r.top,bottom:r.bottom,viewport:innerHeight,position:getComputedStyle(el.closest('.checkout-action')).position};
+   });
+   assert.equal(initialAction.position,'static',"Mobile actions should remain docked outside the scrollable form");
+   assert.ok(initialAction.top>=-1 && initialAction.bottom<=initialAction.viewport+2,"Place Order must fit above mobile browser controls: "+JSON.stringify(initialAction));
+   assert.equal(await page.locator("#checkoutContinueShopping").isVisible(),true);
+   await page.locator('[data-checkout-quantity][data-delta="1"]').first().click();
+   assert.equal((await page.locator(".checkout-quantity-value").first().innerText()).trim(),"2");
+   assert.ok((await page.locator("#checkoutGrandTotal").innerText()).includes("2,000"));
+   await page.locator('[data-checkout-quantity][data-delta="-1"]').first().click();
+   assert.equal((await page.locator(".checkout-quantity-value").first().innerText()).trim(),"1");
    await page.locator("#placeOrder").click();
    await page.locator("#checkoutError").waitFor({state:"visible"});
    assert.match(await page.locator("#checkoutError").innerText(),/address|delivery/i);
@@ -168,7 +180,11 @@ async function openCheckout(page,url){
    await page.waitForFunction(()=>document.querySelectorAll("#checkoutSavedAddresses .checkout-saved-address").length>0);
    assert.equal(data.addresses.length,1);
    await page.locator("#checkoutAddAddress").click();
+   assert.equal(await page.locator("#checkoutAddressFields").isVisible(),true);
    assert.equal(await page.locator("#house").inputValue(),"");
+   await page.locator('[data-address-type="Work"]').click();
+   assert.equal(await page.locator("#addressType").inputValue(),"Work");
+   assert.equal(await page.locator('[data-address-type="Work"]').getAttribute('aria-pressed'),'true');
    console.log("PASS browser/mobile: save account address and add-new-address selection");
 
    const desktop=await browser.newContext({viewport:{width:1366,height:820},reducedMotion:"reduce"});
@@ -177,6 +193,8 @@ async function openCheckout(page,url){
    await openCheckout(dp,url);
    await checkSequence(dp);
    assert.equal(await dp.locator("#placeOrder").isVisible(),true);
+   assert.equal(await dp.locator("#checkoutContinueShopping").isVisible(),true);
+   assert.equal(await dp.locator('[data-checkout-quantity][data-delta="1"]').count(),1);
    assert.equal(await dp.locator("[data-payment]").count(),2);
    assert.ok(await dp.locator(".payment-icon-cod svg").isVisible());
    assert.ok(await dp.locator(".payment-icon-gift svg").isVisible());

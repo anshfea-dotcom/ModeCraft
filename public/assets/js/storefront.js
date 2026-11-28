@@ -285,7 +285,7 @@ function updateCheckoutSummary(){
   if(checkoutGrand)checkoutGrand.textContent=money(finalTotal);
   const dock=$("#checkoutDockTotal");if(dock)dock.textContent=money(finalTotal);
   $("#removeCoupon").hidden = !appliedCoupon;
-  if (!$("#placeOrder").disabled) $("#placeOrder").textContent = "Place order · " + money(finalTotal);
+  if (!$("#placeOrder").disabled) $("#placeOrder").textContent = "Place order";
   const totals=$("#couponTotals");
   if(totals){
     totals.style.display=appliedCoupon?"block":"none";
@@ -326,7 +326,51 @@ function renderCart(){const itemCount=cart.reduce((n,i)=>n+i.quantity,0);$("#cou
 function total(){return cart.reduce((s,i)=>s+effectivePrice(products.find(p=>p.id===i.id)||{})*i.quantity,0)}
 function showBag(show){$("#drawer").classList.toggle("show",show);$("#shade").classList.toggle("show",show)}
 function showCheckout(show){if(show){refreshCheckoutMethods();renderCheckoutItems();updateCheckoutSummary()}$("#checkout").classList.toggle("show",show)}
-function renderCheckoutItems(){const root=$("#checkoutItems");if(!root)return;root.replaceChildren();let count=0;for(const item of cart){const p=products.find(x=>String(x.id)===String(item.id));if(!p)continue;count+=Number(item.quantity)||0;const row=document.createElement('div');row.className='checkout-line-item';const img=document.createElement('img');img.src=productImages(p)[0]||p.image||'';img.alt=p.name||'Product';img.loading='lazy';img.onerror=()=>{img.style.visibility='hidden'};const copy=document.createElement('div');copy.className='checkout-line-copy';const title=document.createElement('strong');title.textContent=p.name||'Product';const variant=document.createElement('small');variant.textContent=[item.color,item.size,'Qty '+(Number(item.quantity)||1)].filter(Boolean).join(' · ');copy.append(title,variant);if(!item.size||(!item.color&&((p.colors||[]).length||(p.inventoryVariants||[]).length))){const warning=document.createElement('span');warning.className='checkout-item-warning';const note=document.createElement('span');note.textContent='⚠ Please select your size and colour.';const fix=document.createElement('button');fix.type='button';fix.textContent='Select size';fix.dataset.fixVariant=cartKey(item);warning.append(note,fix);copy.append(warning)}const price=document.createElement('strong');price.className='checkout-line-price';price.textContent=money(effectivePrice(p)*(Number(item.quantity)||1));row.append(img,copy,price);root.append(row)}if(!count){const empty=document.createElement('p');empty.className='muted';empty.textContent='Your bag is empty. Return to the collection to add products.';root.append(empty)}const countEl=$("#checkoutItemCount");if(countEl)countEl.textContent=count+' item'+(count===1?'':'s');const sub=$("#checkoutSubtotal"),discount=$("#checkoutDiscount"),discountRow=$("#checkoutDiscountRow"),grand=$("#checkoutGrandTotal");if(sub)sub.textContent=money(total());const saving=appliedCoupon?Number(appliedCoupon.discount)||0:0;if(discount)discount.textContent='−'+money(saving);if(discountRow)discountRow.hidden=!saving;if(grand)grand.textContent=money(Math.max(0,total()-saving))}
+function renderCheckoutItems(){
+  const root=$("#checkoutItems");if(!root)return;
+  root.replaceChildren();
+  let count=0;
+  for(const item of cart){
+    const p=products.find(x=>String(x.id)===String(item.id));if(!p)continue;
+    const quantity=Number(item.quantity)||1;
+    count+=quantity;
+    const key=cartKey(item),row=document.createElement('div');row.className='checkout-line-item';
+    const img=document.createElement('img');
+    img.src=productImages(p)[0]||p.image||'';img.alt=p.name||'Product';img.loading='lazy';
+    img.onerror=()=>{img.style.visibility='hidden'};
+    const copy=document.createElement('div');copy.className='checkout-line-copy';
+    const title=document.createElement('strong');title.textContent=p.name||'Product';
+    const variant=document.createElement('small');variant.textContent=[item.color,item.size].filter(Boolean).join(' · ');
+    const qty=document.createElement('div');qty.className='checkout-quantity';
+    const minus=document.createElement('button');minus.type='button';minus.textContent='−';minus.setAttribute('aria-label','Decrease quantity of '+(p.name||'product'));
+    minus.dataset.checkoutQuantity=key;minus.dataset.delta='-1';
+    const amount=document.createElement('span');amount.className='checkout-quantity-value';amount.textContent=quantity;amount.setAttribute('aria-label','Quantity '+quantity);
+    const plus=document.createElement('button');plus.type='button';plus.textContent='+';plus.setAttribute('aria-label','Increase quantity of '+(p.name||'product'));
+    plus.dataset.checkoutQuantity=key;plus.dataset.delta='1';plus.disabled=quantity>=10;
+    qty.append(minus,amount,plus);copy.append(title,variant,qty);
+    if(!item.size||(!item.color&&((p.colors||[]).length||(p.inventoryVariants||[]).length))){
+      const warning=document.createElement('span');warning.className='checkout-item-warning';
+      const note=document.createElement('span');note.textContent='⚠ Please select your size and colour.';
+      const fix=document.createElement('button');fix.type='button';fix.textContent='Select size';fix.dataset.fixVariant=key;
+      warning.append(note,fix);copy.append(warning);
+    }
+    const price=document.createElement('strong');price.className='checkout-line-price';
+    price.textContent=money(effectivePrice(p)*quantity);
+    row.append(img,copy,price);root.append(row);
+  }
+  if(!count){
+    const empty=document.createElement('p');empty.className='muted';
+    empty.textContent='Your bag is empty. Return to the collection to add products.';root.append(empty);
+  }
+  const countEl=$("#checkoutItemCount");
+  if(countEl)countEl.textContent=count+' item'+(count===1?'':'s');
+  const sub=$("#checkoutSubtotal"),discount=$("#checkoutDiscount"),discountRow=$("#checkoutDiscountRow"),grand=$("#checkoutGrandTotal");
+  if(sub)sub.textContent=money(total());
+  const saving=appliedCoupon?Number(appliedCoupon.discount)||0:0;
+  if(discount)discount.textContent='−'+money(saving);
+  if(discountRow)discountRow.hidden=!saving;
+  if(grand)grand.textContent=money(Math.max(0,total()-saving));
+}
 function payload(){return{customer:{name:$("#name").value.trim(),email:$("#email").value.trim(),phone:$("#phone").value.trim(),address:$("#address").value.trim(),house:$("#house").value.trim(),state:$("#state").value.trim(),landmark:$("#landmark").value.trim(),addressType:$("#addressType").value,city:$("#city").value.trim(),postalCode:$("#pin").value.trim()},items:cart.map(i=>({id:i.id,quantity:i.quantity,color:i.color||'',size:i.size||''})),couponCode:appliedCoupon?.code||""}}
 $("#bagBtn").onclick=()=>showBag(true);$("#closeBag").onclick=()=>showBag(false);$("#shade").onclick=()=>showBag(false);$("#checkoutBtn").onclick=()=>{if(!cart.length)return toast("Your bag is empty");updateCheckoutSummary();showBag(false);showCheckout(true)};$("#closeCheckout").onclick=()=>showCheckout(false);
 $("#search").oninput=renderProducts;$("#category").onchange=renderProducts;$("#sort").onchange=renderProducts;$("#year").textContent=new Date().getFullYear();

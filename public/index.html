@@ -10,7 +10,7 @@
 <meta name="description" content="Discover elevated everyday fashion at AERLON. Explore thoughtfully designed hoodies, clothing and accessories with a premium shopping experience."><meta property="og:site_name" content="AERLON"><meta property="og:type" content="website"><meta property="og:title" content="AERLON — Elevated Everyday Fashion"><meta property="og:description" content="Explore thoughtfully designed everyday essentials at AERLON."><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AERLON","url":"/","description":"An online fashion store offering thoughtfully designed everyday clothing and accessories."}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"AERLON","url":"/","potentialAction":{"@type":"SearchAction","target":"/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
 
 <link rel="stylesheet" href="/control-sizes.css">
-<link rel="stylesheet" href="/assets/css/checkout.css"><link rel="stylesheet" href="/assets/css/checkout-onepage.css?v=20261128-2">
+<link rel="stylesheet" href="/assets/css/checkout.css"><link rel="stylesheet" href="/assets/css/checkout-onepage.css?v=20261128-3">
 </head>
 <body>
 <div class="mc-intro" id="mcIntro" role="status" aria-label="Opening AERLON" aria-live="off">
@@ -106,17 +106,17 @@
  <div class="modalbox checkout-box">
   <div class="checkout-shell-top">
    <div class="modalhead checkout-head">
-    <div class="checkout-identity"><strong class="checkout-wordmark">AERLON</strong><span class="checkout-brand-divider" aria-hidden="true"></span><span class="checkout-kicker">SECURE CHECKOUT</span></div>
+    <div class="checkout-identity"><strong class="checkout-wordmark">AERLON<sup>™</sup></strong><span class="checkout-brand-divider" aria-hidden="true"></span><span class="checkout-kicker">SECURE CHECKOUT</span></div>
     <button type="button" class="checkout-close" id="closeCheckout" aria-label="Close checkout">×</button>
    </div>
-   <div class="checkout-lead"><div><span class="checkout-eyebrow">THE FINAL DETAIL</span><h2 id="checkoutTitle">Complete your order.</h2><p>Review your pieces, choose delivery and payment, then place your order—all on one page.</p></div></div>
+   <div class="checkout-lead"><h2 id="checkoutTitle">Complete your order</h2><span class="checkout-lead-caption">A secure, simple checkout</span></div>
   </div>
   <div class="checkout-layout">
    <aside class="checkout-order-summary" aria-label="Order summary">
-    <div class="checkout-summary-head"><div><span class="checkout-kicker">YOUR SELECTION</span><h3>Order summary</h3></div><span class="checkout-item-count" id="checkoutItemCount">0 items</span></div>
+    <div class="checkout-summary-head"><div><h3>Order summary</h3></div><span class="checkout-item-count" id="checkoutItemCount">0 items</span></div>
     <div id="checkoutItems" class="checkout-items"><p class="muted">Your selected products will appear here.</p></div>
     <div class="checkout-totals"><div><span>Subtotal</span><strong id="checkoutSubtotal">₹0</strong></div><div id="checkoutDiscountRow" class="checkout-discount-row" hidden><span>Discount</span><strong id="checkoutDiscount">−₹0</strong></div><div><span>Shipping</span><strong>₹0</strong></div><div class="checkout-final-total"><span id="checkoutGrandLabel">Total</span><strong id="checkoutGrandTotal">₹0</strong></div></div>
-    <div class="checkout-trust"><span aria-hidden="true">✓</span><div><strong>Secure checkout</strong><small>We'll confirm your order and provide its reference.</small><a href="/customer-care.html">Need help?</a></div></div>
+    <p class="checkout-trust"><span aria-hidden="true">✓</span> Secure checkout · Order confirmation provided <a href="/customer-care.html">Need help?</a></p>
    </aside>
    <div class="checkout-main">
     <p class="checkout-form-error" id="checkoutError" role="alert" aria-live="assertive" hidden></p>
@@ -134,6 +134,7 @@
        <span class="location-row-actions"><button type="button" id="locateAddress">⌖ Use my location</button><button type="button" id="enterPin">Enter PIN</button></span>
       </div>
       <p id="addressMessage" class="checkout-location-message" role="status" aria-live="polite"></p>
+      <div class="checkout-address-fields" id="checkoutAddressFields">
       <div class="delivery-grid">
        <label>Full name<input id="name" autocomplete="name" maxlength="100" required></label>
        <label>Mobile number (+91)<input id="phone" type="tel" autocomplete="tel-national" inputmode="numeric" pattern="[6-9][0-9]{9}" maxlength="10" required></label>
@@ -143,12 +144,13 @@
        <label>House / Flat / Building<input id="house" autocomplete="address-line1" maxlength="100" required></label>
        <label>Road / Street / Locality<input id="address" autocomplete="address-line2" maxlength="180" required></label>
        <label>Landmark (optional)<input id="landmark" maxlength="100"></label>
-       <label>Address type<select id="addressType"><option>Home</option><option>Work</option><option>Other</option></select></label>
+       <div class="checkout-type-field"><span class="checkout-type-caption">Address type</span><select id="addressType" class="checkout-type-select" aria-label="Address type"><option>Home</option><option>Work</option><option>Other</option></select><div class="checkout-type-options" role="group" aria-label="Address type"><button type="button" class="checkout-type-option is-selected" data-address-type="Home" aria-pressed="true"><span aria-hidden="true">⌂</span>Home</button><button type="button" class="checkout-type-option" data-address-type="Work" aria-pressed="false"><span aria-hidden="true">▦</span>Work</button><button type="button" class="checkout-type-option" data-address-type="Other" aria-pressed="false"><span aria-hidden="true">◇</span>Other</button></div></div>
        <label>Email for order updates<input id="email" type="email" autocomplete="email" maxlength="180" required></label>
       </div>
+     </div>
      </fieldset>
       <details id="couponPanel" class="checkout-compact-coupon">
-       <summary><span aria-hidden="true">✦</span> Apply coupon <span class="checkout-coupon-chevron" aria-hidden="true">⌄</span></summary>
+       <summary><span aria-hidden="true">⌑</span> Apply coupon <span class="checkout-coupon-chevron" aria-hidden="true">⌄</span></summary>
        <div class="coupon-entry"><label for="couponInput" class="sr-only">Coupon code</label><input id="couponInput" maxlength="32" autocomplete="off" placeholder="Enter coupon code"><button type="button" id="applyCouponBtn">Apply</button></div>
        <p id="couponMessage" role="status" aria-live="polite"></p>
        <div id="couponTotals" hidden><span id="couponSubtotal"></span><span id="couponDiscount"></span><span id="couponTotal"></span></div>
@@ -173,7 +175,7 @@
 
   </div>
   <div class="checkout-action"><div class="checkout-action-total"><small>ORDER TOTAL</small><strong id="checkoutDockTotal">₹0</strong></div>
-   <div class="checkout-action-buttons"><button type="submit" class="btn" form="orderForm" id="placeOrder">Place order</button></div>
+   <div class="checkout-action-buttons"><button type="button" class="checkout-back-shopping" id="checkoutContinueShopping"><span class="checkout-back-icon" aria-hidden="true">←</span><span>Back to shopping</span></button><button type="submit" class="btn" form="orderForm" id="placeOrder">Place order</button></div>
   </div>
   <p class="checkout-bottom-note">Questions? <a href="/customer-care.html" target="_blank" rel="noopener">Customer care</a> · <a href="/return-refund-policy.html" target="_blank" rel="noopener">Returns policy</a></p>
  </div>
@@ -194,6 +196,6 @@
 <div class="modal success-modal" id="orderSuccessModal" role="dialog" aria-modal="true" aria-labelledby="orderSuccessTitle"><div class="modalbox success-box"><div class="success-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"></path></svg></div><div class="success-kicker">AERLON / ORDER CONFIRMED</div><h2 id="orderSuccessTitle">You’re all set.</h2><p class="success-copy" id="orderSuccessMessage">Your order has been accepted by the store.</p><div class="order-reference"><span>YOUR ORDER REFERENCE</span><strong id="successOrderId">—</strong></div><p class="success-copy" id="successPaymentNote">Keep this reference handy to check your order status.</p><div class="success-actions"><button class="btn" type="button" id="successTrackBtn">TRACK ORDER ↗</button><button class="btn success-secondary" type="button" id="successContinueBtn">CONTINUE SHOPPING</button></div></div></div><div class="modal success-modal" id="loginSuccessModal" role="dialog" aria-modal="true" aria-labelledby="loginSuccessTitle"><div class="modalbox success-box"><div class="success-mark auth-success-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5 14.4 8.4 19.8 9.2 15.9 13 16.8 18.4 12 15.9 7.2 18.4 8.1 13 4.2 9.2 9.6 8.4Z"></path></svg></div><div class="success-kicker">WELCOME TO AERLON</div><h2 id="loginSuccessTitle">You’re signed in.</h2><p class="success-copy" id="loginSuccessMessage">Your account is ready. You can now continue exploring your saved styles and orders.</p><div class="success-actions" style="grid-template-columns:1fr"><button class="btn" type="button" id="loginSuccessContinue">CONTINUE EXPLORING ↗</button></div></div></div><div class="toast" id="toast" role="status"></div>
 <script src="/catalogue-product.js"></script>
 <script src="/assets/js/storefront.js"></script>
-<script src="/assets/js/checkout.js?v=20261128-2"></script>
+<script src="/assets/js/checkout.js?v=20261128-3"></script>
 <script src="/aerlon-concierge.js" defer></script>
 </body></html>

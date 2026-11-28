@@ -30,6 +30,10 @@ check("one-page order form has exactly one real Place Order button and no three-
 
 });
 check("only Cash on Delivery and fully-funded Gift Code appear to new customers",()=>{
+  for(const marker of ['id="checkoutContinueShopping"','id="checkoutAddressFields"','id="addressType"','data-address-type="Home"','data-address-type="Work"','data-address-type="Other"']){
+    assert.ok(checkout.includes(marker),"Missing checkout control "+marker);
+  }
+  assert.ok(checkout.includes('AERLON<sup>™</sup>'));
   assert.ok(checkout.includes('name="paymentChoice" value="COD" checked'));
   assert.ok(checkout.includes('name="paymentChoice" value="GIFT"'));
   assert.ok(!checkout.includes('value="ONLINE"'));
@@ -84,14 +88,22 @@ check("size selection is mandatory and gives visible red warning",()=>{
   assert.ok(css.includes("#detailSizeWarning"));
 });
 check("responsive themes, syntax and retry/idempotency safeguards remain valid",()=>{
-  assert.ok(html.includes('checkout-onepage.css?v=20261128-2'));
-  assert.ok(html.includes('checkout.js?v=20261128-2'));
+  assert.ok(html.includes('checkout-onepage.css?v=20261128-3'));
+  assert.ok(html.includes('checkout.js?v=20261128-3'));
   assert.ok(css.includes('flex-direction:column!important'));
   assert.ok(css.includes('position:static!important'));
   assert.ok(css.includes('@media(max-width:540px)'));
   assert.ok(css.includes('#checkout .checkout-location-message[data-state="loading"]::before'));
 
   assert.ok(css.includes("@media(max-width:430px)"));
+  assert.ok(css.includes("position:sticky!important;bottom:0!important"));
+  assert.ok(css.includes("env(safe-area-inset-bottom)"));
+  assert.ok(css.includes(".checkout-quantity"));
+  assert.ok(store.includes("function renderCheckoutItems()"));
+  assert.ok(store.includes("minus.dataset.checkoutQuantity"));
+  assert.ok(store.includes("plus.dataset.checkoutQuantity"));
+  assert.ok(client.includes("by('checkoutContinueShopping')"));
+  assert.ok(client.includes("setAddressFieldsOpen(edit)"));
   assert.ok(css.includes("body.dark #checkout"));
   assert.ok(css.includes("prefers-reduced-motion"));
   assert.ok(baseCss.includes("#checkout .checkout-action"));

@@ -122,9 +122,10 @@
     <p class="checkout-form-error" id="checkoutError" role="alert" aria-live="assertive" hidden></p>
     <form id="orderForm">
      <fieldset id="deliveryFields">
-      <legend><span class="checkout-heading-pin" aria-hidden="true">⌖</span> Delivery Address</legend><div class="checkout-section-heading"><p>Where should we deliver your order?</p></div>
-      <div class="checkout-address-tools">
-       <button type="button" id="checkoutAddAddress" class="checkout-small-action" aria-expanded="true" aria-controls="checkoutAddressFields">＋ Add New Address</button>
+      <legend class="sr-only">Delivery Address</legend>
+      <div class="checkout-address-heading">
+       <h3><span class="checkout-heading-pin" aria-hidden="true">⌖</span> Delivery Address</h3>
+       <div class="checkout-address-tools"><button type="button" id="checkoutAddAddress" class="checkout-small-action" aria-expanded="true" aria-controls="checkoutAddressFields">＋ Add New Address</button></div>
       </div>
       <div id="checkoutSavedAddresses" class="checkout-saved-addresses" aria-label="Saved addresses" hidden></div>
       <p id="checkoutAddressSaveMessage" class="checkout-helper-note" role="status" aria-live="polite">Sign in to save delivery addresses to your AERLON account.</p>

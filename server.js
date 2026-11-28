@@ -158,6 +158,9 @@ app.use(
       ttl: Math.floor(SESSION_TTL_MS / 1000)
     }),
     secret: process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD,
+    // Trust the TLS ingress for Secure cookie delivery only; never use
+    // forwarded headers for rate-limit identity without trusted proxy CIDRs.
+    proxy: process.env.NODE_ENV === "production",
     resave: false,
     saveUninitialized: false,
     rolling: true,

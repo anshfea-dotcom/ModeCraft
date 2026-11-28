@@ -137,7 +137,7 @@ async function testManualGSTInvoice(){
   const issued=response();
   await issue(request,issued,e=>{throw e;});
   assert.equal(issued.statusCode,201);
-  assert.match(issued.body.invoiceNumber,/^G\\d{2}-\\d{2}-\\d{6}$/);
+  assert.match(issued.body.invoiceNumber,/^G\d{2}-\d{2}-\d{6}$/);
   assert.equal(stored.type,"gst_tax_invoice");
   assert.equal(stored.taxType,"intra");
   assert.equal(stored.taxablePaisa,100000);

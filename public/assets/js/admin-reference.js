@@ -268,7 +268,7 @@
       if(kind==="inventory") for(const a of items.slice(0,15))entries.push({type:"Stock",title:safe(a.productName||"Product")+" · "+safe(a.color)+" / "+safe(a.size),body:Number(a.quantity)===0?"Out of stock":Number(a.quantity)+" units remaining",section:"inventory",pending:true});
       if(kind==="orders") {
         const paymentChecks=items.filter(o=>!o.archivedAt && o.paymentStatus!=="paid" && o.orderStatus!=="cancelled" && /online|upi|razorpay/i.test(safe(o.paymentMethod)));
-        for(const o of paymentChecks.slice(0,8))entries.push({type:"Payment",title:"Verify payment for "+safe(o.id),body:"Current status: "+readable(o.paymentStatus),section:"payments",id:o.id,pending:true});
+        for(const o of paymentChecks.slice(0,8))entries.push({type:"Payment",title:"Verify payment for "+safe(o.id),body:"Current status: "+readable(o.paymentStatus),section:currentUser.isOwner?"payments":"orders",id:o.id,pending:true});
         const waiting=items.filter(o=>!o.archivedAt&&!["delivered","cancelled"].includes(o.orderStatus)).sort((a,b)=>Date.parse(b.createdAt||0)-Date.parse(a.createdAt||0));
         for(const o of waiting.slice(0,12))entries.push({type:"Order",title:"Order "+safe(o.id),body:readable(o.orderStatus)+" · "+rup(o.total),section:"orders",id:o.id,pending:true});
       }

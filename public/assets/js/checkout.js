@@ -95,10 +95,15 @@ function endCheckoutAttempt(){
       const row=document.createElement('div');
       row.className='checkout-saved-address'+(address.id===activeId?' selected':'');
       const pick=document.createElement('button');pick.type='button';pick.className='checkout-use-address';
-      const name=document.createElement('strong');name.textContent=(address.addressType||'Home')+' · '+address.name;
+      const type=address.addressType||'Home';
+      const radio=document.createElement('span');radio.className='checkout-address-radio';radio.setAttribute('aria-hidden','true');
+      const tile=document.createElement('span');tile.className='checkout-address-icon';tile.textContent=type==='Home'?'⌂':type==='Work'?'▣':'⌖';tile.setAttribute('aria-hidden','true');
+      const details=document.createElement('span');details.className='checkout-address-details';
+      const name=document.createElement('strong');name.textContent=type;
       const line=document.createElement('small');
-      line.textContent=[address.house,address.address,address.city,address.state,address.postalCode].filter(Boolean).join(', ');
-      pick.append(name,line);pick.onclick=()=>applyAddress(address);
+      line.textContent=[address.name,address.house,address.address,address.city,address.state,address.postalCode].filter(Boolean).join(', ');
+      details.append(name,line);pick.append(radio,tile,details);pick.onclick=()=>applyAddress(address);
+      pick.setAttribute('aria-pressed',String(address.id===activeId));
       const remove=document.createElement('button');remove.type='button';remove.className='checkout-remove-address';remove.textContent='Delete';
       remove.setAttribute('aria-label','Delete saved address '+(address.addressType||''));
       remove.onclick=async()=>{
@@ -167,7 +172,7 @@ function endCheckoutAttempt(){
   });
   addNew.addEventListener('click',()=>{
     activeId=null;revision++;lookupId++;previousPin='';
-    for(const key of keys)by(key).value=key==='addressType'?'Home':'';
+    for(const key of keys)if(key!=='email')by(key).value=key==='addressType'?'Home':'';
     if(account){
       by('name').value=account.name||'';
       by('phone').value=account.phone||'';

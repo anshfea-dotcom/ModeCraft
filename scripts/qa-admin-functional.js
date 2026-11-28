@@ -6,7 +6,8 @@ function appRecorder(){
  const app={get:(p,...handlers)=>routes.set("GET "+p,handlers.at(-1)),
             post:(p,...handlers)=>routes.set("POST "+p,handlers.at(-1)),
             patch:(p,...handlers)=>routes.set("PATCH "+p,handlers.at(-1)),
-            put:(p,...handlers)=>routes.set("PUT "+p,handlers.at(-1))};
+            put:(p,...handlers)=>routes.set("PUT "+p,handlers.at(-1)),
+            delete:(p,...handlers)=>routes.set("DELETE "+p,handlers.at(-1))};
  return {app,routes};
 }
 function response(){

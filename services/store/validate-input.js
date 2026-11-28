@@ -67,7 +67,8 @@ function validateInput(req,res,next) {
     return next();
   }
 
-  if (!["GET","HEAD","DELETE"].includes(req.method) && req.body !== undefined &&
+  const hasEntity = Number(req.headers["content-length"] || 0) > 0 || Boolean(req.headers["transfer-encoding"]);
+  if (!["GET","HEAD","DELETE"].includes(req.method) && hasEntity &&
       !req.is("application/json")) {
     return invalidSingle(res,"body","Expected an application/json request.");
   }
